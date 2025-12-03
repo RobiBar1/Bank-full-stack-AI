@@ -1,0 +1,14 @@
+# Ignore everything
+*
+
+# But do not ignore directories (so git can look inside them)
+!*/
+
+# Whitelist: Allow these specific file types (add the ones you need)
+!*.c
+!*.h
+!*.md
+!Makefile
+!.myfuncs
+!.gitignore
+
