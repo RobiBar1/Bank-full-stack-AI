@@ -76,3 +76,17 @@ int ReverseNumber(int num)
 	
 	return rev_num;	
 }
+
+void Swap(int* one, int* other)
+{
+	int tmp;
+	
+	if (NULL == one || NULL == other)
+	{
+		return;
+	}
+	
+	tmp = *one;
+	*one = *other;		
+	*other = tmp;
+}
