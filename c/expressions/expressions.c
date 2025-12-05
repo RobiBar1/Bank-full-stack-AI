@@ -15,6 +15,13 @@ void PrintHelloWorld(void)
 float Power10(int num)
 {
 	float number_to_return = 1;
+	int is_negetive = 0;
+	
+	if(0 > num)
+	{
+		is_negetive++;
+		num *= -1;
+	}
 	
 	if (0 == num)
 	{
@@ -28,7 +35,7 @@ float Power10(int num)
 			num--;
 		}
 		
-		if (0 > num)
+		if (is_negetive)
 		{
 			number_to_return = 1 / number_to_return;
 		}
@@ -37,4 +44,35 @@ float Power10(int num)
 	return number_to_return;
 }
 
-
+int ReverseNumber(int num)
+{
+	int is_negetive = 0, rev_num = 0, right_num = 0;
+	
+	if (0 == num)
+	{
+		return 0;
+	}
+	if (num < 0)
+	{
+		num *= -1;
+		is_negetive = 1;
+	}
+	
+	rev_num = num % 10;
+	num /= 10;
+	while (num > 0)
+	{
+		rev_num *= 10;
+		right_num = num % 10;
+		rev_num += right_num;
+		num /= 10;
+	}
+	
+	
+	if(is_negetive)
+	{
+		rev_num *= -1;
+	}
+	
+	return rev_num;	
+}
