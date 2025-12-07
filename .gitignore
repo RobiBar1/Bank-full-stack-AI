@@ -3,6 +3,7 @@
 
 # But do not ignore directories (so git can look inside them)
 !*/
+*bin/*
 
 # Whitelist: Allow these specific file types (add the ones you need)
 !*.c
