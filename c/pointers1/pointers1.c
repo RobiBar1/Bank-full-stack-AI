@@ -18,7 +18,7 @@ void CopyArray(const int* array, int* dest_array, size_t array_len)
 {
 	size_t i;
 	
-	assert(NULL != array && NULL != dest_array && 0 != array_len);
+	assert(NULL != array && NULL != dest_array);
 
 	for (i = 0; i < array_len; ++i)
 	{
@@ -55,6 +55,7 @@ void PrintTypesAddress(void)
 	if (ptr4 != NULL)
 	{
 		free(ptr4);
+		ptr4 = NULL;
 	}
 }
 
@@ -70,9 +71,7 @@ void SwapTwoSize_t(size_t* one, size_t* other)
 }
 
 void SwapTwoPtrSize_t(size_t** one, size_t** other)
-{
-	assert(NULL != one && NULL != other);
-	
+{	
 	SwapTwoSize_t((size_t*) one, (size_t*) other);
 }
 
