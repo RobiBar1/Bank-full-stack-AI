@@ -22,7 +22,7 @@ void SevenBoom(long from, long to)
 	
 	while (count_down)
 	{
-		num_time_multi_ten *= 10;
+		num_time_multi_ten *= 10;/*0 - 100 -> 70, */
 	}
 	
 	num_time_multi_ten *= 7;
@@ -31,7 +31,7 @@ void SevenBoom(long from, long to)
 	
 	for (; run_index <= to; run_index++)
 	{
-		if (run_index % 7)
+		if (run_index % 7 || run_index % 10 == 7)
 		{
 			printf("boom\n");
 			continue;
