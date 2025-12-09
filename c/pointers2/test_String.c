@@ -16,6 +16,7 @@ void test_StrCmp(void);
 void test_StrNCmp(void);
 void test_StrCpy(void);
 void test_StrNCpy(void);
+void test_StrCaseCmp(void);
 
 
 int main()
@@ -24,13 +25,72 @@ int main()
 	test_StrCmp();
 	test_StrCpy();
 	test_StrNCpy();
+	test_StrCaseCmp();
 	return 0;
+}
+void test_StrCaseCmp()
+{
+	char arrHello[] = "Hello";
+	size_t i, size = 6;
+	char* arr1 = (char*)malloc(sizeof(char) * size);
+	char* arr2 = (char*)malloc(sizeof(char) * size);
+	
+	assert(NULL != arr1 && NULL != arr2);
+	
+	for (i = 0; i < size; ++i)
+	{
+		arr1[i] = arrHello[i];
+		arr2[i] = arrHello[i];
+	}
+	
+	Print_Test_Start("StrCaseCmp");
+	if ( 0 != StrCaseCmp(arr1, arr2))
+	{
+		printf("fail test StrCaseCmp for first compere\n");
+		free(arr1);
+		free(arr2);
+		return;
+	}
+	
+	arr1[3] = 'a';
+	arr2[3] = 'A';
+	if ( 0 != StrCaseCmp(arr1, arr2))
+	{
+		printf("fail test StrCaseCmp for second compere\n");
+		free(arr1);
+		free(arr2);
+		return;
+	}
+	
+	arr2[3] = 'b';
+	if ( -1 != StrCaseCmp(arr1, arr2))
+	{
+		printf("fail test StrCaseCmp for negetive compere\n");
+		free(arr1);
+		free(arr2);
+		return;
+	}
+	
+	arr1[3] = 'z';
+	if ( 1 != StrCaseCmp(arr1, arr2))
+	{
+		printf("fail test StrCaseCmp for positive compere\n");
+		free(arr1);
+		free(arr2);
+		return;
+	}
+	
+	Print_Test_End("StrCaseCmp");
+	
+	free(arr1);
+	free(arr2);
+
 }
 
 void test_StrNCmp(void)
 {
 	char arrHello[] = "Hello";
-	size_t i, size = 6, n_to_check = size - 4;
+	size_t i, size = 6;
 	char* arr1 = (char*)malloc(sizeof(char) * size);
 	char* arr2 = (char*)malloc(sizeof(char) * size);
 	
@@ -61,7 +121,7 @@ void test_StrNCmp(void)
 	}
 	
 	arr1[3] = arr2[3];
-	if ( 0 != StrCmp(arr1, arr2, 7))
+	if ( 0 != StrNCmp(arr1, arr2, 7))
 	{
 		printf("fail test StrNCmp for last compere\n");
 		free(arr1);
