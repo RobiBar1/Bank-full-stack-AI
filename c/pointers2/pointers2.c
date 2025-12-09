@@ -1,6 +1,45 @@
 #include <assert.h> /* for using asserts */
 #include "String.h" /* for using StrLen */
 
+unsigned long how_much_zeros_in_num(unsigned long num)
+{
+	unsigned long count = 0;
+	
+	while (num > 10)
+	{
+		count++;
+		num /= 10;
+	}
+	
+	return count;
+}
+
+void SevenBoom(long from, long to)
+{
+	long run_index = from;
+	
+	unsigned long count_down = how_much_zeros_in_num(/*make sure positive*/from), num_time_multi_ten = 1;
+	
+	while (count_down)
+	{
+		num_time_multi_ten *= 10;
+	}
+	
+	num_time_multi_ten *= 7;
+	
+	count_down = num_time_multi_ten - from;
+	
+	for (; run_index <= to; run_index++)
+	{
+		if (run_index % 7)
+		{
+			printf("boom\n");
+			continue;
+		}
+		
+		
+	}
+}
 
 char* RemoveWhiteSpaces(char* str)
 {
