@@ -4,12 +4,10 @@
 #include <stdlib.h>    /* for malloc alocate */
 #include "String.h" /* for our functions */
 
-
 void Print_Test_Start(char* func_name);
 void Print_Test_End(char* func_name);
 void resetArray(int* arr, size_t size);
 void printArray(const char* arr, size_t size);
-
 
 void test_StrLen(void);
 void test_StrCmp(void);
@@ -17,7 +15,7 @@ void test_StrNCmp(void);
 void test_StrCpy(void);
 void test_StrNCpy(void);
 void test_StrCaseCmp(void);
-
+void test_StrChr(void);
 
 int main()
 {
@@ -26,8 +24,30 @@ int main()
 	test_StrCpy();
 	test_StrNCpy();
 	test_StrCaseCmp();
+	test_StrChr();
 	return 0;
 }
+
+void test_StrChr(void)
+{
+	char arrHello[] = "Hello";
+	
+	Print_Test_Start("StrChr");
+	if(StrChr(arrHello, arrHello[2]) != &arrHello[2])
+	{
+		printf("fail test StrChr for StrChr(arrHello, arrHello[2]) compere\n");
+		return;
+	}
+	
+	if(NULL != StrChr(arrHello, 'a'))
+	{
+		printf("fail test StrChr for input: StrChr(arrHello, 'a') compere\n");
+		return;
+	}
+	
+	Print_Test_End("StrChr");
+}
+
 void test_StrCaseCmp()
 {
 	char arrHello[] = "Hello";

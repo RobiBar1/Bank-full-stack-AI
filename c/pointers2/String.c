@@ -171,7 +171,7 @@ char* StrCat(char* dst, const char* src)
 
 char* StrDup(const char* str)
 {
-	char* out_arr;
+	char* out_arr = NULL;
 	
 	assert(NULL != str );
 	
@@ -314,18 +314,14 @@ char* StrCpy(char* dst, char* src)
 	
 	assert(NULL != dst && NULL != src);
 	
-	for (i = 0; '\0' != src[i] && '\0' != dst[i]; i++)
+	for (i = 0; '\0' != src[i]; i++)
 	{
 		dst[i] = src[i];
 	}
 	
-	while (dst[i] != '\0')
-	{
-		i++;
-	}
+	dst[i] = '\0';
 	
 	return &dst[i];
-	
 }
 
 
