@@ -1,55 +1,81 @@
 #include <stddef.h> /* size_t type */
 #include <assert.h> /* for asserts use */
-#include <stdlib.h> /* Required for malloc() and free() */
+#include <stdlib.h> /* for malloc and free */
 
 size_t StrLen(const char *str);
 char* StrCpy(char* dst, char* src);
 
 char* StrTok(char* str, const char* delim)
 {
-	static char* last_str = NULL;
-	static size_t last_index;
-	size_t i, deli_index, out_index = 0;
-	int found_delimiter = 0;
-	
-	assert(NULL != delim || (NULL != str && NULL == last_str));
-	
-	if (NULL == last_str || str != last_str)
-	{
-		last_str = str;
-		i = 0;
-	}
-	else
-	{
-		i = last_index;
-	}
-	if ('\0' != str[i])
-	{
-		return NULL;
-	}
-	
-	out_index = i;	
-	while ('\0' != str[i])
-	{
-		for (deli_index = 0; '\0' != delim[deli_index]; ++deli_index)
-		{
-			if (delim[deli_index] == str[i])
-			{
-				last_index = i + 1;
-				found_delimiter++;
-				break;
-			}
-		}
-		
-		if (found_delimiter)
-		{
-			break;
-		}
-		
-		i++;
-	}
-	
-	return &str[out_index];
+	static char* next_token = NULL;
+    char* current_token = NULL;
+    int is_delim;
+    size_t i;
+
+    if (NULL != str)
+    {
+        next_token = str;
+    }
+    
+    if (NULL == next_token)
+    {
+        return NULL;
+    }
+
+    while ('\0' != *next_token)
+    {
+        is_delim = 0;
+        for (i = 0; '\0' != delim[i]; ++i)
+        {
+            if (*next_token == delim[i]) 
+            {
+                is_delim = 1;
+                break;
+            }
+        }
+        
+        if (!is_delim)
+        { 
+            break; 
+        }
+            
+        next_token++;
+    }
+
+    if ('\0' == *next_token)
+    {
+        next_token = NULL;
+        return NULL;
+    }
+
+    current_token = next_token;
+
+    while ('\0' != *next_token)
+    {
+        is_delim = 0;
+        for (i = 0; '\0' != delim[i]; ++i)
+        {
+            if (*next_token == delim[i])
+            {
+                is_delim = 1;
+                break;
+            }
+        }
+
+        if (is_delim)
+        {
+            *next_token = '\0';
+            next_token++;
+            
+            return current_token;
+        }
+
+        next_token++;
+    }
+
+    next_token = NULL;
+    
+    return current_token;
 }
 
 size_t StrSpn(const char* str, const char* accept)
@@ -82,91 +108,80 @@ size_t StrSpn(const char* str, const char* accept)
 
 char* StrStr(const char* haystack, const char* needle)
 {
-	size_t stack_index, needle_index, stack_size;
-	
-	assert(NULL != haystack && NULL != needle);
-	
-	stack_size = StrLen(haystack);
-	if ('\0' == needle[0])
-	{
-		return 	(char*)haystack;
-	}
-	
-	for (stack_index = 0, needle_index = 0; stack_index < stack_size - 1; ++stack_size)
-	{
-		if(haystack[stack_index] == needle[needle_index])
-		{
-			needle_index++;
-			if('\0' == needle[needle_index])
-			{
-				stack_index++;
-				return (char*)&haystack[stack_index - needle_index];
-			}
-		}
-		else
-		{
-			needle_index = 0;
-		}
-	}
-	
-	return NULL;
+	size_t i, j;
+
+    assert(NULL != haystack && NULL != needle);
+
+    if ('\0' == needle[0])
+    {
+        return (char*)haystack;
+    }
+
+    for (i = 0; '\0' != haystack[i]; ++i)
+    {
+        for (j = 0; '\0' != needle[j]; ++j)
+        {
+            if (haystack[i + j] != needle[j])
+            {
+                break;
+            }
+        }
+
+        if ('\0' == needle[j])
+        {
+            return (char*)&haystack[i];
+        }
+    }
+
+    return NULL;
 }
 
 char* StrNCat(char* dst, const char* src, size_t n_bytes)
 {
-	char* out_arr;
-	size_t i, j, out_arr_size, left_size, right_size;
+	char* original_dst = NULL;
+    size_t i;
+
+    assert(NULL != dst && NULL != src);
 	
-	assert(NULL != dst && NULL != src );
-	
-	left_size = StrLen(dst);
-	right_size = StrLen(src);
-	out_arr_size =  left_size + right_size + 1;
-	out_arr = (char*)malloc(sizeof(char) * out_arr_size);
-	
-	for (i = 0; i < left_size && i < n_bytes; ++i)
-	{
-		out_arr[i] = dst[i];
-	}
-	
-	for (j = 0; i < right_size && i < n_bytes; ++j, ++i)
-	{
-		out_arr[i] = src[j];
-	}
-	
-	while('\0' != out_arr[i])
-	{
-		out_arr[i] = '\0';		
-	}
-	
-	return out_arr;
+	original_dst = dst;
+    while ('\0' != *dst)
+    {
+        dst++;
+    }
+
+    for (i = 0; i < n_bytes && '\0' != src[i]; i++)
+    {
+        *dst = src[i];
+        dst++;
+    }
+
+    *dst = '\0';
+
+    return original_dst;
 }
 
 char* StrCat(char* dst, const char* src)
 {
-	char* out_arr;
-	size_t i, j, out_arr_size, left_size, right_size;
+	char* out_original_dst = NULL;
+
+    assert(NULL != dst && NULL != src);
 	
-	assert(NULL != dst && NULL != src );
-	
-	left_size = StrLen(dst);
-	right_size = StrLen(src);
-	out_arr_size =  left_size + right_size + 1;
-	out_arr = (char*)malloc(sizeof(char) * out_arr_size);
-	
-	for (i = 0; i < left_size; ++i)
-	{
-		out_arr[i] = dst[i];
-	}
-	
-	for (j = 0; i < right_size; ++j, ++i)
-	{
-		out_arr[i] = src[j];
-	}
-	
-	out_arr[i] = '\0';
-	
-	return out_arr;
+	out_original_dst = dst;
+    while ('\0' != *dst)
+    {
+        dst++;
+    }
+
+    while ('\0' != *src)
+    {
+        *dst = *src;
+        dst++;
+        src++;
+    }
+
+    *dst = '\0';
+
+    return out_original_dst;
 }
 
 char* StrDup(const char* str)
@@ -206,18 +221,24 @@ int CharCmp(char ch, char ch1)
 char* StrChr(const char* str, int c)
 {
 	size_t i;
+	char ch = (char)c;
 	
-	assert(NULL != str && c > 0);
+	assert(NULL != str);
 	
+	if ('\0' == ch)
+    {
+        return (char*)str;
+    }
+    
 	for (i = 0; '\0' != str[i]; ++i)
 	{
-		if (str[i] == c)
+		if (str[i] == ch)
 		{
 			return (char*)&str[i];
 		}
 	}
 	
-	return (char*)&str[i];
+	return NULL;
 }
 
 int StrNCmp(const char* s1, const char* s2, size_t n)
