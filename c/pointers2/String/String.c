@@ -199,9 +199,9 @@ char* StrDup(const char* str)
 	return StrCpy(out_arr, (char*)str);
 }
 
-char makeLower(char ch)
+char MakeLower(char ch)
 {
-	return ch + 32;
+	return ch + ('a' - 'A');
 }
 
 int CharCmp(char ch, char ch1)
@@ -245,6 +245,7 @@ int StrNCmp(const char* s1, const char* s2, size_t n)
 {
 	size_t i;
 	int curent_res;
+	
 	assert(NULL != s1 && NULL != s2);
 	
 	for (i = 0; '\0' != s1[i] && '\0' != s2[i] && i < n; ++i)
@@ -271,7 +272,7 @@ int StrCaseCmp(const char* s1, const char* s2)
 	
 	for (i = 0; '\0' != s1[i] && '\0' != s2[i]; ++i)
 	{
-		if(s1[i] >= 'A' && s1[i] <= 'Z')
+		if('A' <= s1[i] && 'Z' >= s1[i])
 		{
 			left = makeLower(s1[i]);
 		}
@@ -279,7 +280,7 @@ int StrCaseCmp(const char* s1, const char* s2)
 		{
 			left = s1[i];
 		}
-		if(s2[i] >= 'A' && s2[i] <= 'Z')
+		if('A' <= s2[i] && 'Z' >= s2[i])
 		{
 			right = makeLower(s2[i]);
 		}
@@ -321,7 +322,7 @@ char* StrNCpy(char* dst, const char* src, size_t n_bytes)
 		dst[i] = src[i];
 	}
 	
-	while (dst[i] != '\0')
+	while ('\0' != dst[i])
 	{
 		dst[i] = '\0';
 		i++;
@@ -366,6 +367,7 @@ int StrCmp(const char *s1, const char *s2)
 {
 	size_t i;
 	int curent_res;
+	
 	assert(NULL != s1 && NULL != s2);
 	
 	for (i = 0; '\0' != s1[i] && '\0' != s2[i]; ++i)
