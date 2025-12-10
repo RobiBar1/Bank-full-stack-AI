@@ -1,6 +1,7 @@
 #include <stdio.h>  /* for printf use */
 #include <assert.h> /* for asserts use */
 #include <stdlib.h> /* for mallocs use */
+#include "String.h"
 
 #define ROWS 3
 #define COLS 4
@@ -73,7 +74,7 @@ void TwoDArraysHalfDynamic(int (*arr)[COLS], int rows)
 int TwoDArraysBestPractice(int **arr, size_t rows, size_t cols)
 {
 	size_t i, j;
-	int *arr_res_by_rows;
+	int *arr_res_by_rows = NULL;
 	
 	assert(NULL != arr && NULL != *arr);
     
@@ -254,20 +255,101 @@ size_t Josephus(size_t amount_of_pepole) /* first man do first kill */
 }
  /*----------------------------------Environment functions----------------------*/
 
-int ToLower(int ch)
+size_t CountEnvVars(const char* envp[])
 {
-	if (ch >= 'A' && ch <= 'Z')
-	{
-		ch += 32; 
-	}
-	
-	return ch;
+    size_t count = 0;
+    
+    assert(NULL != envp);
+    
+    while (NULL != envp[count])
+    {
+        count++;
+    }
+    
+    return count;
 }
 
-void EnvironmentVariblesPrint(const char* envp[])
+void FreeEnvArray(char** env_copy, size_t count)
 {
-	printf("%s", envp[0]);
-	printf("%s", envp[1]);
+    size_t i;
+    
+	assert(NULL != env_copy);
+
+    for (i = 0; i < count; i++)
+    {
+        if (NULL != env_copy[i])
+        {
+            free(env_copy[i]); env_copy[i] = NULL;
+        }
+    }
+    
+    free(env_copy); env_copy = NULL;
+}
+
+char* CreateLowerCaseString(const char* source)
+{
+    size_t len;
+    size_t i;
+    char* new_str = NULL;
+    
+    assert(NULL != source);
+    
+    len = StrLen(source);
+    new_str = (char*)malloc((len + 1) * sizeof(char));
+
+    if (NULL == new_str)
+    {
+        return NULL;
+    }
+
+    for (i = 0; i < len; i++)
+    {
+        new_str[i] = (char)makeLower(source[i]);
+    }
+    
+    new_str[len] = '\0';
+
+    return new_str;
+}
+
+int EnvironmentVariblesPrint(const char* envp[])
+{
+	char** env_copy = NULL;
+    size_t num_vars = 0;
+    size_t i;
+
+    assert(NULL != envp);
+    
+    num_vars = CountEnvVars(envp);
+    env_copy = (char**)malloc((num_vars + 1) * sizeof(char*));
+    if (NULL == env_copy)
+    {
+        return 1; /* env_copy allocation fail*/
+    }
+
+    for (i = 0; i <= num_vars; i++)
+    {
+        env_copy[i] = NULL;
+    }
+
+    for (i = 0; i < num_vars; i++)
+    {
+        env_copy[i] = CreateLowerCaseString(envp[i]);
+        if (env_copy[i] == NULL)
+        {
+            FreeEnvArray(env_copy, num_vars);
+            return 2; /* string allocation failed */
+        }
+    }
+
+    for (i = 0; i < num_vars; i++)
+    {
+        printf("%s\n", env_copy[i]);
+    }
+
+    FreeEnvArray(env_copy, num_vars);
+
+    return 0; 
 }
 
  /*----------------------------------DataTypePrint----------------------*/

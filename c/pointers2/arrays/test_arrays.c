@@ -5,6 +5,7 @@
 #include <stdlib.h>    /* for malloc alocate */
 #include "arrays.h" /* for our functions */
 
+#define UNDEF(a) (void)a
 
 typedef struct  
 {
@@ -23,14 +24,30 @@ void RunTest(int test_num, test_case tc);
 void test_AllDataTypesPrint(void);
 void test_Josephus(void); 
 void test_TwoDArraysBestPractice(void);
+void test_EnvironmentVariblesPrint(const char* envp[]);
 
-
-int main()
+int main(int argc,const char *argv[],const char* envp[]) 
 {
+	UNDEF(argc);
+	UNDEF(argv);
+	/*
 	test_AllDataTypesPrint();
 	test_Josephus();
 	test_TwoDArraysBestPractice();
+	*/
+	test_EnvironmentVariblesPrint(envp);
 	return 0;
+}
+
+void test_EnvironmentVariblesPrint(const char* envp[])
+{
+	assert(NULL != envp);
+
+    if (0 != EnvironmentVariblesPrint((const char**)envp))
+    {
+        printf("Error: Memory allocation failed with code %d\n", result);
+        return 1;
+    }
 }
 
 int** create_matrix(size_t rows, size_t cols) 
@@ -73,7 +90,7 @@ void free_matrix(int** m, size_t rows)
         m[i] = NULL;
     }
     
-    free(m);
+	free(m);
     m = NULL;
 }
 
@@ -145,7 +162,6 @@ void test_Josephus(void)
         {16, 1, "Sixteen soldiers "},
         {32, 1, "Thirty-Two soldiers "},
 
-       	
         {10, 5,  "Ten soldiers"},
         {41, 19, "Forty-One soldiers"}
         
