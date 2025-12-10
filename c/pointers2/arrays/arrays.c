@@ -1,4 +1,112 @@
-#include <stdio.h>
+#include <stdio.h>  /* for printf use */
+#include <assert.h> /* for asserts use */
+#include <stdlib.h> /* for mallocs use */
+
+void printArray(size_t* arr, size_t size)
+{
+	size_t i;
+	
+	printf("print array:\n");
+	for(i = 0; i < size; ++i)
+	{
+		printf("index number: %lu have value-> %lu\n", i, arr[i]);
+	}
+	
+	printf("end print array:\n");
+}
+
+
+void InitJosefCircle(size_t* arr, size_t amount_of_pepole)
+{
+	size_t i;
+	
+	assert(NULL != arr);
+	
+	arr[0] = 0;
+	for (i = 1; i < amount_of_pepole - 1; ++i)
+	{
+		arr[i] = i + 1;
+	}
+	
+	arr[i] = 1;
+}
+
+void KillManAndSwapTarget(size_t* arr, size_t killer_index)
+{
+	size_t get_his_kill;
+	
+	assert(NULL != arr);
+	
+	if (arr[arr[killer_index]] == arr[killer_index])
+	{
+		arr[arr[killer_index]] = 0;	
+	}
+	else
+	{
+		get_his_kill = arr[arr[killer_index]];
+		arr[arr[killer_index]] = 0;
+		arr[killer_index] = get_his_kill;
+	}
+}
+
+size_t JosefGameLoop(size_t* arr, size_t amount_of_pepole)
+{
+	size_t i = 1, circle_winner = 0, count_circles = 0;
+	
+	assert(NULL != arr);
+	
+	while ( i < amount_of_pepole) 
+	{
+		if (0 != arr[i])
+		{
+			KillManAndSwapTarget(arr, i);
+			if (0 == arr[i])
+			{
+				circle_winner = i;
+				break; 
+			}
+			
+			i = arr[i];
+		}
+		
+		if (circle_winner)
+		{
+			break;
+		}
+		
+		if (count_circles > amount_of_pepole * 10) /* for test only */
+		{
+			break;
+		}
+		
+		count_circles++;
+	}
+	
+	return circle_winner;
+}
+
+size_t Josephus(size_t amount_of_pepole) /* first man do first kill */
+{
+	size_t *arr = NULL;
+	
+	if (amount_of_pepole <= 1)
+	{
+		return amount_of_pepole;
+	}
+	
+	amount_of_pepole++;
+	arr = (size_t*)malloc(sizeof(size_t) * amount_of_pepole);
+	if (NULL == arr)
+	{
+		printf("alocate memory problem");
+		return 0;
+	}
+	
+	InitJosefCircle(arr, amount_of_pepole);
+	
+	return JosefGameLoop(arr, amount_of_pepole);
+}
+
 
 int ToLower(int ch)
 {
