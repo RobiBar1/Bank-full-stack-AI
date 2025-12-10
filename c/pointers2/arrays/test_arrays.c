@@ -22,15 +22,86 @@ void RunTest(int test_num, test_case tc);
 
 void test_AllDataTypesPrint(void);
 void test_Josephus(void); 
-
+void test_TwoDArraysBestPractice(void);
 
 
 int main()
 {
 	test_AllDataTypesPrint();
 	test_Josephus();
-	
+	test_TwoDArraysBestPractice();
 	return 0;
+}
+
+int** create_matrix(size_t rows, size_t cols) 
+{
+    size_t i, j, numbers = 1;
+    int** matrix = (int**)malloc(rows * sizeof(int*));
+    
+	if (NULL == matrix)	
+	{
+		return NULL;
+	}
+	
+    for (i = 0; i < rows; i++) 
+    {
+        matrix[i] = (int*)malloc(cols * sizeof(int));
+        if (NULL == matrix[i])	
+		{
+			return NULL;
+		}
+		
+        for (j = 0; j < cols; j++) 
+        {
+            matrix[i][j] = numbers;
+            numbers++;
+        }
+    }
+    
+    return matrix;
+}
+
+void free_matrix(int** m, size_t rows) 
+{
+    size_t i;
+    
+    assert(NULL != m);
+    
+    for (i = 0; i < rows; i++) 
+    {
+        free(m[i]);
+        m[i] = NULL;
+    }
+    
+    free(m);
+    m = NULL;
+}
+
+void test_TwoDArraysBestPractice(void)
+{
+    int** m = create_matrix(3, 3);
+    
+   	assert(NULL != m);
+   	
+	Print_Test_Start("TwoDArraysBestPractice");
+    /* Expected: Row 1 = 6, Row 2 = 15, Row 3 = 24 */
+	printf("[TEST] Standard 3x3 Matrix\n");
+	printf("Expected: Row 1 = 6, Row 2 = 15, Row 3 = 24\n");
+	    
+    TwoDArraysBestPractice(m, 3, 3);
+    
+    free_matrix(m, 3);
+    
+    m = create_matrix(2, 4);
+    
+    assert(NULL != m);
+    
+    /* Expected: Row 1 = 10, Row 2 = 26 */
+    printf("[TEST] Standard 3x3 Matrix\n");
+    printf("Expected: Row 1 = 10, Row 2 = 26\n");
+    TwoDArraysBestPractice(m, 2, 4);
+    free_matrix(m, 2);
+    Print_Test_End("TwoDArraysBestPractice");
 }
 
 void RunTest(int test_num, test_case tc) 
