@@ -200,8 +200,13 @@ char* StrDup(const char* str)
 }
 
 char MakeLower(char ch)
-{
-	return ch + ('a' - 'A');
+{	
+	if('A' <= ch && 'Z' >= ch)
+	{
+		return ch + ('a' - 'A');	
+	}
+	
+	return ch;
 }
 
 int CharCmp(char ch, char ch1)
@@ -272,22 +277,9 @@ int StrCaseCmp(const char* s1, const char* s2)
 	
 	for (i = 0; '\0' != s1[i] && '\0' != s2[i]; ++i)
 	{
-		if('A' <= s1[i] && 'Z' >= s1[i])
-		{
-			left = makeLower(s1[i]);
-		}
-		else
-		{
-			left = s1[i];
-		}
-		if('A' <= s2[i] && 'Z' >= s2[i])
-		{
-			right = makeLower(s2[i]);
-		}
-		else
-		{
-			right = s2[i];
-		}
+		
+		left = makeLower(s1[i]);
+		right = makeLower(s2[i]);
 		
 		curent_res = CharCmp(left, right);
 		if (0 == curent_res)
@@ -343,24 +335,24 @@ char* StrCpy(char* dst, char* src)
 	
 	dst[i] = '\0';
 	
-	return &dst[i];
+	return dst;
 }
 
 
 size_t StrLen(const char *str)
 {
-	const char* counter;
 	size_t i;
 	
 	assert(NULL != str);
 	
 	counter = str;
-	for (i = 0; '\0' != str[i]; ++i)
+	i = 0
+	while ('\0' != str[i])
 	{
-		counter++;
+		++i;
 	}
-	
-	return counter - str;
+		
+	return i;
 }
 
 int StrCmp(const char *s1, const char *s2)
