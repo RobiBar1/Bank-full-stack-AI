@@ -7,75 +7,56 @@ char* StrCpy(char* dst, char* src);
 
 char* StrTok(char* str, const char* delim)
 {
-	static char* next_token = NULL;
-    char* current_token = NULL;
-    int is_delim;
-    size_t i;
-
-    if (NULL != str)
-    {
-        next_token = str;
-    }
-    
-    if (NULL == next_token)
-    {
-        return NULL;
-    }
-
-    while ('\0' != *next_token)
-    {
-        is_delim = 0;
-        for (i = 0; '\0' != delim[i]; ++i)
-        {
-            if (*next_token == delim[i]) 
-            {
-                is_delim = 1;
-                break;
-            }
-        }
-        
-        if (!is_delim)
-        { 
-            break; 
-        }
-            
-        next_token++;
-    }
-
-    if ('\0' == *next_token)
-    {
-        next_token = NULL;
-        return NULL;
-    }
-
-    current_token = next_token;
-
-    while ('\0' != *next_token)
-    {
-        is_delim = 0;
-        for (i = 0; '\0' != delim[i]; ++i)
-        {
-            if (*next_token == delim[i])
-            {
-                is_delim = 1;
-                break;
-            }
-        }
-
-        if (is_delim)
-        {
-            *next_token = '\0';
-            next_token++;
-            
-            return current_token;
-        }
-
-        next_token++;
-    }
-
-    next_token = NULL;
-    
-    return current_token;
+	static char *remind_token;
+	char* current_token = NULL;
+	char* start = NULL;
+	
+	if (NULL == str)
+	{
+		if (NULL == token)
+		{
+			return NULL;
+		}
+		
+		current_token = remind_token;
+	}
+	else
+	{
+		current_token = str;
+	}
+	
+	/* for skip prefix delimeter, exmpl: ,,,,,hello -> will jump to h */
+	while (*current_token && StrChr(delim, *current_token))
+	{
+		++current_token;
+	}
+	
+	/* exmple: ,,,,,,,,,,,,,'\0' */
+	if (!*current_token)
+	{
+		remind_token = NULL;
+		return NULL;
+	}
+	
+	start = current_token;
+	
+	/* end when (start to current) is the next word */
+	while (*current_token && !StrChr(delim, *current_token))
+	{
+		++current_token;
+	}
+	
+	if (*current_token)
+	{
+		*current_token = '\0';
+		remind_token = current_token + 1;
+	}
+	else
+	{
+		remind_token = NULL;
+	}
+	
+	return start;
 }
 
 size_t StrSpn(const char* str, const char* accept)
@@ -108,31 +89,27 @@ size_t StrSpn(const char* str, const char* accept)
 
 char* StrStr(const char* haystack, const char* needle)
 {
-	size_t i, j;
+	size_t needle_size = 0;
 
-    assert(NULL != haystack && NULL != needle);
+    assert(NULL != haystack);
+    assert(NULL != needle);
 
-    if ('\0' == needle[0])
+    if ('\0' == *needle)
     {
         return (char*)haystack;
     }
-
-    for (i = 0; '\0' != haystack[i]; ++i)
-    {
-        for (j = 0; '\0' != needle[j]; ++j)
-        {
-            if (haystack[i + j] != needle[j])
-            {
-                break;
-            }
-        }
-
-        if ('\0' == needle[j])
-        {
-            return (char*)&haystack[i];
-        }
-    }
-
+    
+    needle_size = StrLen(needle);
+	while (*needle)
+	{
+		if (!StrNCmp(haystack, needle, needle_size))
+		{
+			return (char*)haystack;
+		}
+		
+		++haystack;
+	}
+	
     return NULL;
 }
 
@@ -188,7 +165,7 @@ char* StrDup(const char* str)
 {
 	char* out_arr = NULL;
 	
-	assert(NULL != str );
+	assert(NULL != str);
 	
 	out_arr = (char*)malloc(sizeof(char) * (StrLen(str) + 1));
 	if (NULL == out_arr)
@@ -225,22 +202,21 @@ int CharCmp(char ch, char ch1)
 
 char* StrChr(const char* str, int c)
 {
-	size_t i;
-	char ch = (char)c;
+	size_t i = 0;
 	
 	assert(NULL != str);
-	
-	if ('\0' == ch)
-    {
-        return (char*)str;
-    }
     
-	for (i = 0; '\0' != str[i]; ++i)
+	for (; '\0' != *(str + i); ++i)
 	{
-		if (str[i] == ch)
+		if (*str == c)
 		{
-			return (char*)&str[i];
+			return (char*)str;
 		}
+	}
+	
+	if ('\0' == c)
+	{
+		return (char*)str;
 	}
 	
 	return NULL;
@@ -278,8 +254,8 @@ int StrCaseCmp(const char* s1, const char* s2)
 	for (i = 0; '\0' != s1[i] && '\0' != s2[i]; ++i)
 	{
 		
-		left = makeLower(s1[i]);
-		right = makeLower(s2[i]);
+		left = MakeLower(s1[i]);
+		right = MakeLower(s2[i]);
 		
 		curent_res = CharCmp(left, right);
 		if (0 == curent_res)
@@ -305,37 +281,38 @@ int StrCaseCmp(const char* s1, const char* s2)
 
 char* StrNCpy(char* dst, const char* src, size_t n_bytes)
 {
-	size_t i;
+	char* start = dst;
 	
-	assert(NULL != dst && NULL != src);
+	assert(NULL != dst);
+	assert(NULL != src);
 	
-	for (i = 0; i < n_bytes && '\0' != src[i] && '\0' != dst[i]; i++)
+	for (; n_bytes > 0 && *src; --n_bytes)
 	{
-		dst[i] = src[i];
+		*dst++ = *src++;
 	}
 	
-	while ('\0' != dst[i])
+	while ( n_bytes > 0)
 	{
-		dst[i] = '\0';
-		i++;
+		*dst++ = '\0';
+		--n_bytes;
 	}
 	
-	return dst;
+	return start;
 }
-char* StrCpy(char* dst, char* src)
+
+/*
+ * that was the original h.file, and then few change it to:
+ * char* StrCpy(char* dst, const char* src) */
+char* StrCpy(char* dst, char* src) 
 {
-	size_t i;
+	char* start_index = dst;
 	
-	assert(NULL != dst && NULL != src);
+	assert(NULL != dst);
+	assert(NULL != src);
+
+	while ((*dst++ = *src++));
 	
-	for (i = 0; '\0' != src[i]; i++)
-	{
-		dst[i] = src[i];
-	}
-	
-	dst[i] = '\0';
-	
-	return dst;
+	return 	start_index;
 }
 
 
