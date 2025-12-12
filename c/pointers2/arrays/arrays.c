@@ -1,6 +1,7 @@
 #include <stdio.h>  /* for printf use */
 #include <assert.h> /* for asserts use */
 #include <stdlib.h> /* for mallocs use */
+
 #include "String.h"
 
 #define ROWS 3
@@ -73,35 +74,34 @@ void TwoDArraysHalfDynamic(int (*arr)[COLS], int rows)
  
 int TwoDArraysBestPractice(int **arr, size_t rows, size_t cols)
 {
-	size_t i, j;
+	size_t i = 0, j = 0;
 	int *arr_res_by_rows = NULL;
 	
-	assert(NULL != arr && NULL != *arr);
+	assert(NULL != arr)
+	assert(NULL != *arr);
     
     printf("sizeof(arr) = %lu bytes\n", (unsigned long)sizeof(arr));
-    
 	arr_res_by_rows = (int*)calloc(rows, sizeof(int));
 	if (NULL == arr_res_by_rows)
 	{
 		return 1;
 	}
 	
-    for (i = 0; i < rows; i++)
+    for (; i < rows; ++i)
     {
-        for (j = 0; j < cols; j++)
+        for (j = 0; j < cols; ++j)
         {
             arr_res_by_rows[i] += arr[i][j];
 			printf("arr_res_by_rows[i] is: %d\n", arr[i][j]);
         }
     }
     
-    for (i = 0; i < rows; i++)
+    for (i = 0; i < rows; ++i)
     {
     	printf("the sum or row %lu is: %d .\n", i + 1, arr_res_by_rows[i]);
     }
 	
-	free(arr_res_by_rows);
-	arr_res_by_rows = NULL;
+	free(arr_res_by_rows); arr_res_by_rows = NULL;
 	
 	return 0;
 }
@@ -152,29 +152,29 @@ void TwoDArraysFullDynamic(int *arr[], int rows, int cols)
 }
 
  ----------------------------------helper functions----------------------*/
-void printArray(int* arr, size_t size)
+static void printArray(int* arr, size_t size)
 {
-	size_t i;
+	size_t i = 0;
 	
-	printf("print array:\n");
-	for(i = 0; i < size; ++i)
+	printf("print array:--------------------------------------------\n");
+	for(; i < size; ++i)
 	{
 		printf("index number: %lu have value-> %d\n", i, arr[i]);
 	}
 	
-	printf("end print array:\n");
+	printf("end print array:----------------------------------------\n");
 }
 
  /*----------------------------------Josef Functions----------------------*/
 
 void InitJosefCircle(size_t* arr, size_t amount_of_pepole)
 {
-	size_t i;
+	size_t i = 1;
 	
 	assert(NULL != arr);
 	
 	arr[0] = 0;
-	for (i = 1; i < amount_of_pepole - 1; ++i)
+	for (; i < amount_of_pepole - 1; ++i)
 	{
 		arr[i] = i + 1;
 	}
@@ -184,7 +184,7 @@ void InitJosefCircle(size_t* arr, size_t amount_of_pepole)
 
 void KillManAndSwapTarget(size_t* arr, size_t killer_index)
 {
-	size_t get_his_kill;
+	size_t get_his_kill = 0;
 	
 	assert(NULL != arr);
 	
@@ -202,27 +202,22 @@ void KillManAndSwapTarget(size_t* arr, size_t killer_index)
 
 size_t JosefGameLoop(size_t* arr, size_t amount_of_pepole)
 {
-	size_t i = 1, circle_winner = 0;
+	size_t i = 1, have_circle_winner = 0;
 	
 	assert(NULL != arr);
 	
-	while ( i < amount_of_pepole) 
+	while (i < amount_of_pepole && !have_circle_winner) 
 	{
 		if (0 != arr[i])
 		{
 			KillManAndSwapTarget(arr, i);
 			if (0 == arr[i])
 			{
-				circle_winner = i;
+				have_circle_winner = i;
 				break; 
 			}
 			
 			i = arr[i];
-		}
-		
-		if (circle_winner)
-		{
-			break;
 		}
 	}
 	
@@ -261,21 +256,18 @@ size_t CountEnvVars(const char* envp[])
     
     assert(NULL != envp);
     
-    while (NULL != envp[count])
-    {
-        count++;
-    }
+    while ((NULL != envp[count++]));
     
-    return count;
+    return count - 1;
 }
 
 void FreeEnvArray(char** env_copy, size_t count)
 {
-    size_t i;
+    size_t i = 0;
     
 	assert(NULL != env_copy);
 
-    for (i = 0; i < count; i++)
+    for (; i < count; i++)
     {
         if (NULL != env_copy[i])
         {
@@ -288,23 +280,21 @@ void FreeEnvArray(char** env_copy, size_t count)
 
 char* CreateLowerCaseString(const char* source)
 {
-    size_t len;
-    size_t i;
+    size_t len = 0, i = 0;
     char* new_str = NULL;
     
     assert(NULL != source);
     
     len = StrLen(source);
     new_str = (char*)malloc((len + 1) * sizeof(char));
-
     if (NULL == new_str)
     {
         return NULL;
     }
 
-    for (i = 0; i < len; i++)
+    for (; i < len; ++i)
     {
-        new_str[i] = (char)makeLower(source[i]);
+        new_str[i] = (char)MakeLower(source[i]);
     }
     
     new_str[len] = '\0';
@@ -316,7 +306,7 @@ int EnvironmentVariblesPrint(const char* envp[])
 {
 	char** env_copy = NULL;
     size_t num_vars = 0;
-    size_t i;
+    size_t i = 0;
 
     assert(NULL != envp);
     
@@ -327,22 +317,22 @@ int EnvironmentVariblesPrint(const char* envp[])
         return 1; /* env_copy allocation fail*/
     }
 
-    for (i = 0; i <= num_vars; i++)
+    for (; i <= num_vars; ++i)
     {
         env_copy[i] = NULL;
     }
 
-    for (i = 0; i < num_vars; i++)
+    for (i = 0; i < num_vars; ++i)
     {
         env_copy[i] = CreateLowerCaseString(envp[i]);
-        if (env_copy[i] == NULL)
+        if (NULL == env_copy[i])
         {
             FreeEnvArray(env_copy, num_vars);
             return 2; /* string allocation failed */
         }
     }
 
-    for (i = 0; i < num_vars; i++)
+    for (i = 0; i < num_vars; ++i)
     {
         printf("%s\n", env_copy[i]);
     }
