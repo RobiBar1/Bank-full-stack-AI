@@ -97,19 +97,19 @@ char* StrStr(const char* haystack, const char* needle)
     assert(NULL != haystack);
     assert(NULL != needle);
 
-    if ('\0' == *needle)
+    if (!*needle)
     {
         return (char*)haystack;
     }
     
     needle_size = StrLen(needle);
-	while (*needle)
-	{
+    while(*haystack)
+    {
 		if (!StrNCmp(haystack, needle, needle_size))
 		{
 			return (char*)haystack;
 		}
-		
+
 		++haystack;
 	}
 	

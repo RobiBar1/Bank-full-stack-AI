@@ -180,10 +180,10 @@ void test_StrStr(void)
         printf("fail test StrStr: found incorrect location\n");
         return;
     }
-
-    if (NULL != StrStr(haystack, "Zebra"))
+	result = StrStr(haystack, "Zebra");
+    if (NULL != result)
     {
-        printf("fail test StrStr: found non-existent string\n");
+        printf("fail test StrStr: found non-existent string: %s\n", result);
         return;
     }
 
@@ -362,11 +362,11 @@ void test_StrNCpy(void)
 		printf("fail test StrCpy for first copy\n");
 		printArray( arr1, size);
 		printArray( arr2, size);
-		free(arr2);
+		free(arr2); arr2 = NULL;
 		return;
 	}
 
-	free(arr2);
+	free(arr2); arr2 = NULL;
 	Print_Test_End("StrNCpy");
 }
 
@@ -378,25 +378,31 @@ void test_StrCpy(void)
 	char* arr1 = (char*)malloc(sizeof(char) * size);
 	char* arr2 = (char*)malloc(sizeof(char) * size);
 	
-	assert(NULL != arr1 && NULL != arr2);
+	Print_Test_Start("StrCpy");
+	if(NULL == arr1 || NULL == arr2)
+	{
+		printf("fail alocate memory\n");
+		return;
+	}
 	
 	for (i = 0; i < size; ++i)
 	{
 		arr1[i] = arrHello[i];
 	}
 	
-	Print_Test_Start("StrCpy");
 	StrCpy(arr2, arr1);
 	if ( 0 != strcmp(arr2, arr1))
 	{
 		printf("fail test StrCpy for first copy\n");
 		printArray( arr1, size);
 		printArray( arr2, size);
-		free(arr1);
-		free(arr2);
+		free(arr1); arr1 = NULL;
+		free(arr2); arr2 = NULL;
 		return;
 	}
 	
+	free(arr1); arr1 = NULL;
+	free(arr2); arr2 = NULL;
 	Print_Test_End("StrCpy");
 }
 
