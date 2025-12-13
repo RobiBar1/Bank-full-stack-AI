@@ -227,23 +227,27 @@ char* StrChr(const char* str, int c)
 
 int StrNCmp(const char* s1, const char* s2, size_t n)
 {
-	size_t i;
-	int curent_res;
-	
-	assert(NULL != s1 && NULL != s2);
-	
-	for (i = 0; '\0' != s1[i] && '\0' != s2[i] && i < n; ++i)
-	{
-		curent_res = CharCmp(s1[i], s2[i]);
-		if (0 == curent_res)
-		{
-			continue;
-		}
-		
-		return curent_res;
-	}
-	
-	return 0;
+    size_t i = 0;
+    int current_res = 0;
+    
+    assert(NULL != s1);
+    assert(NULL != s2);
+    
+    for (; i < n; ++i)
+    {
+        current_res = CharCmp(s1[i], s2[i]);
+        if (0 != current_res)
+        {
+            return current_res;
+        }
+        
+        if (!s1[i])
+        {
+            return 0;
+        }
+    }
+    
+    return 0;
 }
 
 int StrCaseCmp(const char* s1, const char* s2)
