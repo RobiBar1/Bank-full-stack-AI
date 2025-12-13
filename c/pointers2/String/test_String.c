@@ -17,6 +17,13 @@ void test_StrNCpy(void);
 void test_StrCaseCmp(void);
 void test_StrChr(void);
 
+void test_StrTok(void);
+void test_StrSpn(void);
+void test_StrStr(void);
+void test_StrCat(void);
+void test_StrNCat(void);
+void test_StrDup(void);
+
 int main()
 {
 	test_StrLen();
@@ -24,8 +31,188 @@ int main()
 	test_StrCpy();
 	test_StrNCpy();
 	test_StrCaseCmp();
-	test_StrChr();
+	
+    test_StrDup();
+    test_StrCat();
+    test_StrNCat();
+    test_StrStr();
+    test_StrSpn();
+    test_StrChr();
+    test_StrTok();
+    
 	return 0;
+}
+
+void test_StrTok(void)
+{
+    char str[] = "One,Two,Three"; 
+    char delims[] = ",";
+    char* token = NULL;
+
+    Print_Test_Start("StrTok");
+    token = StrTok(str, delims);
+    if (NULL == token || 0 != strcmp(token, "One"))
+    {
+        printf("fail test StrTok: 1st token. Expected 'One', Got '%s'\n", token ? token : "NULL");
+        return;
+    }
+
+    token = StrTok(NULL, delims);    
+    if (NULL == token || 0 != strcmp(token, "Two"))
+    {
+        printf("fail test StrTok: 2nd token. Expected 'Two', Got '%s'\n", token ? token : "NULL");
+        return;
+    }
+
+    token = StrTok(NULL, delims);    
+    if (NULL == token || 0 != strcmp(token, "Three"))
+    {
+        printf("fail test StrTok: 3rd token. Expected 'Three', Got '%s'\n", token ? token : "NULL");
+        return;
+    }
+
+    token = StrTok(NULL, delims);
+    if (NULL != token)
+    {
+        printf("fail test StrTok: Expected NULL at end, but got '%s'\n", token);
+        return;
+    }
+
+    Print_Test_End("StrTok");
+}
+void test_StrDup(void)
+{
+    char source[] = "DuplicateMe";
+    char* copy = NULL;
+
+    Print_Test_Start("StrDup");
+    copy = StrDup(source);
+
+    if (NULL == copy)
+    {
+        printf("fail test StrDup: returned NULL\n");
+        return;
+    }
+
+    if (0 != strcmp(copy, source))
+    {
+        printf("fail test StrDup: strings are not equal\n");
+        printf("Expected: %s, Got: %s\n", source, copy);
+        free(copy); copy = NULL;
+        return;
+    }
+    
+    /* valid that deep copy(by memory) */
+    if (copy == source)
+    {
+        printf("fail test StrDup: pointers are identical (shallow copy)\n");
+        return;
+    }
+
+    free(copy); copy = NULL;
+    Print_Test_End("StrDup");
+}
+    
+void test_StrCat(void)
+{
+    char s1[20] = "Hello"; 
+    char s2[] = "World";
+    char* result = NULL;
+    
+    Print_Test_Start("StrCat");
+    result = StrCat(s1, s2);
+    if (NULL == result)
+    {
+        printf("fail test StrCat: returned NULL\n");
+        return;
+    }
+
+    if (0 != strcmp(result, "HelloWorld"))
+    {
+        printf("fail test StrCat: result incorrect\n");
+        printf("Expected: HelloWorld, Got: %s\n", result);
+        return;
+    }
+
+    Print_Test_End("StrCat");
+}
+
+void test_StrNCat(void)
+{
+    char s1[20] = "Hello";
+    char s2[] = "World";
+    char* result = NULL;
+    
+    Print_Test_Start("StrNCat");
+    result = StrNCat(s1, s2, 3);
+    if (NULL == result)
+    {
+        printf("fail test StrNCat: returned NULL\n");
+        return;
+    }
+
+    if (0 != strcmp(result, "HelloWor"))
+    {
+        printf("fail test StrNCat: result incorrect\n");
+        printf("Expected: HelloWor, Got: %s\n", result);
+        return;
+    }
+
+    Print_Test_End("StrNCat");
+}
+
+void test_StrStr(void)
+{
+    char haystack[] = "Simple String Search";
+    char needle[] = "String";
+    char* result = NULL;;
+
+    Print_Test_Start("StrStr");
+    result = StrStr(haystack, needle);
+    if (NULL == result)
+    {
+        printf("fail test StrStr: needle not found\n");
+        return;
+    }
+
+    if (0 != strncmp(result, needle, strlen(needle)))
+    {
+        printf("fail test StrStr: found incorrect location\n");
+        return;
+    }
+
+    if (NULL != StrStr(haystack, "Zebra"))
+    {
+        printf("fail test StrStr: found non-existent string\n");
+        return;
+    }
+
+    Print_Test_End("StrStr");
+}
+
+void test_StrSpn(void)
+{
+    char str[] = "12345abcde";
+    char accept[] = "1234567890";
+    size_t len = 0;
+
+    Print_Test_Start("StrSpn");
+    len = StrSpn(str, accept);
+    if (5 != len)
+    {
+        printf("fail test StrSpn: incorrect length\n");
+        printf("Expected: 5, Got: %lu\n", (unsigned long)len);
+        return;
+    }
+
+    len = StrSpn(str, "xyz");
+    if (0 != len)
+    {
+        printf("fail test StrSpn: found matches where none exist\n");
+        return;
+    }
+
+    Print_Test_End("StrSpn");
 }
 
 void test_StrChr(void)

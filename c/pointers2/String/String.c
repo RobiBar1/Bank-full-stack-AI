@@ -4,6 +4,9 @@
 
 size_t StrLen(const char *str);
 char* StrCpy(char* dst, char* src);
+char* StrChr(const char* str, int c);
+char* StrStr(const char* haystack, const char* needle);
+int StrNCmp(const char* s1, const char* s2, size_t n);
 
 char* StrTok(char* str, const char* delim)
 {
@@ -13,7 +16,7 @@ char* StrTok(char* str, const char* delim)
 	
 	if (NULL == str)
 	{
-		if (NULL == token)
+		if (NULL == remind_token)
 		{
 			return NULL;
 		}
@@ -201,20 +204,20 @@ int CharCmp(char ch, char ch1)
 }
 
 char* StrChr(const char* str, int c)
-{
-	size_t i = 0;
-	
+{	
 	assert(NULL != str);
     
-	for (; '\0' != *(str + i); ++i)
+	while (*str)
 	{
-		if (*str == c)
+		if (*str++ == c)
 		{
+			--str;
+			
 			return (char*)str;
 		}
 	}
 	
-	if ('\0' == c)
+	if (!c)
 	{
 		return (char*)str;
 	}
@@ -318,18 +321,13 @@ char* StrCpy(char* dst, char* src)
 
 size_t StrLen(const char *str)
 {
-	size_t i;
+	size_t i = 0;
 	
 	assert(NULL != str);
 	
-	counter = str;
-	i = 0
-	while ('\0' != str[i])
-	{
-		++i;
-	}
+	while (('\0' != str[i++]));
 		
-	return i;
+	return i - 1;
 }
 
 int StrCmp(const char *s1, const char *s2)
