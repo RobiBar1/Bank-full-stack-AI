@@ -77,7 +77,7 @@ int TwoDArraysBestPractice(int **arr, size_t rows, size_t cols)
 	size_t i = 0, j = 0;
 	int *arr_res_by_rows = NULL;
 	
-	assert(NULL != arr)
+	assert(NULL != arr);
 	assert(NULL != *arr);
     
     printf("sizeof(arr) = %lu bytes\n", (unsigned long)sizeof(arr));
@@ -151,21 +151,8 @@ void TwoDArraysFullDynamic(int *arr[], int rows, int cols)
     printf("  Access arr[1][2] = %d\n", arr[1][2]);
 }
 
- ----------------------------------helper functions----------------------*/
-static void printArray(int* arr, size_t size)
-{
-	size_t i = 0;
-	
-	printf("print array:--------------------------------------------\n");
-	for(; i < size; ++i)
-	{
-		printf("index number: %lu have value-> %d\n", i, arr[i]);
-	}
-	
-	printf("end print array:----------------------------------------\n");
-}
 
- /*----------------------------------Josef Functions----------------------*/
+// ----------------------------------Josef Functions----------------------*/
 
 void InitJosefCircle(size_t* arr, size_t amount_of_pepole)
 {
@@ -224,7 +211,7 @@ size_t JosefGameLoop(size_t* arr, size_t amount_of_pepole)
 	free(arr);
 	arr = NULL;
 	
-	return circle_winner;
+	return i;
 }
 
 size_t Josephus(size_t amount_of_pepole) /* first man do first kill */

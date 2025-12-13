@@ -41,12 +41,15 @@ int main(int argc,const char *argv[],const char* envp[])
 
 void test_EnvironmentVariblesPrint(const char* envp[])
 {
+	int result = 0;
+	
 	assert(NULL != envp);
 
-    if (0 != EnvironmentVariblesPrint((const char**)envp))
+	result = EnvironmentVariblesPrint((const char**)envp);
+    if (0 != result)
     {
         printf("Error: Memory allocation failed with code %d\n", result);
-        return 1;
+        return;
     }
 }
 
