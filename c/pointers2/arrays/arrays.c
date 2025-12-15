@@ -154,6 +154,8 @@ void TwoDArraysFullDynamic(int *arr[], int rows, int cols)
 
 // ----------------------------------Josef Functions----------------------*/
 
+char MakeLower(char ch);
+
 void InitJosefCircle(size_t* arr, size_t amount_of_pepole)
 {
 	size_t i = 1;
@@ -281,7 +283,7 @@ char* CreateLowerCaseString(const char* source)
 
     for (; i < len; ++i)
     {
-        new_str[i] = (char)MakeLower(source[i]);
+        new_str[i] = MakeLower(source[i]);
     }
     
     new_str[len] = '\0';

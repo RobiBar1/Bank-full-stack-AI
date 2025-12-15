@@ -30,11 +30,11 @@ int main(int argc,const char *argv[],const char* envp[])
 {
 	UNDEF(argc);
 	UNDEF(argv);
-	/*
+	
 	test_AllDataTypesPrint();
 	test_Josephus();
 	test_TwoDArraysBestPractice();
-	*/
+	
 	test_EnvironmentVariblesPrint(envp);
 	return 0;
 }
