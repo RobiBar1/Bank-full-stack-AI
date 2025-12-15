@@ -1,13 +1,19 @@
 #include <stddef.h> 	   /* size_t */
 #include <unistd.h> 	  /* For using getcwd (user path to create there the file) */
 #include <stdio.h>  	 /* for fgets() */
+#include <assert.h>
+#include <stdlib.h>
 
 #include "String.h"     /* For StrNCmp */
 #include "pointers2.h" /* for DeleteWhiteSpaces */
+#include "logger.h"
 
 #define cmd_size 5
 #define TRUE 'T'
-#define FALSE 0; 
+#define FALSE 0
+#define UNUSED(x) (void)x
+
+char IsCount(const char* line);
 
 char input[BUFSIZ];
 char to_exit = FALSE;
@@ -18,23 +24,25 @@ typedef char (*cmd_compre)(const char*);
 
 typedef logger_status_t (*cmd_fun)(const char*);
 
+
+
 void Print(int a) 
 {
     printf("number is: %d\n", a);
 }
 
-struct cmd
+typedef struct 
 {
-	string cmd_string;
+	char* cmd_string;
 	cmd_compre cmp_func;
 	cmd_fun cmd_active;
-}
+}cmd;
 
-struct print_me
+typedef struct 
 {
     int current_value;
     print_fun operate; 
-};
+}print_me;
 
 /*---------------------------- not review functions ---------------------------- */
 void StructInitAndPrint(void)
@@ -65,7 +73,7 @@ void StructInitAndPrint(void)
 /*---------------------------- action commends functions ---------------------------- */
 static logger_status_t LogerAppend(const char* file_name)
 {
-	File* file = NULL;
+	FILE* file = NULL;
 	
 	assert(NULL != file_name);
 	
@@ -91,6 +99,7 @@ static logger_status_t LogerAppend(const char* file_name)
 
 static logger_status_t LogerExit(const char* file_name) /* TODO- need free malocs*/
 {
+	UNUSED(file_name);
 	to_exit = TRUE;
 	
 	return SUCCESS;
@@ -109,8 +118,9 @@ static logger_status_t LogerRemove(const char* file_name)
 
 static logger_status_t LogerCount(const char* file_name)
 {
-	File* file = NULL;
-	size_t counter = 0, c = 0;
+	FILE* file = NULL;
+	size_t counter = 0;
+	int c = 0;
 	
 	assert(NULL != file_name);
 	
@@ -119,7 +129,7 @@ static logger_status_t LogerCount(const char* file_name)
 		return FILE_OPEN_ERROR;
 	}
 	
-	while (EOF != (c = fgetc(file)) && c >= 0)
+	while (EOF != (c = fgetc(file)) && c)
 	{
 		++counter;
 	}
@@ -163,10 +173,9 @@ static logger_status_t LogerHeadAppend(const char *filename)
     FILE *original_file = NULL;
     FILE *temp_file = NULL;
     logger_status_t check = SUCCESS;
-    //char buffer[BUFSIZ];
     const char *temp_filename = "temp_text.txt";
 	
-	assert(NULL != file_name);
+	assert(NULL != filename);
 	
     original_file = fopen(filename, "r");
     temp_file = fopen(temp_filename, "w+");
@@ -228,7 +237,7 @@ static logger_status_t LogerHeadAppend(const char *filename)
     printf("Prepended text to '%s'.\n", filename);
     
     return SUCCESS;
-
+}
 /*---------------------------- Compre functions ---------------------------- */
 char IsCount(const char* line)
 {	
@@ -296,6 +305,7 @@ char IsFirstLine(const char* line)
 
 char IsAppend(const char* line)
 {
+	UNUSED(line);
 	return TRUE;
 }
 
@@ -304,7 +314,6 @@ char IsAppend(const char* line)
 /*-------------------------------- Helper functions ----------------------------*/
 static cmd* initStrctCmd(void)
 {
-	size_t cmd_index = 0;
 	cmd* arr = (cmd*)malloc(sizeof(cmd) * cmd_size);
 	
 	cmd count = {"-count ", IsCount, LogerCount};
@@ -323,16 +332,16 @@ static cmd* initStrctCmd(void)
 	return arr;
 }
 
-static void ActiveCmd(cmd* comend, const char* file_name)
+static logger_status_t ActiveCmd(cmd* comend, const char* file_name)
 {
 	logger_status_t status = SUCCESS;
 	
 	assert(NULL != file_name);
 	
-	status = comend.cmd_active(file_name);
+	status = comend->cmd_active(file_name);
 	if (SUCCESS == status)
 	{	
-		print("SUCCESS");	
+		printf("SUCCESS");	
 	}
 	
 	return status;
@@ -352,9 +361,8 @@ static void OpenPrint(void)
 /*--------------------------------main logger function----------------------------*/
 logger_status_t Logger(const char* file_name)
 {
-	unsigned char user_want_to_keep_progrem = 1;
-	cmd* arr = NULL, start_arr = NULL;
-	
+	cmd* arr = NULL, *start_arr = NULL;
+	char* line_cursor = NULL;
 	assert(NULL != file_name);
 	
 	arr = initStrctCmd();
@@ -364,19 +372,21 @@ logger_status_t Logger(const char* file_name)
 		OpenPrint();
 		arr = start_arr;
 		fgets(input, sizeof(input), stdin);
-		input = RemoveWhiteSpaces(input);
-		while(True)
+		line_cursor = RemoveWhiteSpaces((char*)input);
+		while(TRUE)
 		{	
-			if (FALSE != (*arr).cmp_func(*arr.cmd_string))
+			if (FALSE != (*arr).cmp_func(line_cursor))
 			{
-				if (SUCCESS == ActiveCmd(*arr, file_name));
-				break;
+				if (SUCCESS == ActiveCmd(arr, file_name))
+				{
+					break;
+				}
 			}
 			
 			++arr;
 		}
 	}
 	
-	
+	return SUCCESS;
 }
 /*--------------------------------end main logger function--------------------*/

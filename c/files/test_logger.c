@@ -16,7 +16,8 @@ void printArray(int* arr, size_t size);
 int main()
 {
 	
-	
+	Logger("rak_bibi");
+	printf("im here\n");
 	return 0;
 }
 
