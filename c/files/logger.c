@@ -14,6 +14,8 @@
 #define UNUSED(x) (void)x
 
 char IsCount(const char* line);
+static logger_status_t CopyFileToFile(FILE* src, FILE* dst);
+static logger_status_t LogerAppend(const char* file_name);
 
 char input[BUFSIZ];
 char to_exit = FALSE;
@@ -71,103 +73,6 @@ void StructInitAndPrint(void)
 /*---------------------------- end not review functions ---------------------------- */
 
 /*---------------------------- action commends functions ---------------------------- */
-static logger_status_t LogerAppend(const char* file_name)
-{
-	FILE* file = NULL;
-	
-	assert(NULL != file_name);
-	
-	if (NULL == (file = fopen(file_name, "a")))
-	{
-		return FILE_OPEN_ERROR;
-	}
-	
-	if (EOF == fputs(input, file))
-	{
-		fclose(file);
-		return FILE_WRITE_ERROR; 
-	}
-	
-	if(fclose(file) == EOF)
-	{
-		return FILE_CLOSE_ERROR;
-	}
-		
-	return SUCCESS;
-}
-
-
-static logger_status_t LogerExit(const char* file_name) /* TODO- need free malocs*/
-{
-	UNUSED(file_name);
-	to_exit = TRUE;
-	
-	return SUCCESS;
-}
-static logger_status_t LogerRemove(const char* file_name)
-{
-	assert(NULL != file_name);
-	
-	if (NULL == fopen(file_name, "w"))
-	{
-		return FILE_OPEN_ERROR;
-	}
-	
-	return SUCCESS;
-}
-
-static logger_status_t LogerCount(const char* file_name)
-{
-	FILE* file = NULL;
-	size_t counter = 0;
-	int c = 0;
-	
-	assert(NULL != file_name);
-	
-	if (NULL == (file = fopen(file_name, "r")))
-	{
-		return FILE_OPEN_ERROR;
-	}
-	
-	while (EOF != (c = fgetc(file)) && c)
-	{
-		++counter;
-	}
-	
-	if (EOF == c)
-	{
-		printf("num of line is: %lu\n", counter);
-		if(fclose(file) == EOF)
-		{
-			return FILE_CLOSE_ERROR;
-		}
-		
-		return SUCCESS;
-	}
-	else
-	{
-		fclose(file);
-		return FILE_READ_ERROR;
-	}
-}
-
-/*---------------------------- end action commends functions ---------------------------- */
-
-static logger_status_t CopyFileToFile(FILE* src, FILE* dst)
-{
-	char buffer[BUFSIZ];
-	
-	assert(NULL != src);
-	assert(NULL != dst);
-	
-	while (NULL != fgets(buffer, BUFSIZ, src)) 
-    {
-        fputs(buffer, dst);
-    }
-    
-    return SUCCESS;
-}
-
 static logger_status_t LogerHeadAppend(const char *filename) 
 {
     FILE *original_file = NULL;
@@ -178,7 +83,7 @@ static logger_status_t LogerHeadAppend(const char *filename)
 	assert(NULL != filename);
 	
     original_file = fopen(filename, "r");
-    temp_file = fopen(temp_filename, "w+");
+    temp_file = fopen(temp_filename, "a+");
 
     if (NULL == original_file || NULL == temp_file) 
     {
@@ -216,6 +121,7 @@ static logger_status_t LogerHeadAppend(const char *filename)
         return FILE_OPEN_ERROR;
     }
     
+    fseek(temp_file, 0, SEEK_SET);
     check = CopyFileToFile(temp_file, original_file);
     if (SUCCESS != check)
 	{
@@ -238,6 +144,84 @@ static logger_status_t LogerHeadAppend(const char *filename)
     
     return SUCCESS;
 }
+
+static logger_status_t LogerAppend(const char* file_name)
+{
+	FILE* file = NULL;
+	
+	assert(NULL != file_name);
+	
+	if (NULL == (file = fopen(file_name, "a")))
+	{
+		return FILE_OPEN_ERROR;
+	}
+	
+	if (EOF == fputs(input, file))
+	{
+		fclose(file);
+		return FILE_WRITE_ERROR; 
+	}
+	
+	if(fclose(file) == EOF)
+	{
+		return FILE_CLOSE_ERROR;
+	}
+		
+	return SUCCESS;
+}
+
+
+static logger_status_t LogerExit(const char* file_name)
+{
+	UNUSED(file_name);
+	to_exit = TRUE;
+	
+	return SUCCESS;
+}
+static logger_status_t LogerRemove(const char* file_name)
+{
+	assert(NULL != file_name);
+	
+	if (0 != remove(file_name))
+	{
+		return FILE_OPEN_ERROR;
+	}
+	
+	return SUCCESS;
+}
+
+static logger_status_t LogerCount(const char* file_name)
+{
+	FILE* file = NULL;
+	size_t counter = 0;
+	char buffer[BUFSIZ];
+	
+	assert(NULL != file_name);
+	
+	if (NULL == (file = fopen(file_name, "r")))
+	{
+		return FILE_OPEN_ERROR;
+	}
+	while (NULL != fgets(buffer, BUFSIZ, file)) 
+    {
+        ++counter;
+    	printf("line num %lu is: %s\n", counter, buffer);
+    }
+	printf("---------------------------------------------\n");
+	printf("num of line is: %lu\n", counter);
+	printf("---------------------------------------------\n");
+	if(fclose(file) == EOF)
+	{
+		return FILE_CLOSE_ERROR;
+	}
+	
+	return SUCCESS;
+}
+
+/*---------------------------- end action commends functions ---------------------------- */
+
+
+
 /*---------------------------- Compre functions ---------------------------- */
 char IsCount(const char* line)
 {	
@@ -247,7 +231,7 @@ char IsCount(const char* line)
 	assert(NULL != line);
 	
 	if (0 == StrNCmp(line, string1_cmp, sizeof(string1_cmp)) || 
-		0 == StrNCmp(line, string2_cmp, sizeof(string1_cmp)))
+		0 == StrNCmp(line, string2_cmp, sizeof(string2_cmp)))
 	{
 		return TRUE;
 	}
@@ -263,7 +247,7 @@ char IsExit(const char* line)
 	assert(NULL != line);
 	
 	if (0 == StrNCmp(line, string1_cmp, sizeof(string1_cmp)) || 
-		0 == StrNCmp(line, string2_cmp, sizeof(string1_cmp)))
+		0 == StrNCmp(line, string2_cmp, sizeof(string2_cmp)))
 	{
 		return TRUE;
 	}
@@ -279,7 +263,7 @@ char IsRemove(const char* line)
 	assert(NULL != line);
 	
 	if (0 == StrNCmp(line, string1_cmp, sizeof(string1_cmp)) || 
-		0 == StrNCmp(line, string2_cmp, sizeof(string1_cmp)))
+		0 == StrNCmp(line, string2_cmp, sizeof(string2_cmp)))
 	{
 		return TRUE;
 	}
@@ -290,12 +274,12 @@ char IsRemove(const char* line)
 char IsFirstLine(const char* line)
 {
 	char string1_cmp[] = "< ";
-	char string2_cmp[] = "<\n";
+	char string2_cmp[] = "< \n";
 	
 	assert(NULL != line);
 	
-	if (0 == StrNCmp(line, string1_cmp, sizeof(string1_cmp)) || 
-		0 == StrNCmp(line, string2_cmp, sizeof(string1_cmp)))
+	if (0 == StrNCmp(line, string1_cmp, sizeof(string1_cmp) - 1) || 
+		0 == StrNCmp(line, string2_cmp, sizeof(string2_cmp) - 1))
 	{
 		return TRUE;
 	}
@@ -312,6 +296,21 @@ char IsAppend(const char* line)
 /*---------------------------- end Compre functions ----------------------------*/
 
 /*-------------------------------- Helper functions ----------------------------*/
+static logger_status_t CopyFileToFile(FILE* src, FILE* dst)
+{
+	char buffer[BUFSIZ];
+	
+	assert(NULL != src);
+	assert(NULL != dst);
+	
+	while (NULL != fgets(buffer, BUFSIZ, src)) 
+    {
+        fputs(buffer, dst);
+    }
+    
+    return SUCCESS;
+}
+
 static cmd* initStrctCmd(void)
 {
 	cmd* arr = (cmd*)malloc(sizeof(cmd) * cmd_size);
@@ -321,7 +320,6 @@ static cmd* initStrctCmd(void)
 	cmd remove = {"-remove ", IsRemove, LogerRemove};
 	cmd first_line = {"< ", IsFirstLine, LogerHeadAppend};
 	cmd append = {"append(defult)", IsAppend , LogerAppend};
-	
 	
 	arr[0] = count;	  	
 	arr[1] = exit;
@@ -341,7 +339,7 @@ static logger_status_t ActiveCmd(cmd* comend, const char* file_name)
 	status = comend->cmd_active(file_name);
 	if (SUCCESS == status)
 	{	
-		printf("SUCCESS");	
+		printf("SUCCESS used of commend: %s\n", comend->cmd_string);
 	}
 	
 	return status;
@@ -349,7 +347,6 @@ static logger_status_t ActiveCmd(cmd* comend, const char* file_name)
 
 static void OpenPrint(void)
 {
-	printf("Welcome to Mini Loger\n");
 	printf("please enter your input:\n");
 	printf("------------------------------------------------------------\n");
 	printf("'-exit'/'-count'/'-remove'/'<'string''/'string':\n");
@@ -363,11 +360,14 @@ logger_status_t Logger(const char* file_name)
 {
 	cmd* arr = NULL, *start_arr = NULL;
 	char* line_cursor = NULL;
+	logger_status_t code_status = SUCCESS;
+	
 	assert(NULL != file_name);
 	
+	printf("Welcome to Mini Loger\n");
 	arr = initStrctCmd();
 	start_arr = arr;
-	while(to_exit)
+	while(!to_exit)
 	{
 		OpenPrint();
 		arr = start_arr;
@@ -377,16 +377,24 @@ logger_status_t Logger(const char* file_name)
 		{	
 			if (FALSE != (*arr).cmp_func(line_cursor))
 			{
-				if (SUCCESS == ActiveCmd(arr, file_name))
+				code_status = ActiveCmd(arr, file_name);
+				if (SUCCESS != code_status)
 				{
-					break;
+					to_exit = TRUE;
 				}
+				
+				break;
 			}
 			
 			++arr;
 		}
 	}
 	
-	return SUCCESS;
+	if(NULL != start_arr)
+	{
+		free(start_arr); start_arr = NULL;
+	}
+	
+	return code_status;
 }
 /*--------------------------------end main logger function--------------------*/
