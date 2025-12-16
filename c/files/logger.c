@@ -72,18 +72,21 @@ void StructInitAndPrint(void)
 }
 /*---------------------------- end not review functions ---------------------------- */
 
-/*---------------------------- action commends functions ---------------------------- */
-static logger_status_t LogerHeadAppend(const char *filename) 
+static logger_status_t OpenFilesRAndAPlusMode(
+	const char *r_file, const char *a_plus_file,
+	FILE** rpt_file, FILE** a_plus_ptr_file)
 {
-    FILE *original_file = NULL;
-    FILE *temp_file = NULL;
-    logger_status_t check = SUCCESS;
-    const char *temp_filename = "temp_text.txt";
+	FILE* original_file = NULL;
+    FILE* temp_file = NULL;
+    
+	assert(NULL != r_file);
+	assert(NULL != a_plus_file);
 	
-	assert(NULL != filename);
+	UNUSED(rpt_file);
+	UNUSED(a_plus_ptr_file);
 	
-    original_file = fopen(filename, "r");
-    temp_file = fopen(temp_filename, "a+");
+	original_file = fopen(r_file, "r");
+    temp_file = fopen(a_plus_file, "a+");
 
     if (NULL == original_file || NULL == temp_file) 
     {
@@ -98,13 +101,36 @@ static logger_status_t LogerHeadAppend(const char *filename)
         
         return FILE_OPEN_ERROR;
     }
+    
+    *rpt_file = original_file;
+    *a_plus_ptr_file = temp_file;
+    
+    return SUCCESS;
+}
+
+/*---------------------------- action commends functions -------------------- */
+static logger_status_t LogerHeadAppend(const char *filename) 
+{
+    FILE* original_file = NULL;
+    FILE* temp_file = NULL;
+    logger_status_t check = SUCCESS;
+    const char *temp_filename = "temp_text.txt";
 	
-	fputs(input, temp_file);
+	assert(NULL != filename);
+	
+	check = OpenFilesRAndAPlusMode(filename, temp_filename, &original_file, &temp_file);
+	if (SUCCESS != check)
+	{
+		return check;
+	}
+		
+	fputs(input + 2, temp_file);
 	check = CopyFileToFile(original_file, temp_file);
 	if (SUCCESS != check)
 	{
 		fclose(original_file);
 		fclose(temp_file);
+		
 		return check;
 	}
     
@@ -130,11 +156,7 @@ static logger_status_t LogerHeadAppend(const char *filename)
 		return check;
 	}
 	
-    if(EOF == fclose(original_file))
-	{
-		return FILE_CLOSE_ERROR;
-	}
-	if(EOF == fclose(temp_file))
+    if(EOF == fclose(original_file) || EOF == fclose(temp_file))
 	{
 		return FILE_CLOSE_ERROR;
 	}
