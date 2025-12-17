@@ -13,7 +13,9 @@
 #define eight_groups_one_zeros 0x00FF00FF
 #define sixteen_groups_one_zeros 0x3F
 #define mask_one ((unsigned int)1)
-
+#define MASK_ODD_BITS  0xAA
+#define MASK_PAIR_LEFT  0xCC
+#define MASK_NIBBLE_UPPER 0xF0 
 
 long Pow2(unsigned int x, unsigned int y)
 {
@@ -109,9 +111,9 @@ unsigned char ByteMirrorLoop(unsigned char n)
 
 unsigned char ByteMirrorNoLoop(unsigned char byte)
 {
-    byte = ((byte & 0xF0) >> 4) | ((byte & 0x0F) << 4);
-    byte = ((byte & 0xCC) >> 2) | ((byte & 0x33) << 2);
-    byte = ((byte & 0xAA) >> 1) | ((byte & 0x55) << 1);
+    byte = ((byte & MASK_NIBBLE_UPPER) >> 4) | ((byte & for_groups_one_zeros) << 4);
+	byte = ((byte & MASK_PAIR_LEFT) >> 2) | ((byte & pairs_one_zeros) << 2);
+	byte = ((byte & MASK_ODD_BITS) >> 1) | ((byte & ones_zeros_mask) << 1);
     
     return byte;
 }
@@ -237,10 +239,28 @@ size_t CountBitsNoLoop(int n)
 	n = (n + (n >> 8)) & eight_groups_one_zeros;
     return (n + (n >> 16)) & sixteen_groups_one_zeros;
 }
-void PrintFloatBitwise(float fl)
+void PrintFloatBitwise(float f)
 {
-	fl = 5;
-	printf("%f", fl);
+    unsigned int n = *((unsigned int*)&f), bit = JUNK;
+	int i = 31;
+	
+    printf("Original Float: %f\n", f);
+    printf("Binary Layout:  ");
+
+    for (; i >= 0; --i) 
+    {
+        bit = (n >> i) & 1;
+        printf("%u", bit);
+
+        if (31 == i) printf(" "); 
+        if (23 == i) printf(" "); 
+    }
+    
+    printf("\n");
+    
+    printf("Legend:         S EEEEEEEE MMMMMMMMMMMMMMMMMMMMMMM\n");
+    printf("                ^ ^        ^\n");
+    printf("             Sign Exponent Mantissa (Fraction)\n\n");
 }
 
 
