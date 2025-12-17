@@ -196,15 +196,6 @@ void Swap3(int* one, int* other) /* no temp variable */
 	*one -= *other;
 	*other = *one + *other;	
 	*one = *other - *one;
-	
-	if (*one < 0)
-	{
-	}
-	else
-	{
-	}
-	
-	*one += *other;
 }
 
 size_t CountBitsLoop(int n)
