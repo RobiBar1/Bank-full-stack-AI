@@ -184,6 +184,11 @@ void Swap2(int* one, int* other) /* no temp variable */
 	assert(NULL != one);
 	assert(NULL != other);
 	
+	if (one == other)
+	{
+		return;	
+	}
+	
 	*one += *other;
 	*other = *one - *other; 
 	*one -= *other;
@@ -192,6 +197,11 @@ void Swap3(int* one, int* other) /* no temp variable */
 {   
     assert(NULL != one);
 	assert(NULL != other);
+	
+	if (one == other)
+	{
+		return;	
+	}
 	
 	*one -= *other;
 	*other = *one + *other;	
