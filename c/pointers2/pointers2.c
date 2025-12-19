@@ -1,7 +1,7 @@
 #include <assert.h> /* for using asserts */
 #include <stdio.h>  /* for printf */
 
-#include "String.h" /* for using StrLen */
+#include "string.h" /* for using StrLen */
 
 static int IsHave7(long num)
 {
@@ -61,7 +61,6 @@ char* RemoveWhiteSpaces(char* str)
     char* write = str;
     char* last_char_saw = NULL;
     
-
     assert(NULL != str);
 
     while (*read && IsWhiteSpace(*read))
@@ -87,9 +86,12 @@ char* RemoveWhiteSpaces(char* str)
 	
 	if (last_char_saw)
 	{
-		++last_char_saw;
-		*last_char_saw = '\0';
+		write = last_char_saw + 1;
 	}
+	else
+    {
+        write = str;
+    }
 	
      *write = '\0';
 
@@ -98,19 +100,20 @@ char* RemoveWhiteSpaces(char* str)
 
 int ISPalindrome(const char* str)
 {
-	size_t i = 0, j = 0;
+	size_t left = 0, right = 0;
 	
 	assert(NULL != str);
 	
-	j = StrLen(str) - 1;
-	if (j < 1)
+	right = strlen(str);
+	if (right <= 1)
 	{
 		return 1;
 	}
 	
-	for (; i <= j; ++i, --j)
+	--right;
+	for (; left <= right; ++left, --right)
 	{
-		if (str[i] != str[j])
+		if (str[left] != str[right])
 		{
 			return 0;
 		}
