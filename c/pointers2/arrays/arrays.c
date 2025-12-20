@@ -1,8 +1,8 @@
-#include <stdio.h>  /* for printf use */
-#include <assert.h> /* for asserts use */
-#include <stdlib.h> /* for mallocs use */
+#include <stdio.h>  /* printf use */
+#include <assert.h> /* asserts use */
+#include <stdlib.h> /* mallocs use */
 
-#include "String.h"
+#include "String.h" /* StrLen use */
 
 #define ROWS 3
 #define COLS 4
@@ -154,8 +154,15 @@ void TwoDArraysFullDynamic(int *arr[], int rows, int cols)
 
 // ----------------------------------Josef Functions----------------------*/
 
-char MakeLower(char ch);
-
+static char MakeLower(char ch)
+{
+	if (ch >= 'A' && ch <= 'Z')
+	{
+		ch += 'a' - 'A';
+	}
+	
+	return ch;
+}
 void InitJosefCircle(size_t* arr, size_t amount_of_pepole)
 {
 	size_t i = 1;
