@@ -98,7 +98,7 @@ char* RemoveWhiteSpaces(char* str)
     return str;
 }
 
-int ISPalindrome(const char* str)
+int IsPalindrome(const char* str)
 {
 	size_t left = 0, right = 0;
 	
