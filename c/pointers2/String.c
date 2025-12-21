@@ -322,18 +322,6 @@ char* StrCpy(char* dst, char* src)
 	return 	start_index;
 }
 
-
-size_t StrLen(const char *str)
-{
-	size_t i = 0;
-	
-	assert(NULL != str);
-	
-	while (('\0' != str[i++]));
-		
-	return i - 1;
-}
-
 int StrCmp(const char *s1, const char *s2)
 {
 	size_t i;
@@ -364,4 +352,13 @@ int StrCmp(const char *s1, const char *s2)
 	return 0;
 }
 
-
+size_t StrLen(const char *str)
+{
+	size_t i = 0;
+	
+	assert(NULL != str);
+	
+	while (('\0' != str[i++]));
+		
+	return i - 1;
+}
