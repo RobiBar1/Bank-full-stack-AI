@@ -1,10 +1,9 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <stdio.h>				/* FILE, fopen, fwrite, fread, fclose */
+#include <stdlib.h>				/* size_t */
 #include <assert.h>				/* assert */
 
 #include "String.h" 			/* StrLen, StrNCpy */
-#include "serialize_structs.h"
+#include "serialize_structs.h"	/* our api */
 
 #define JUNK 0
 #define NUM_TO_WRITE 1
@@ -45,7 +44,7 @@ static grades_t InitGrades(float sport, grades_h_t hum, grades_r_t real)
 /* ---------------------------- Helper functions ---------------------- */
 student_t InitStudent(const char* first, const char* last, float sport_grade)
 {
-    student_t s = {""};
+    student_t s = {"", ""};
     size_t str_size = 0;
     
     assert(NULL != first);
