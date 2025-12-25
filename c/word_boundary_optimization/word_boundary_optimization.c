@@ -1,28 +1,52 @@
 #include <limits.h> /* CHAR_BIT (give me the size of byte in bits in this machine) */
 #include <assert.h> /* assert */
 
-#define INIT1 1
-#define RAISE_COUNT_POW2 (count *= 2)
-#define Shift_MASK_LEFT_BY_POW2 ((mask) | ((mask) << ((byte_size) * (count))))
+#define INIT0 0
+
+static short IsAlinged()
+{
+	return (0 == (size_t*)str % sizeof(size_t)); 	
+}
+
+static void 
 
 void* MemSet(void* str, int c, size_t num_bytes)
 {
-	unsigned short word_size = (unsigned short)sizeof(size_t),
-	count = INIT1, byte_size = CHAR_BIT;
+	unsigned short word_size = (unsigned short)sizeof(size_t), count = INIT0;
 	unsigned char val = (unsigned char)c;
-	size_t mask = val | 0;
-	--num_bytes;
+	size_t* ptr = NULL, word_buffer = (size_t)c;
+	unsigned char* ptr_char = (unsigned char*)str; 
 	
 	assert(NULL != str);
 	
-	while (count < word_size && num_bytes >= count)
+	while (!IsAlinged() && num_bytes)
 	{
-	    mask = Shift_MASK_LEFT_BY_POW2;
-	    num_bytes -= count;
-	    RAISE_COUNT_POW2;
+		*ptr_char = c;
+		++ptr_char;
+		--num_bytes;
 	}
 	
-	if (num)
+	while (++count < word_size)
+	{
+		word_buffer = word_buffer | word_buffer << CHAR_BIT;
+		word_buffer << CHAR_BIT;
+	}
+	
+	ptr = (size_t*)ptr_char;	
+	while (num_bytes >= word_size)
+	{
+		ptr* = word_buffer;
+		++ptr;
+		num_bytes -= word_size;
+	}
+	
+	ptr_char = (char*)ptr;
+	while (num_bytes)
+	{
+		*ptr_char = c;
+		++ptr_char;
+		--num_bytes;
+	}
 	
 	return str;
 }
