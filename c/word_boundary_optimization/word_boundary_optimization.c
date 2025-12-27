@@ -54,14 +54,16 @@ void* MemSet(void* str, int c, size_t num_bytes)
 	return str;
 }
 
-static void CopyBytes(void** dst_ptr, const void** src_ptr, size_t num_bytes, int direction)
+static void CopyBytes(const void** dst_ptr, const void** src_ptr, size_t num_bytes, int direction)
 {
-	char* dst_runner = *(char**)dst_ptr;
-	char* src_runner = *(char**)src_ptr;
+	char* dst_runner = NULL;
+	char* src_runner = NULL;
 
 	assert(NULL != dst_ptr);
 	assert(NULL != src_ptr);
 
+	dst_runner = *(char**)dst_ptr;
+	src_runner = *(char**)src_ptr;
 	if (FORWARD == direction)
 	{
 		for (; num_bytes > 0; --num_bytes)
@@ -81,14 +83,16 @@ static void CopyBytes(void** dst_ptr, const void** src_ptr, size_t num_bytes, in
 	*src_ptr = (void*)src_runner;
 }
 
-static void CopyWords(void** dst_ptr, const void** src_ptr, size_t num_words, int direction)
-{
-	size_t* dst_runner = *(size_t**)dst_ptr;
-	size_t* src_runner = *(size_t**)src_ptr;
+static void CopyWords(const void** dst_ptr, const void** src_ptr, size_t num_words, int direction)
+{	
+	size_t* dst_runner = NULL;
+	size_t* src_runner = NULL;
 
 	assert(NULL != dst_ptr);
 	assert(NULL != src_ptr);
 
+	dst_runner = *(size_t**)dst_ptr;
+	src_runner = *(size_t**)src_ptr;
 	if (direction == FORWARD)
 	{
 		for (; num_words > 0; --num_words)
@@ -110,33 +114,34 @@ static void CopyWords(void** dst_ptr, const void** src_ptr, size_t num_words, in
 
 void* MemCpy(void* dest_str, const void* src_str, size_t num_bytes)
 {
-	void* res = dest_str;
-	size_t bytes_to_write = 0;
-	size_t words_to_write = 0;
+	void* res = NULL; 
+	size_t bytes_to_write = INIT0;
+	size_t words_to_write = INIT0;
 
 	assert(NULL != dest_str);
 	assert(NULL != src_str);
 	assert(IS_SAME_ALINGED);
-
+	
+	res = dest_str;
 	if ((size_t)dest_str % WORD_SIZE != 0)
 	{
 		bytes_to_write = WORD_SIZE - (size_t)dest_str % WORD_SIZE;
 		bytes_to_write = TAKE_MIN(num_bytes, bytes_to_write);
-		CopyBytes(&dest_str, &src_str, bytes_to_write, FORWARD);
+		CopyBytes((const void**)&dest_str, &src_str, bytes_to_write, FORWARD);
 		num_bytes -= bytes_to_write;
 	}
 
 	if (num_bytes >= WORD_SIZE)
 	{
 		words_to_write = num_bytes / WORD_SIZE;
-		CopyWords(&dest_str, &src_str, words_to_write, FORWARD);
+		CopyWords((const void**)&dest_str, &src_str, words_to_write, FORWARD);
 		num_bytes -= words_to_write * WORD_SIZE;
 	}
 
 	if (num_bytes > 0)
 	{
 		bytes_to_write = num_bytes;
-		CopyBytes(&dest_str, &src_str, bytes_to_write, FORWARD);
+		CopyBytes((const void**)&dest_str, &src_str, bytes_to_write, FORWARD);
 		num_bytes -= bytes_to_write;
 	}
 
@@ -157,21 +162,21 @@ static void* MemCpyBackward(void* dest_str, const void* src_str, size_t num_byte
 	{
 		bytes_to_write = (size_t)dest_str % WORD_SIZE;
 		bytes_to_write = TAKE_MIN(num_bytes, bytes_to_write);
-		CopyBytes(&dest_str, &src_str, bytes_to_write, BACKWARD);
+		CopyBytes((const void**)&dest_str, &src_str, bytes_to_write, BACKWARD);
 		num_bytes -= bytes_to_write;
 	}
 
 	if (num_bytes >= WORD_SIZE)
 	{
 		words_to_write = num_bytes / WORD_SIZE;
-		CopyWords(&dest_str, &src_str, words_to_write, BACKWARD);
+		CopyWords((const void**)&dest_str, &src_str, words_to_write, BACKWARD);
 		num_bytes -= words_to_write * WORD_SIZE;
 	}
 
 	if (num_bytes > 0)
 	{
 		bytes_to_write = num_bytes;
-		CopyBytes(&dest_str, &src_str, bytes_to_write, BACKWARD);
+		CopyBytes((const void**)&dest_str, &src_str, bytes_to_write, BACKWARD);
 		num_bytes -= bytes_to_write;
 	}
 
