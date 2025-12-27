@@ -1,13 +1,11 @@
 #ifndef __SERIALIZE_STRUCTS_H__
 #define __SERIALIZE_STRUCTS_H__
 
+#include <stdio.h> /* FILE */
+
 #define NAME_SIZE (48)
 
-typedef enum 
-{SUCCESS, ALLOC_FAIL,
-FILE_OPEN_ERROR, FILE_CLOSE_ERROR, FILE_REMOVE_ERROR,
-FILE_WRITE_ERROR, FILE_READ_ERROR}
-status_t;
+typedef enum {SUCCESS,FILE_WRITE_ERROR, FILE_READ_ERROR} status_t;
 
 typedef struct GradesR grades_r_t;
 typedef struct GradesH grades_h_t;
@@ -44,7 +42,9 @@ struct Student
     grades_t grades;
 };
 
-status_t SaveStudentToBinary(student_t* student, char* file_name);
-status_t LoadStudentFromBinary(student_t* student, char* file_name);
+status_t SaveStudentToBinary(student_t* student, FILE* file_ptr);
+status_t LoadStudentFromBinary(student_t* student, FILE* file_ptr);
 
 #endif /*__SERIALIZE_STRUCTS_H__*/
+
+
