@@ -33,7 +33,7 @@ static void PassedCompareString(const char *expected, const char *received, cons
     }
     else
     {
-        /* printf("PASSED: %s\n", test_name); */
+         printf("PASSED: %s\n", test_name); 
     }
 }
 
@@ -184,11 +184,13 @@ void TestAtoiEdgeCases(void)
 	printf("Testing \"-0\": %s\n", TestAtoiVsSystem("-0") ? "PASS" : "FAIL");
 	printf("=== End of Atoi Comparison Tests ===\n\n");
 }
+
+
 int main(void)
 {
     TestItoa();
     TestAtoi();
-    TestAtoiEdgeCases();
+  	TestAtoiEdgeCases();
 	TestPrintIntersectionFirstTwoWithExclusionThird();
     printf("\nSUMMARY: %s (%d failed)\n", (g_fail == 0) ? "ALL PASSED" : "SOME FAILED", g_fail);
     return (g_fail == 0) ? 0 : 1;
