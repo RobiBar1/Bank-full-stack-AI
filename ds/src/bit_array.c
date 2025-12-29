@@ -10,20 +10,22 @@
 bitarr_t BitArrSetAllOn(bitarr_t bit_arr)
 {
 	UNUSED(bit_arr);
+	
 	return ALL_ONE_ON;
 }
 
 bitarr_t BitArrSetAllOff(bitarr_t bit_arr)
 {
 	UNUSED(bit_arr);
+	
 	return INIT0;
 }
 
 bitarr_t BitArrSetBit(bitarr_t bit_arr, size_t index, int boolean_value)
 {
 	size_t mask = 0x1;
-	mask = mask << index;
 	
+	mask = mask << index;
 	if (boolean_value)
 	{
 		return bit_arr | mask;
@@ -37,8 +39,9 @@ bitarr_t BitArrSetBit(bitarr_t bit_arr, size_t index, int boolean_value)
 int BitArrGetBit(bitarr_t bit_arr, size_t index)
 {
 	size_t mask = 0x1;
-	mask = mask << index;
 	
+	mask = mask << index;
+
 	return (mask & bit_arr) == mask;
 }
 
@@ -51,14 +54,24 @@ bitarr_t BitArrFlipBit(bitarr_t bit_arr, size_t index)
 size_t BitArrCountOn(bitarr_t bit_arr)
 {
 	/* check if the 32-bit macro (__i386__) is missing. If __i386__ is NOT defined, can assume its 64-bit. */
-	size_t tmp_num = bit_arr;
-	size_t mask_1 = 0x5555555555555555;
-	size_t mask_2 = 0x3333333333333333;
-	size_t mask_4 = 0x0f0f0f0f0f0f0f0f;
-	size_t mask_8 = 0x00ff00ff00ff00ff;
-	size_t mask_16 = 0x0000ffff0000ffff;
-	size_t mask_32 = 0x00000000ffffffff;
-	
+	#ifndef __i386__ 
+		size_t tmp_num = bit_arr;
+		size_t mask_1 = 0x5555555555555555;
+		size_t mask_2 = 0x3333333333333333;
+		size_t mask_4 = 0x0f0f0f0f0f0f0f0f;
+		size_t mask_8 = 0x00ff00ff00ff00ff;
+		size_t mask_16 = 0x0000ffff0000ffff;
+		size_t mask_32 = 0x00000000ffffffff;
+		
+    #else
+    	size_t tmp_num = bit_arr;
+		size_t mask_1 = 0x55555555;
+		size_t mask_2 = 0x33333333;
+		size_t mask_4 = 0x0f0f0f0f;
+		size_t mask_8 = 0x00ff00ff;
+		size_t mask_16 = 0x0000fff;
+    #endif
+    
 	tmp_num = (tmp_num & mask_1) +
 	((tmp_num >> 1) & mask_1);
 	tmp_num = (tmp_num & mask_2) +
@@ -69,13 +82,13 @@ size_t BitArrCountOn(bitarr_t bit_arr)
 	((tmp_num >> 8) & mask_8);
 	tmp_num = (tmp_num & mask_16) +
 	((tmp_num >> 16) & mask_16);
-	
-	#ifndef __i386__ 
+		
+	#ifndef __i386__
 		return (tmp_num & mask_32) +
-	((tmp_num >> 32) & mask_32);
-    #else
-        return tmp_num;
-    #endif
+		((tmp_num >> 32) & mask_32);
+	#else
+		return tmp_num;
+	#endif
 }
 
 size_t BitArrCountOff(bitarr_t bit_arr)
@@ -84,16 +97,25 @@ size_t BitArrCountOff(bitarr_t bit_arr)
 }
 
 bitarr_t BitArrMirror(bitarr_t bit_arr)
-{
-	size_t tmp_num = bit_arr;
-	size_t mask_1 = 0x5555555555555555;
-	size_t mask_2 = 0x3333333333333333;
-	size_t mask_4 = 0x0f0f0f0f0f0f0f0f;
-	size_t mask_8 = 0x00ff00ff00ff00ff;
-	size_t mask_16 = 0x0000ffff0000ffff;
-	size_t mask_32 = 0x00000000ffffffff;
-	
-	tmp_num = ((tmp_num & mask_1) << 1) |
+{	
+	#ifndef __i386__ 
+		size_t tmp_num = bit_arr;
+		size_t mask_1 = 0x5555555555555555;
+		size_t mask_2 = 0x3333333333333333;
+		size_t mask_4 = 0x0f0f0f0f0f0f0f0f;
+		size_t mask_8 = 0x00ff00ff00ff00ff;
+		size_t mask_16 = 0x0000ffff0000ffff;
+		size_t mask_32 = 0x00000000ffffffff;
+    #else
+    	size_t tmp_num = bit_arr;
+		size_t mask_1 = 0x55555555;
+		size_t mask_2 = 0x33333333;
+		size_t mask_4 = 0x0f0f0f0f;
+		size_t mask_8 = 0x00ff00ff;
+		size_t mask_16 = 0x0000fff;
+    #endif
+    
+    tmp_num = ((tmp_num & mask_1) << 1) |
 	((tmp_num >> 1) & mask_1);
 	tmp_num = ((tmp_num & mask_2) << 2) |
 	((tmp_num >> 2) & mask_2);
@@ -105,11 +127,11 @@ bitarr_t BitArrMirror(bitarr_t bit_arr)
 	((tmp_num >> 16) & mask_16);
 	
 	#ifndef __i386__ 
-		return ((tmp_num & mask_32) << 32) |
-	((tmp_num >> 32) & mask_32);
-    #else
-        return tmp_num;
-    #endif
+	return ((tmp_num & mask_32) << 32) |
+		((tmp_num >> 32) & mask_32);
+	#else
+		return tmp_num;
+	#endif
 }
 
 bitarr_t BitArrRotateLeft(bitarr_t bit_arr, size_t num_rotations)
