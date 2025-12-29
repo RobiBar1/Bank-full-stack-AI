@@ -69,7 +69,7 @@ size_t BitArrCountOn(bitarr_t bit_arr)
 		size_t mask_2 = 0x33333333;
 		size_t mask_4 = 0x0f0f0f0f;
 		size_t mask_8 = 0x00ff00ff;
-		size_t mask_16 = 0x0000fff;
+		size_t mask_16 = 0x0000ffff;
     #endif
     
 	tmp_num = (tmp_num & mask_1) +
@@ -112,7 +112,7 @@ bitarr_t BitArrMirror(bitarr_t bit_arr)
 		size_t mask_2 = 0x33333333;
 		size_t mask_4 = 0x0f0f0f0f;
 		size_t mask_8 = 0x00ff00ff;
-		size_t mask_16 = 0x0000fff;
+		size_t mask_16 = 0x0000ffff;
     #endif
     
     tmp_num = ((tmp_num & mask_1) << 1) |
