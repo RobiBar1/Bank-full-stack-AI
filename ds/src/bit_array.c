@@ -5,14 +5,17 @@
 
 #define INIT0 0
 #define ALL_ONE_ON -1
+#define UNUSED(X) (void(x))
 
 bitarr_t BitArrSetAllOn(bitarr_t bit_arr)
 {
+	UNUSED(bit_arr);
 	return ALL_ONE_ON;
 }
 
 bitarr_t BitArrSetAllOff(bitarr_t bit_arr)
 {
+	UNUSED(bit_arr);
 	return INIT0;
 }
 
@@ -23,7 +26,7 @@ bitarr_t BitArrSetBit(bitarr_t bit_arr, size_t index, int boolean_value)
 	
 	if (boolean_value)
 	{
-		return bit_arr |= mask;
+		return bit_arr | mask;
 	}
 	else
 	{
