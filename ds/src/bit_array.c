@@ -5,7 +5,7 @@
 
 #define INIT0 0
 #define ALL_ONE_ON -1
-#define UNUSED(X) (void(x))
+#define UNUSED(X) (void)(X)
 
 bitarr_t BitArrSetAllOn(bitarr_t bit_arr)
 {
