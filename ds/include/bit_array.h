@@ -74,6 +74,6 @@ bitarr_t BitArrRotateRight(bitarr_t bit_arr, size_t num_rotations);
  * @param[in,out] bit_arr - value representing a bit array
  * @return char* - the transformed string
  **/
-char* BitArrToString(bitarr_t* word, char* dest);
+char* BitArrToString(bitarr_t bit_arr, char* dest);
 
-#endif /*__BIT_ARRAY_H__*/n
+#endif /*__BIT_ARRAY_H__*/
