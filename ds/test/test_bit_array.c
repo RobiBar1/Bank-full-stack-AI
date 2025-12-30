@@ -1,297 +1,301 @@
-#include <stddef.h> /* size_t */
-#include <stdio.h>  /* printf */
-#include <string.h> /* strcmp */
+#include <stdio.h>
+#include <limits.h>
+#include <string.h>
+#include <stdint.h>  
+#include "bit_array.h" /* own header */
 
-#include "bit_array.h"
+#define TOTAL_BITS ((size_t)(sizeof(bitarr_t) * CHAR_BIT))
+#define ALL_ONES   ((bitarr_t)~(bitarr_t)0)
 
-#define RESET   "\033[0m"
-#define RED     "\033[31m"
-#define GREEN   "\033[32m"
-
-#if _WIN32 || _WIN64
-#if _WIN64
-#define ENVIRONMENT_BIT 64
+#if (SIZE_MAX == 0xFFFFFFFFFFFFFFFF)
+    #define BITARR_64
+#elif (SIZE_MAX == 0xFFFFFFFF)
+    #define BITARR_32
 #else
-#define ENVIRONMENT_BIT 32
-#endif /* _WIN64 */
-#endif /* _WIN32 || _WIN64 */
+    #error "Unsupported platform: SIZE_MAX is not 32/64"
+#endif
 
-#if __GNUC__
-#if __x86_64__ || __ppc64__
-#define ENVIRONMENT_BIT 64
-#else
-#define ENVIRONMENT_BIT 32
-#endif /* __x86_64__ || __ppc64__ */
-#endif /* __GNUC__ */
+#ifdef BITARR_64
+    #define ALT_A ((bitarr_t)0xAAAAAAAAAAAAAAAA)
+    #define ALT_5 ((bitarr_t)0x5555555555555555)
+#else /* BITARR_32 */
+    #define ALT_A ((bitarr_t)0xAAAAAAAA)
+    #define ALT_5 ((bitarr_t)0x55555555)
+#endif
 
-#define UNUSED(x) (void(x))
 
-typedef enum {TEST_STATUS_SUCCESS, TEST_STATUS_FAILURE} test_status_t;
-
-static void CheckTest(test_status_t result, char* name);
-
-static test_status_t BitArrSetAllOn_TestBasic(void);
-static test_status_t BitArrFlipBit_TestBasic(void);
-static test_status_t BitArrSetBit_TestBasic(void);
-static test_status_t BitArrGetBit_TestBasic(void);
-static test_status_t BitArrCountOn_TestBasic(void);
-static test_status_t BitArrCountOff_TestBasic(void);
-static test_status_t BitArrMirror_TestBasic(void);
-static test_status_t BitArrRotateLeft_TestBasic(void);
-static test_status_t BitArrRotateRight_TestBasic(void);
-static test_status_t BitArrToString_TestBasic(void);
-
-/* gd test_bit_array.c ../src/bit_array.c  ../../c/bitwise/bitwise.c ../../c/pointers2/String.c ../../c/atoi_itoa/atoi_itoa.c -I ../include/ -I ../../c/atoi_itoa/ -I ../../c/bitwise/  -I ../../c/pointers2/ */
-
-static void CheckTest(test_status_t result, char* name)
+static void BuildExpectedBitString(bitarr_t bit_arr, char *out)
 {
-	if (result == TEST_STATUS_SUCCESS)
-	{
-		printf("-> %s: ", name);
-		printf(GREEN "PASSED\n\n" RESET);
-	}
-	else 
-	{
-		printf(RED "-> %s: FAILED\n\n" RESET, name);
-	}
+    size_t i = 0;
+    for (i = 0; i < TOTAL_BITS; ++i)
+    {
+        bitarr_t mask = (bitarr_t)1 << (TOTAL_BITS - 1 - i);
+        out[i] = (bit_arr & mask) ? '1' : '0';
+    }
+    out[TOTAL_BITS] = '\0';
 }
 
 
-int main()
+void TestBitArrSetAllOn(bitarr_t bit_arr)
 {
-	CheckTest(BitArrSetAllOn_TestBasic(), "BitArrSetAllOn_TestBasic");
-	CheckTest(BitArrFlipBit_TestBasic(), "BitArrFlipBit_TestBasic");
-	CheckTest(BitArrSetBit_TestBasic(), "BitArrSetBit_TestBasic");
-	CheckTest(BitArrGetBit_TestBasic(), "BitArrGetBit_TestBasic");
-	CheckTest(BitArrCountOn_TestBasic(), "BitArrCountOn_TestBasic");
-	CheckTest(BitArrCountOff_TestBasic(), "BitArrCountOff_TestBasic");
-	CheckTest(BitArrMirror_TestBasic(), "BitArrMirror_TestBasic");
-	CheckTest(BitArrRotateLeft_TestBasic(), "BitArrRotateLeft_TestBasic");
-	CheckTest(BitArrRotateRight_TestBasic(), "BitArrRotateRight_TestBasic");
-	CheckTest(BitArrToString_TestBasic(), "BitArrToString_TestBasic");
-
-	return 0;
+    bit_arr = BitArrSetAllOn(bit_arr);
+    if(ALL_ONES == bit_arr)
+    {
+        printf("PASSED: From: %ld to: %ld \n", (long)ALL_ONES, (long)bit_arr);
+    }
+    else
+    {
+        printf("FAILED: From: %ld to: %ld\n", (long)bit_arr, (long)bit_arr);
+    }
 }
 
-static test_status_t BitArrSetAllOn_TestBasic(void)
+void TestBitArrSetAllOff(bitarr_t bit_arr)
 {
-	bitarr_t bit_arr = 0x38;
-	
-	bit_arr = BitArrSetAllOn(bit_arr);
-	
-	if ((bitarr_t)(~(bitarr_t)0) == bit_arr)
-	{
-		return TEST_STATUS_SUCCESS;
-	}
-	
-	return TEST_STATUS_FAILURE;
+    bit_arr = BitArrSetAllOff(bit_arr);
+    if(0 == bit_arr)
+    {
+        printf("PASSED: From: %ld to: %ld \n", (long)bit_arr, (long)bit_arr);
+    }
+    else
+    {
+        printf("FAILED: From: %ld to: %ld \n", (long)bit_arr, (long)bit_arr);
+    }
 }
 
-static test_status_t BitArrFlipBit_TestBasic(void)
+void TestBitArrGetBit(bitarr_t bit_arr, size_t index, int expected)
 {
-	bitarr_t bit_arr = 0x38; /*... 0011 1000*/
-	
-	bit_arr = BitArrFlipBit(bit_arr, 2); /*... 0011 1100*/
-	
-	if (0x3C != bit_arr)
-	{
-		return TEST_STATUS_FAILURE;
-	}
-	
-	bit_arr = BitArrFlipBit(bit_arr, 4); /*... 0010 1100*/
-	
-	if (0x2C != bit_arr)
-	{
-		return TEST_STATUS_FAILURE;
-	}
-	
-	return TEST_STATUS_SUCCESS;
+    int result = BitArrGetBit(bit_arr, index);
+
+    if (result == expected)
+    {
+        printf("PASSED: BitArrGetBit(%ld, %ld) = %d\n",
+               (long)bit_arr, (long)index, result);
+    }
+    else
+    {
+        printf("FAILED: BitArrGetBit(%ld, %ld) = %d (expected %d)\n",
+               (long)bit_arr, (long)index, result, expected);
+    }
 }
 
-static test_status_t BitArrSetBit_TestBasic(void)
+void TestBitArrSetBit(bitarr_t bit_arr,
+                      size_t index,
+                      int boolean_value,
+                      bitarr_t expected)
 {
-	bitarr_t bit_arr = 0x38; /*... 0011 1000*/
-	
-	bit_arr = BitArrSetBit(bit_arr, 2, 1); /*... 0011 1100*/
-	
-	if (0x3C != bit_arr)
-	{
-		return TEST_STATUS_FAILURE;
-	}
-	
-	bit_arr = BitArrSetBit(bit_arr, 4, 0); /*... 0010 1100*/
-	
-	if (0x2C != bit_arr)
-	{
-		return TEST_STATUS_FAILURE;
-	}
-	
-	bit_arr = BitArrSetBit(bit_arr, 1, 0); /*... 0010 1100*/
-	
-	if (0x2C != bit_arr)
-	{
-		return TEST_STATUS_FAILURE;
-	}
-	
-	return TEST_STATUS_SUCCESS;
+    bitarr_t result = BitArrSetBit(bit_arr, index, boolean_value);
+
+    if (result == expected)
+    {
+        printf("PASSED: SetBit(%ld, %ld, %d) -> %ld\n",
+               (long)bit_arr,
+               (long)index,
+               boolean_value,
+               (long)result);
+    }
+    else
+    {
+        printf("FAILED: SetBit(%ld, %ld, %d) -> %ld (expected %ld)\n",
+               (long)bit_arr,
+               (long)index,
+               boolean_value,
+               (long)result,
+               (long)expected);
+    }
 }
 
-static test_status_t BitArrGetBit_TestBasic(void)
+void TestBitArrFlipBit(bitarr_t bit_arr,
+                      size_t index,
+                      bitarr_t expected)
 {
-	bitarr_t bit_arr = 0x38; /*... 0011 1000*/
-	
-	int res  = BitArrGetBit(bit_arr, 2);
-	
-	if (0 != res)
-	{
-		return TEST_STATUS_FAILURE;
-	}
-	
-	res  = BitArrGetBit(bit_arr, 3);
-	
-	if (1!= res)
-	{
-		return TEST_STATUS_FAILURE;
-	}
-	
-	res  = BitArrGetBit(bit_arr, 4);
-	
-	if (1 != res)
-	{
-		return TEST_STATUS_FAILURE;
-	}
-	
-	return TEST_STATUS_SUCCESS;
+    bitarr_t result = BitArrFlipBit(bit_arr, index);
+
+    if (result == expected)
+    {
+        printf("PASSED: FlipBit(%ld, %ld) -> %ld\n",
+               (long)bit_arr,
+               (long)index,
+               (long)result);
+    }
+    else
+    {
+        printf("FAILED: FlipBit(%ld, %ld) -> %ld(expected %ld)\n",
+               (long)bit_arr,
+               (long)index,
+               (long)result,
+               (long)expected);
+    }
 }
 
-static test_status_t BitArrCountOn_TestBasic(void)
+void TestBitArrCountOn(bitarr_t bit_arr, size_t expected)
 {
-	bitarr_t bit_arr = 0x95381038; /* 1001 0101 0011 1000 0001 0000 0011 1000*/
-	
-	int res  = BitArrCountOn(bit_arr);
-	
-	if (11 != res)
-	{
-		return TEST_STATUS_FAILURE;
-	}
-	
-	bit_arr = 0x3588888895381038; 	/* 	1001 0101 0011 1000 0001 0000 0011 1000
-										0011 0101 1000 1000 1000 1000 1000 1000
-									*/
-	
-	res  = BitArrCountOn(bit_arr);
-	
-	if (21 != res)
-	{
-		return TEST_STATUS_FAILURE;
-	}
-	
-	return TEST_STATUS_SUCCESS;
+    size_t result = BitArrCountOn(bit_arr);
+
+    if (result == expected)
+    {
+        printf("PASSED: CountOn(%ld) -> %ld\n",
+               (long)bit_arr,
+               (long)result);
+    }
+    else
+    {
+        printf("FAILED: CountOn(%ld) -> %ld (expected %ld)\n",
+               (long)bit_arr,
+               (long)result,
+               (long)expected);
+    }
 }
 
-static test_status_t BitArrCountOff_TestBasic(void)
+void TestBitArrCountOff(bitarr_t bit_arr, size_t expected)
 {
-	bitarr_t bit_arr = 0x95381038; /* 1001 0101 0011 1000 0001 0000 0011 1000*/
-	
-	int res  = BitArrCountOff(bit_arr);
-	
-	if ((64 - 11) != res)
-	{
-		return TEST_STATUS_FAILURE;
-	}
-	
-	bit_arr = 0x3588888895381038; 	/* 	1001 0101 0011 1000 0001 0000 0011 1000
-										0011 0101 1000 1000 1000 1000 1000 1000
-									*/
-	
-	res  = BitArrCountOff(bit_arr);
-	
-	if ((64 - 21) != res)
-	{
-		return TEST_STATUS_FAILURE;
-	}
-	
-	return TEST_STATUS_SUCCESS;
+    size_t result = BitArrCountOff(bit_arr);
+
+    if (result == expected)
+    {
+        printf("PASSED: CountOff(%ld) -> %ld \n",
+               (long)bit_arr,
+               (long)result);
+    }
+    else
+    {
+        printf("FAILED: CountOff(%ld) -> %ld (expected %ld)\n",
+              (long)bit_arr,
+              (long)result,
+              (long)expected);
+    }
 }
 
-static test_status_t BitArrMirror_TestBasic(void)
+void TestBitArrRotateLeft(bitarr_t bit_arr, size_t num_rotations, bitarr_t expected)
 {
-	bitarr_t bit_arr = 0xb5888888f5381039; 	/* 	1111 0101 0011 1000 0001 0000 0011 1001
-												1011 0101 1000 1000 1000 1000 1000 1000
-											*/
-	
-	bitarr_t res  = BitArrMirror(bit_arr);
-	
-	size_t ans = 0x9C081CAF111111AD;
-	
-	if (ans != res)
-	{
-		return TEST_STATUS_FAILURE;
-	}
+    bitarr_t got = BitArrRotateLeft(bit_arr, num_rotations);
 
-	return TEST_STATUS_SUCCESS;
+    if (got == expected)
+        printf("PASSED BitArrRotateLeft(): Got: %ld Expected: %ld\n",
+               (long)got, (long)expected);
+    else
+        printf("FAILED BitArrRotateLeft(): Got: %ld Expected: %ld\n",
+               (long)got, (long)expected);
 }
 
-static test_status_t BitArrRotateLeft_TestBasic(void)
+void TestBitArrRotateRight(bitarr_t bit_arr, size_t num_rotations, bitarr_t expected)
 {
-	bitarr_t bit_arr = 0xb5888888f5381039; 	/* 	1111 0101 0011 1000 0001 0000 0011 1001
-												1011 0101 1000 1000 1000 1000 1000 1000
-											*/
-	
-	bitarr_t res  = BitArrRotateLeft(bit_arr, 3*4);
-	
-	size_t ans = 0x88888f5381039b58;
-	
-	if (ans != res)
-	{
-		return TEST_STATUS_FAILURE;
-	}
+    bitarr_t got = BitArrRotateRight(bit_arr, num_rotations);
 
-	return TEST_STATUS_SUCCESS;
+    if (got == expected)
+        printf("PASSED BitArrRotateRight(): Got: %ld Expected: %ld\n",
+              (long)got, (long)expected);
+    else
+        printf("FAILED BitArrRotateRight(): Got: %ld Expected: %ld\n",
+               (long)got, (long)expected);
 }
 
-static test_status_t BitArrRotateRight_TestBasic(void)
+void TestBitArrMirror(bitarr_t bit_arr, bitarr_t expected)
 {
-	bitarr_t bit_arr = 0xb5888888f5381039; 	/* 	1111 0101 0011 1000 0001 0000 0011 1001
-												1011 0101 1000 1000 1000 1000 1000 1000
-											*/
-	
-	bitarr_t res  = BitArrRotateRight(bit_arr, 3*4);
-	
-	size_t ans = 0x039b5888888f5381;
-	
-	if (ans != res)
-	{
-		return TEST_STATUS_FAILURE;
-	}
+    bitarr_t got = BitArrMirror(bit_arr);
 
-	return TEST_STATUS_SUCCESS;
+    if (got == expected)
+        printf("PASSED BitArrMirror(): Got: %ld Expected: %ld\n",
+               (long)got, (long)expected);
+    else
+        printf("FAILED BitArrMirror(): Got: %ld Expected: %ld\n",
+               (long)got, (long)expected);
 }
 
-static test_status_t BitArrToString_TestBasic(void)
+void TestBitArrToString(bitarr_t bit_arr, char* dest, const char* expected)
 {
-	bitarr_t bit_arr = 0xb5888888f5381039; 	/* 	1111 0101 0011 1000 0001 0000 0011 1001
-												1011 0101 1000 1000 1000 1000 1000 1000
-											*/
-	
-	char res[ENVIRONMENT_BIT+1] = {'0'};
-	char ans[] = "1011010110001000100010001000100011110101001110000001000000111001";
-	
-	res[ENVIRONMENT_BIT] = '\0';
-	
-	BitArrToString(bit_arr, res);
-	
-	if (0 != strcmp(res, ans))
-	{
-		return TEST_STATUS_FAILURE;
-	}
+    BitArrToString(bit_arr, dest);
 
-	return TEST_STATUS_SUCCESS;
+    if (0 == strcmp(dest, expected))
+    {
+        printf("PASSED: Got: %s Expected: %s\n", dest, expected);
+    }
+    else
+    {
+        printf("FAILED: Got: %s Expected: %s\n", dest, expected);
+    }
 }
 
+/* ------------------ main (updated only where needed) ------------------ */
 
+int main(void)
+{
+    bitarr_t value = (bitarr_t)0x0009;
+    bitarr_t value2 = (bitarr_t)0x0000;
+    size_t total_bits = TOTAL_BITS;
 
+    char array[(sizeof(bitarr_t) * CHAR_BIT) + 1];
+    char expected_str[(sizeof(bitarr_t) * CHAR_BIT) + 1];
 
+    /* init arrays (C89) */
+    memset(array, 0, sizeof(array));
+    memset(expected_str, 0, sizeof(expected_str));
 
+    TestBitArrSetAllOn(value);
+    TestBitArrSetAllOff(value2);
+
+    TestBitArrGetBit(value, 0, 1);
+    TestBitArrGetBit(value, 1, 0);
+
+    TestBitArrSetBit(0, 0, 1, 1);
+    TestBitArrSetBit(0, 3, 1, (bitarr_t)1 << 3);
+    TestBitArrSetBit(8, 7, 0, 8);
+    TestBitArrSetBit(16, 4, 0, 0);
+
+    TestBitArrFlipBit(0, 3, 8);
+    TestBitArrFlipBit(8, 3, 0);
+
+    TestBitArrFlipBit(0, 0, 1);
+    TestBitArrFlipBit(1, 0, 0);
+
+    TestBitArrFlipBit(10, 1, 8);
+    TestBitArrFlipBit(10, 3, 2);
+
+    TestBitArrCountOn(0, 0);
+    TestBitArrCountOff(0, total_bits);
+
+    TestBitArrCountOn(ALL_ONES, total_bits);
+    TestBitArrCountOff(ALL_ONES, 0);
+
+    TestBitArrCountOn((bitarr_t)1, 1);
+    TestBitArrCountOff((bitarr_t)1, total_bits - 1);
+
+    TestBitArrCountOn(3, 2);
+    TestBitArrCountOn(5, 2);
+    TestBitArrCountOn(10, 2);
+
+    TestBitArrCountOff(3, total_bits - 2);
+    TestBitArrCountOff(5, total_bits - 2);
+    TestBitArrCountOff(10, total_bits - 2);
+
+    TestBitArrCountOn(ALT_A, total_bits / 2);
+    TestBitArrCountOff(ALT_A, total_bits / 2);
+    TestBitArrCountOn(ALT_5, total_bits / 2);
+    TestBitArrCountOff(ALT_5, total_bits / 2);
+
+    /* Rotate Left */
+    TestBitArrRotateLeft((bitarr_t)0x1,  (size_t)0x2, (bitarr_t)0x4);
+    TestBitArrRotateLeft((bitarr_t)0x1,  (size_t)0x1, (bitarr_t)0x2);
+    TestBitArrRotateLeft((bitarr_t)0xA5, (size_t)0x8, (bitarr_t)0xA500);
+
+    /* Rotate Right */
+    TestBitArrRotateRight((bitarr_t)0x2,  (size_t)0x1, (bitarr_t)0x1);
+    TestBitArrRotateRight((bitarr_t)0x1,  (size_t)0x1,
+                          (bitarr_t)0x1 << (TOTAL_BITS - 1));
+    /* portable expected for both 32/64 */
+    TestBitArrRotateRight((bitarr_t)0xA5, (size_t)0x8,
+                          (bitarr_t)0xA5 << (TOTAL_BITS - 8));
+
+    /* Mirror */
+    TestBitArrMirror((bitarr_t)0x1,
+                     (bitarr_t)0x1 << (TOTAL_BITS - 1));
+    TestBitArrMirror((bitarr_t)0xF,
+                     (bitarr_t)0xF << (TOTAL_BITS - 4));
+
+    /* ToString: build expected string according to width, then use your test as-is */
+    BuildExpectedBitString((bitarr_t)0x113, expected_str);
+    TestBitArrToString((bitarr_t)0x113, array, expected_str);
+
+    return 0;
+}
 
 
