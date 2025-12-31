@@ -15,6 +15,7 @@ Date:    31.12.2025
 #define NOT_SUCCESS -1
 #define GROWTH_FACTOR 2 
 #define MIN_(x,y) ((x) > (y) ? (y) : (x))
+#define MAX_SIZE_T_NUMBER (size_t)-1
 
 struct vector
 {
@@ -26,7 +27,9 @@ struct vector
 
 vector_t* VectorCreate(size_t capacity, size_t element_size)
 {
-	vector_t* vec = (vector_t*)malloc(sizeof(vector_t));
+	vector_t* vec = NULL;
+	
+	vec = (vector_t*)malloc(sizeof(vector_t));
 	if (NULL == vec)
 	{
 		return NULL;
@@ -35,6 +38,7 @@ vector_t* VectorCreate(size_t capacity, size_t element_size)
 	vec->arr = (char*)malloc(capacity * element_size);
 	if (NULL == vec->arr)
 	{
+		free(vec);
 		return NULL;
 	}
 	
@@ -102,6 +106,8 @@ size_t VectorGetCapacity(const vector_t* vec)
 
 int VectorReserve(vector_t* vec, size_t new_capacity)
 {
+	char* tmp = NULL;
+	
 	assert(NULL != vec);
 	
 	if (vec->capacity > new_capacity)
@@ -109,30 +115,35 @@ int VectorReserve(vector_t* vec, size_t new_capacity)
 		return SUCCESS;
 	}
 	
-	vec->arr = (char*)realloc(vec->arr,vec->element_size_in_bytes * new_capacity);
-	if (NULL == vec->arr)
+	
+	tmp = (char*)realloc(vec->arr,vec->element_size_in_bytes * new_capacity);
+	if (NULL == tmp)
 	{
 		return NOT_SUCCESS;
 	}
 	
+	vec->arr = tmp;
 	vec->capacity = new_capacity;
+	
 	return SUCCESS;
 }
 
 int VectorShrink(vector_t* vec)
 {
 	size_t new_capacity = INIT0;
+	char* tmp = NULL;
 	
 	assert(NULL != vec);
 	
 	new_capacity = MIN_(vec->curr_size_of_elemnts * GROWTH_FACTOR + 1, vec->capacity);
-	vec->arr = (char*)realloc(vec->arr, new_capacity);
-	
-	if (NULL == vec->arr)
+	tmp = (char*)realloc(vec->arr, new_capacity * vec->element_size_in_bytes);
+	if (NULL == tmp)
 	{
 		return NOT_SUCCESS;
 	}
 	
+	vec->arr = tmp;
 	vec->capacity = new_capacity;
+	
 	return SUCCESS;	
 }
