@@ -11,7 +11,7 @@ Date:    31.12.2025
 #include "vector.h" /* our api */
 
 #define SUCCESS (0)
-#define NOT_SUCCESS (-1)
+#define NOT_SUCCESS (1)
 #define GROWTH_FACTOR (2) 
 #define MIN_(x,y) ((x) > (y) ? (y) : (x))
 
@@ -29,11 +29,11 @@ static int VectorResize(vector_t* vec, size_t new_capacity)
 	
 	assert(NULL != vec);
 	
-	tmp = (char*)realloc(vec->arr, new_capacity);
+	tmp = (char*)realloc(vec->arr, new_capacity * vec->element_size_in_bytes);
 	if (NULL != tmp)
 	{
 		vec->arr = tmp;
-		vec->capacity = new_capacity / vec->element_size_in_bytes;
+		vec->capacity = new_capacity;
 		
 		return SUCCESS; 
 	}
@@ -73,7 +73,7 @@ int VectorPushBack(vector_t* vec, const void* data)
 	
 	if (vec->curr_size_of_elemnts == vec->capacity)
 	{
-		if (SUCCESS != VectorReserve(vec, vec->capacity * GROWTH_FACTOR))
+		if (SUCCESS != VectorResize(vec, vec->capacity * GROWTH_FACTOR))
 		{
 			return NOT_SUCCESS;
 		}
@@ -126,7 +126,7 @@ int VectorReserve(vector_t* vec, size_t new_capacity)
 		return SUCCESS;
 	}
 	
-	return VectorResize(vec, vec->element_size_in_bytes * new_capacity);
+	return VectorResize(vec, new_capacity);
 }
 
 int VectorShrink(vector_t* vec)
@@ -136,5 +136,6 @@ int VectorShrink(vector_t* vec)
 	assert(NULL != vec);
 	
 	new_capacity = MIN_(vec->curr_size_of_elemnts * GROWTH_FACTOR + 1, vec->capacity);
-	return VectorResize(vec, new_capacity * vec->element_size_in_bytes);
+	
+	return VectorResize(vec, new_capacity);
 }
