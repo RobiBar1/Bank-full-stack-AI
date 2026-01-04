@@ -4,6 +4,7 @@
 #include "singly_linked_list.h"
 
 #define SUCCESS (0)
+#define UNUSED(x) (void)(x)
 
 struct slist
 {
@@ -16,6 +17,17 @@ struct slist_node
 	void* val;
 	slist_iter_t next;
 };
+
+
+static int CounterToUseInForEach(void* data, void* counter)
+{
+	UNUSED(data);
+	assert(NULL != counter);
+	
+	++(*(size_t*)counter);
+	
+	return SUCCESS;
+}
 
 static slist_iter_t CreateNode(const void* data)
 {
@@ -163,17 +175,13 @@ slist_iter_t SListNext(slist_iter_t iter)
 size_t SListCount(const slist_t* list)
 {
 	size_t count = 0;
-	slist_iter_t current = NULL;
 	
 	assert (NULL != list);
 	
-	current = list->head;
-	while (NULL != current->next)
-	{
-		++count;
-		current = current->next;
-	}
-	
+	SListForEach(SListBegin(list),
+	 SListEnd(list),CounterToUseInForEach,
+	  (void*)(&count));
+	  
 	return count;
 }
 
@@ -187,6 +195,7 @@ int SListIsEmpty(const slist_t* list)
 void* SListGetData(slist_iter_t iter)
 {
 	assert (NULL != iter);
+	assert (NULL != iter->next);
 	
 	return iter->val;
 }
@@ -194,6 +203,7 @@ void* SListGetData(slist_iter_t iter)
 void SListSetData(slist_iter_t iter, const void* data)
 {
 	assert (NULL != iter);
+	assert (NULL != iter->next);
 	
 	iter->val = (void*)data;
 }
@@ -202,6 +212,8 @@ int SListForEach(slist_iter_t from, slist_iter_t to, action_func_t action_func, 
 {
 	int status = 0;
 	
+	assert(to != NULL);
+	assert(from != NULL);
 	assert (NULL != action_func);
 	
 	while (from != to && SUCCESS == status)
