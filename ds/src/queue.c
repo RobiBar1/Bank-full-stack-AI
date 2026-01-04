@@ -4,11 +4,11 @@ review by: Hen
 date: 04.01.2026
 */
 
-#include <assert.h> /* assert */
-#include <stdlib.h> /* malloc */
+#include <assert.h> 			/* assert */
+#include <stdlib.h>				/* malloc */
 
-#include "queue.h"
-#include "singly_linked_list.h"
+#include "queue.h"  			/* our api */
+#include "singly_linked_list.h" /* SListCreate, etc.. */
 #define FAIL (1)
 #define SUCCESS (0)
 
