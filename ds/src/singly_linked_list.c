@@ -63,7 +63,7 @@ void SListDestroy(slist_t* list)
 	slist_iter_t current = NULL;
 	slist_iter_t next = NULL;
 	
-	assert(NULL != list);
+	assert (NULL != list);
 	
 	current = list->head;	
 	while (NULL != current)
@@ -80,8 +80,8 @@ slist_iter_t SListInsert(slist_t* list, slist_iter_t iter_pos, const void* data)
 {
 	slist_iter_t new_node = NULL;
 	
-	assert(NULL != list);
-	assert(NULL != iter_pos);
+	assert (NULL != list);
+	assert (NULL != iter_pos);
 	
 	new_node = CreateNode(iter_pos->val);
 	if (NULL == new_node)
@@ -123,7 +123,7 @@ slist_iter_t SListRemove(slist_iter_t iter)
 
 slist_iter_t SListFind(slist_iter_t from, slist_iter_t to, const void* val, match_func_t is_match_func)
 {
-	assert(NULL != is_match_func);
+	assert (NULL != is_match_func);
 	
 	while (from != to)
 	{
@@ -140,22 +140,22 @@ slist_iter_t SListFind(slist_iter_t from, slist_iter_t to, const void* val, matc
 
 slist_iter_t SListBegin(const slist_t* list)
 {
-	assert(NULL != list);
+	assert (NULL != list);
 	
 	return list->head;
 }
 
 slist_iter_t SListEnd(const slist_t* list)
 {
-	assert(NULL != list);
+	assert (NULL != list);
 	
 	return list->tail;
 }
 
 slist_iter_t SListNext(slist_iter_t iter)
 {
-	assert(NULL != iter);
-	assert(NULL != iter->next);
+	assert (NULL != iter);
+	assert (NULL != iter->next);
 	
 	return iter->next;
 }
@@ -165,7 +165,7 @@ size_t SListCount(const slist_t* list)
 	size_t count = 0;
 	slist_iter_t current = NULL;
 	
-	assert(NULL != list);
+	assert (NULL != list);
 	
 	current = list->head;
 	while (NULL != current->next)
@@ -179,21 +179,21 @@ size_t SListCount(const slist_t* list)
 
 int SListIsEmpty(const slist_t* list)
 {
-	assert(NULL != list);
+	assert (NULL != list);
 	
 	return (list->head == list->tail);
 }
 
 void* SListGetData(slist_iter_t iter)
 {
-	assert(NULL != iter);
+	assert (NULL != iter);
 	
 	return iter->val;
 }
 
 void SListSetData(slist_iter_t iter, const void* data)
 {
-	assert(NULL != iter);
+	assert (NULL != iter);
 	
 	iter->val = (void*)data;
 }
@@ -202,7 +202,7 @@ int SListForEach(slist_iter_t from, slist_iter_t to, action_func_t action_func, 
 {
 	int status = 0;
 	
-	assert(NULL != action_func);
+	assert (NULL != action_func);
 	
 	while (from != to && SUCCESS == status)
 	{
@@ -220,6 +220,8 @@ int SListIsIterEqual(slist_iter_t iter1, slist_iter_t iter2)
 
 static void MakeListDummy(slist_t* src)
 {
+	assert (NULL != src);
+	
 	src->tail = src->head;
 	src->head->val = &src->tail;
 	src->tail->val = &src->tail;		
@@ -235,8 +237,8 @@ static void CopyHeadToDummy(slist_t* dst, slist_t* src)
 
 void SListAppend(slist_t* dst, slist_t* src)
 {	
-	assert(NULL != dst);
-	assert(NULL != src);
+	assert (NULL != dst);
+	assert (NULL != src);
 	
 	if (SListIsEmpty(src))
 	{
