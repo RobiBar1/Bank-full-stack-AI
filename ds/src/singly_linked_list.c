@@ -1,7 +1,13 @@
-#include <stdlib.h> /* malloc, free */
-#include <assert.h> /* assert */
+/*
+Write by: Robi
+review by: Max
+date: 04.01.2026
+*/
 
-#include "singly_linked_list.h"
+#include <stdlib.h> 			/* malloc, free */
+#include <assert.h> 			/* assert */
+
+#include "singly_linked_list.h" /* our api */
 
 #define SUCCESS (0)
 #define UNUSED(x) (void)(x)
