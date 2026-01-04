@@ -4,6 +4,9 @@ review by: Hen
 date: 04.01.2026
 */
 
+#include <assert.h> /* assert */
+#include <stdlib.h> /* malloc */
+
 #include "queue.h"
 #include "singly_linked_list.h"
 #define FAIL (1)
@@ -23,7 +26,7 @@ queue_t* QueueCreate(void)
 	}
 	
 	que->list = NULL;
-	SListCreate(que->list);
+	que->list = SListCreate();
 	if (NULL == que->list)
 	{
 		free(que); que = NULL;
@@ -59,10 +62,10 @@ void QueueDequeue(queue_t* que)
 {
 	assert(NULL != que);
 	
-	return SListRemove(SListBegin(que->list));
+	SListRemove(SListBegin(que->list));
 }
 
-void* QueuePeek(const queue_t* queue)
+void* QueuePeek(const queue_t* que)
 {
 	assert(NULL != que);
 	
@@ -81,7 +84,7 @@ void QueueAppend(queue_t* dst, queue_t* src)
 	SListAppend(dst->list, src->list);
 }
 
-int QueueIsEmpty(const queue_t* que);
+int QueueIsEmpty(const queue_t* que)
 {
 	assert(NULL != que);
 	
