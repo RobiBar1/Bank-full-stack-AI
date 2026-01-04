@@ -127,5 +127,6 @@ int SListForEach(slist_iter_t from, slist_iter_t to, action_func_t action_func, 
  */
 int SListIsIterEqual(slist_iter_t iter1, slist_iter_t iter2);
 
+void SListAppend(slist_t* dst, slist_t* src);
 
 #endif /* __SINGLY_LINKED_LIST_H__ */

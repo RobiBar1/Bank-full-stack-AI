@@ -1,4 +1,5 @@
 #include <stdio.h> /* printf */
+#include <assert.h> /* assert */
 
 #include "singly_linked_list.h"
 
@@ -11,6 +12,10 @@ typedef enum {TEST_STATUS_SUCCESS, TEST_STATUS_FAILURE} test_status_t;
 /* gd test_singly_linked_list.c ../src/singly_linked_list.c -I ../include/ */
 
 static void CheckTest(test_status_t result, char* name);
+
+static slist_iter_t AdvanceIterBy(slist_iter_t iter, size_t num);
+static void FillListWithIntArr(slist_t* slist, const int arr[], size_t arr_length);
+static int IsMatchIntArrayWithSList(slist_t* slist, const int arr[], size_t arr_length);
 
 static test_status_t SListCreate_UnitTest(void);
 static test_status_t SListBeginEnd_BasicTest(void);
@@ -25,6 +30,9 @@ static test_status_t SListFind_Test(void);
 static test_status_t SListCount_Test(void);
 static test_status_t SListForEach_Test(void);
 static test_status_t SListIsIterEqual_Test(void);
+static test_status_t SListRemoveLast_Test(void);
+static test_status_t SListAppend_Test(void);
+static test_status_t SListAppendWithEmpty_Test(void);
 
 static void CheckTest(test_status_t result, char* name)
 {
@@ -57,9 +65,61 @@ int main()
 	CheckTest(SListCount_Test(), "SListCount_Test");
 	CheckTest(SListForEach_Test(), "SListForEach_Test");
 	CheckTest(SListIsIterEqual_Test(), "SListIsIterEqual_Test");
+	CheckTest(SListRemoveLast_Test(), "SListRemoveLast_Test");
+	CheckTest(SListAppend_Test(), "SListAppend_Test");
+	CheckTest(SListAppendWithEmpty_Test(), "SListAppendWithEmpty_Test");
 	
 	return 0;
 }
+
+/* == HELPER FUNCTIONS == */
+
+static slist_iter_t AdvanceIterBy(slist_iter_t iter, size_t num)
+{
+	while (0 != num)
+	{
+		iter = SListNext(iter);
+		--num;
+	}
+	
+	return iter;
+}
+
+static void FillListWithIntArr(slist_t* slist, const int arr[], size_t arr_length)
+{
+	slist_iter_t iter = SListBegin(slist);
+	size_t index = 0;
+	
+	while (index < arr_length)
+	{
+		iter = SListInsert(slist, iter, (void*)&arr[index]); 
+		iter = SListNext(iter);
+		++index;
+	}
+}
+
+static int IsMatchIntArrayWithSList(slist_t* slist, const int arr[], size_t arr_length)
+{
+	slist_iter_t iter = SListBegin(slist);
+	
+	assert(SListCount(slist) == arr_length);
+	
+	while (0 < arr_length)
+	{
+		if (*arr != *(int*)SListGetData(iter))
+		{
+			return 0;
+		}
+		
+		iter = SListNext(iter);
+		++arr;
+		--arr_length;
+	}
+	
+	return 1;
+}
+
+/* == TEST FUNCTIONS == */
 
 static test_status_t SListCreate_UnitTest(void)
 {
@@ -209,6 +269,76 @@ static test_status_t SListRemoveMultiple_Test(void)
 	return res;
 }
 
+static test_status_t SListRemoveLast_Test(void)
+{
+	slist_t* slist = SListCreate();
+	test_status_t res = TEST_STATUS_SUCCESS;
+	slist_iter_t iter = SListBegin(slist);
+	
+	int a = 5;
+	int b = 7;
+	int c = 9;
+	int d = 12;
+	int d_new = 14;
+	
+	SListInsert(slist, iter, (void*)&a); /* 5 */
+	iter = SListNext(iter);
+	SListInsert(slist, iter, (void*)&b); /* 5 7 */
+	iter = SListNext(iter);
+	SListInsert(slist, iter, (void*)&c); /* 5 7 9 */
+	iter = SListNext(iter);
+	SListInsert(slist, iter, (void*)&d); /* 5 7 9 12 */
+	
+	SListRemove(iter); /* 5 7 9 */
+	iter = SListBegin(slist);
+	iter = SListNext(SListNext(iter));
+	
+	if (c != *(int*)SListGetData(iter))
+	{
+		res = TEST_STATUS_FAILURE;
+	}
+	
+	SListInsert(slist, iter, (void*)&d_new); /* 5 7 9 14 */
+	
+	if (d_new != *(int*)SListGetData(iter))
+	{
+		res = TEST_STATUS_FAILURE;
+	}
+	
+	SListRemove(iter); /* 5 7 9 */
+	iter = SListBegin(slist);
+	iter = SListNext(SListNext(iter));
+	SListRemove(iter); /* 5 7 */
+	
+	if (1 != SListIsIterEqual(iter, SListEnd(slist)))
+	{
+		res = TEST_STATUS_FAILURE;
+	}
+	
+	iter = SListBegin(slist);
+	
+	if (a != *(int*)SListGetData(iter))
+	{
+		res = TEST_STATUS_FAILURE;
+	}
+	
+	iter = SListNext(iter);
+	if (b != *(int*)SListGetData(iter))
+	{
+		res = TEST_STATUS_FAILURE;
+	}
+	SListRemove(iter); /* 5 */
+	
+	if (1 != SListIsIterEqual(iter, SListEnd(slist)))
+	{
+		res = TEST_STATUS_FAILURE;
+	}
+	
+	SListDestroy(slist);
+
+	return res;
+}
+
 static test_status_t SListIsEmpty_Test(void)
 {
 	slist_t* slist = SListCreate();
@@ -305,30 +435,6 @@ static test_status_t SListSetData_Test(void)
 static int IntsAreEqual(const void* num1, void* num2)
 {
 	return (*(int*)num1 == *(int*)num2);
-}
-
-static slist_iter_t AdvanceIterBy(slist_iter_t iter, size_t num)
-{
-	while (0 != num)
-	{
-		iter = SListNext(iter);
-		--num;
-	}
-	
-	return iter;
-}
-
-static void FillListWithIntArr(slist_t* slist, const int arr[], size_t arr_length)
-{
-	slist_iter_t iter = SListBegin(slist);
-	size_t index = 0;
-	
-	while (index < arr_length)
-	{
-		iter = SListInsert(slist, iter, (void*)&arr[index]); 
-		iter = SListNext(iter);
-		++index;
-	}
 }
 
 static test_status_t SListFind_Test(void)
@@ -505,6 +611,147 @@ static test_status_t SListIsIterEqual_Test(void)
 
 	return res;
 }
+
+static test_status_t SListAppend_Test(void)
+{
+	slist_t* dest = SListCreate();
+	slist_t* src = SListCreate();
+	test_status_t res = TEST_STATUS_SUCCESS;
+	
+	int arr1[] = {1,2,3};
+	size_t arr_length1 = 3;
+	
+	int arr2[] = {4,5,6};
+	size_t arr_length2 = 3;
+	
+	int arr_appended[] = {1,2,3,4,5,6};
+	
+	int a = 7;
+	int b = 12;
+	
+	int dest_after_insert[] = {1,2,3,4,5,6,7};
+	int src_after_insert[] = {12};
+	
+	FillListWithIntArr(dest, arr1, arr_length1);
+	FillListWithIntArr(src, arr2, arr_length2);
+	
+	SListAppend(dest, src);
+	
+	if (1 != SListIsEmpty(src))
+	{
+		res = TEST_STATUS_FAILURE;
+	}
+	
+	if (6 != SListCount(dest))
+	{
+		res = TEST_STATUS_FAILURE;
+	}
+	
+	if (1 != IsMatchIntArrayWithSList(dest, arr_appended, 6))
+	{
+		res = TEST_STATUS_FAILURE;
+	}
+	
+	
+	SListInsert(dest, SListEnd(dest), (void*)&a); 
+	SListInsert(src, SListEnd(src), (void*)&b); 
+	
+	if (7 != SListCount(dest))
+	{
+		res = TEST_STATUS_FAILURE;
+	}
+	
+	if (1 != SListCount(src))
+	{
+		res = TEST_STATUS_FAILURE;
+	}
+	
+	if (1 != IsMatchIntArrayWithSList(dest, dest_after_insert, 7))
+	{
+		res = TEST_STATUS_FAILURE;
+	}
+	
+	if (1 != IsMatchIntArrayWithSList(dest, dest_after_insert, 7))
+	{
+		res = TEST_STATUS_FAILURE;
+	}
+	
+	if (1 != IsMatchIntArrayWithSList(src, src_after_insert, 1))
+	{
+		res = TEST_STATUS_FAILURE;
+	}
+	
+	SListDestroy(dest);
+	SListDestroy(src);
+
+	return res;
+}
+
+static test_status_t SListAppendWithEmpty_Test(void)
+{
+	slist_t* dest = SListCreate();
+	slist_t* src = SListCreate();
+	test_status_t res = TEST_STATUS_SUCCESS;
+	
+	int arr1[] = {1,2,3};
+	size_t arr_length1 = 3;
+	
+	int a = 4;
+	int b = 12;
+	
+	int arr1_after[] = {1,2,3,4};
+	int arr2_after[] = {12};
+	
+	FillListWithIntArr(dest, arr1, arr_length1);
+	
+	SListAppend(dest, src);
+	
+	if (1 != SListIsEmpty(src))
+	{
+		res = TEST_STATUS_FAILURE;
+	}
+	
+	if (3 != SListCount(dest))
+	{
+		res = TEST_STATUS_FAILURE;
+	}
+	
+	if (1 != IsMatchIntArrayWithSList(dest, arr1, 3))
+	{
+		res = TEST_STATUS_FAILURE;
+	}
+	
+	
+	SListInsert(dest, SListEnd(dest), (void*)&a); 
+	SListInsert(src, SListEnd(src), (void*)&b); 
+	
+	if (4 != SListCount(dest))
+	{
+		res = TEST_STATUS_FAILURE;
+	}
+	
+	if (1 != SListCount(src))
+	{
+		res = TEST_STATUS_FAILURE;
+	}
+	
+	if (1 != IsMatchIntArrayWithSList(dest, arr1_after, 4))
+	{
+		res = TEST_STATUS_FAILURE;
+	}
+	
+	if (1 != IsMatchIntArrayWithSList(src, arr2_after, 1))
+	{
+		res = TEST_STATUS_FAILURE;
+	}
+	
+	SListDestroy(dest);
+	SListDestroy(src);
+
+	return res;
+}
+
+
 
 
 

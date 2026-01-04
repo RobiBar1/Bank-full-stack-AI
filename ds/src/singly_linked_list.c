@@ -43,7 +43,9 @@ slist_t* SListCreate(void)
 		return NULL;
 	}
 	
-	dummy = CreateNode(list);
+	list->head = NULL;
+	list->tail = NULL;
+	dummy = CreateNode(&list->tail);
 	if (NULL == dummy)
 	{
 		free(list); list = NULL;
@@ -77,23 +79,20 @@ void SListDestroy(slist_t* list)
 slist_iter_t SListInsert(slist_t* list, slist_iter_t iter_pos, const void* data)
 {
 	slist_iter_t new_node = NULL;
-	void* temp_data = NULL;
 	
 	assert(NULL != list);
 	assert(NULL != iter_pos);
 	
-	temp_data = iter_pos->val;
-	iter_pos->val = (void*)data;
-	new_node = CreateNode(temp_data);
+	new_node = CreateNode(iter_pos->val);
 	if (NULL == new_node)
 	{
-		iter_pos->val = temp_data;
-		
 		return list->tail;
 	}
 	
+	iter_pos->val = (void*)data;
 	new_node->next = iter_pos->next;
 	iter_pos->next = new_node;
+	
 	if (iter_pos == list->tail)
 	{
 		list->tail = new_node;
@@ -104,27 +103,20 @@ slist_iter_t SListInsert(slist_t* list, slist_iter_t iter_pos, const void* data)
 
 slist_iter_t SListRemove(slist_iter_t iter)
 {
-	slist_iter_t next_iter = NULL;
-	slist_t* list = NULL;
+	slist_iter_t temp = NULL;
 	
 	assert(NULL != iter);
 	assert(NULL != iter->next);
 	
-	next_iter = iter->next;
-	if (NULL == next_iter->next)
+	temp = iter->next;
+	iter->val = iter->next->val;
+	iter->next = iter->next->next;
+	if (NULL == iter->next)
 	{
-		list = (slist_t*)next_iter->val;
-		iter->next = NULL;
-		free(next_iter); next_iter = NULL;
-		list->tail = iter;
-		iter->val = (void*)list;
+		*((slist_iter_t*)iter->val) = iter;
 	}
-	else
-	{
-		iter->val = next_iter->val;
-		iter->next = next_iter->next;
-		free(next_iter); next_iter = NULL;
-	}
+	
+	free(temp);
 	
 	return iter;
 }
@@ -176,7 +168,7 @@ size_t SListCount(const slist_t* list)
 	assert(NULL != list);
 	
 	current = list->head;
-	while (current != list->tail)
+	while (NULL != current->next)
 	{
 		++count;
 		current = current->next;
@@ -224,4 +216,37 @@ int SListForEach(slist_iter_t from, slist_iter_t to, action_func_t action_func, 
 int SListIsIterEqual(slist_iter_t iter1, slist_iter_t iter2)
 {
 	return (iter1 == iter2);
+}
+
+static void MakeListDummy(slist_t* src)
+{
+	src->tail = src->head;
+	src->head->val = &src->tail;
+	src->tail->val = &src->tail;		
+	src->head->next = NULL;		
+	src->tail->next = NULL;		
+}
+
+static void CopyHeadToDummy(slist_t* dst, slist_t* src)
+{
+	dst->tail->val = src->head->val;
+	dst->tail->next = src->head->next;
+}
+
+void SListAppend(slist_t* dst, slist_t* src)
+{	
+	assert(NULL != dst);
+	assert(NULL != src);
+	
+	if (SListIsEmpty(src))
+	{
+		return;
+	}
+	
+	CopyHeadToDummy(dst, src);
+	
+	dst->tail = src->tail;
+	
+	MakeListDummy(src);
+	dst->tail->val = &dst->tail;
 }
