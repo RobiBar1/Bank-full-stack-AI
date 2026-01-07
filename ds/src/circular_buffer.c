@@ -92,7 +92,11 @@ static char* GetArr(cbuff_t* buff)
 cbuff_t* CbuffCreate(size_t capacity)
 {
 	size_t real_capacity = capacity + 1;
-    cbuff_t* buff = (cbuff_t*)malloc(offsetof(struct cbuff, arr) + real_capacity);
+	cbuff_t* buff = NULL;
+	
+	assert (capacity > 0);
+	
+    buff = (cbuff_t*)malloc(offsetof(struct cbuff, arr) + real_capacity);
     if (NULL == buff)
     {
         return NULL;
@@ -105,7 +109,7 @@ cbuff_t* CbuffCreate(size_t capacity)
     
     return buff;
 }
-
+/* dont need free the buff->arr becuase 'struck huck' */
 void CbuffDestroy(cbuff_t* buff)
 {
     free(buff); buff = NULL;
@@ -132,6 +136,26 @@ size_t CbuffGetFreeSpace(const cbuff_t* buff)
     return GetCapacity((cbuff_t*)buff) - GetWriteIndex((cbuff_t*)buff) + GetReadIndex((cbuff_t*)buff) - 1;
 }
 
+/*------------------ helper functions ---------------*/
+static void PrepreDataToWrite(size_t* free_space, size_t* bytes_to_write, size_t* capacity,size_t* write_pos,size_t* first_chunk,size_t* second_chunk, size_t* num_bytes, cbuff_t* buff)
+{
+	*free_space = CbuffGetFreeSpace(buff);
+    *bytes_to_write = MIN_(*num_bytes, *free_space);
+	*capacity = GetCapacity(buff);
+    *write_pos = GetWriteIndex(buff) % (*capacity);
+    *first_chunk = MIN_(*bytes_to_write, *capacity - *write_pos);
+    *second_chunk = *bytes_to_write - *first_chunk;
+}
+
+static void PrepreDataToRead(size_t* available_data, size_t* bytes_to_read, size_t* capacity,size_t* read_pos,size_t* first_chunk,size_t* second_chunk, size_t* num_bytes, cbuff_t* buff)
+{
+	*available_data = GetWriteIndex(buff) - GetReadIndex(buff);
+    *bytes_to_read = MIN_(*num_bytes, *available_data);
+	*capacity = GetCapacity(buff);
+    *read_pos = GetReadIndex(buff) % *capacity;
+    *first_chunk = MIN_(*bytes_to_read, *capacity - *read_pos);
+    *second_chunk = *bytes_to_read - *first_chunk;
+}
 ssize_t CbuffWrite(cbuff_t* buff, const void* src, size_t num_bytes)
 {
     size_t free_space = 0;
@@ -148,13 +172,8 @@ ssize_t CbuffWrite(cbuff_t* buff, const void* src, size_t num_bytes)
         return FAILED;
     }
     
-    free_space = CbuffGetFreeSpace(buff);
-    bytes_to_write = MIN_(num_bytes, free_space);
-	capacity = GetCapacity(buff);
-    write_pos = GetWriteIndex(buff) % capacity;
-    first_chunk = MIN_(bytes_to_write, capacity - write_pos);
-    second_chunk = bytes_to_write - first_chunk;
-
+    PrepreDataToWrite(&free_space, &bytes_to_write, &capacity, &write_pos, 
+    &first_chunk, &second_chunk, &num_bytes, buff);
     
     memmove(GetArr(buff) + write_pos, src, first_chunk);
     memmove(GetArr(buff), ((char*)src) + first_chunk, second_chunk);
@@ -179,13 +198,8 @@ ssize_t CbuffRead(cbuff_t* buff, void* dst, size_t num_bytes)
         return FAILED;
     }
     
-    available_data = GetWriteIndex(buff) - GetReadIndex(buff);
-    bytes_to_read = MIN_(num_bytes, available_data);
-	capacity = GetCapacity(buff);
-    read_pos = GetReadIndex(buff) % capacity;
-    first_chunk = MIN_(bytes_to_read, capacity - read_pos);
-    second_chunk = bytes_to_read - first_chunk;
-
+    PrepreDataToRead(&available_data, &bytes_to_read, &capacity, &read_pos, 
+    &first_chunk, &second_chunk, &num_bytes, buff);
     
     memmove(dst, GetArr(buff) + read_pos, first_chunk);
 	memmove(((char*)dst) + first_chunk, GetArr(buff), second_chunk);
