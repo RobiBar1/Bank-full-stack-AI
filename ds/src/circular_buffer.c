@@ -91,13 +91,14 @@ static char* GetArr(cbuff_t* buff)
 
 cbuff_t* CbuffCreate(size_t capacity)
 {
-    cbuff_t* buff = (cbuff_t*)malloc(offsetof(struct cbuff, arr) + capacity);
+	size_t real_capacity = capacity + 1;
+    cbuff_t* buff = (cbuff_t*)malloc(offsetof(struct cbuff, arr) + real_capacity);
     if (NULL == buff)
     {
         return NULL;
     }
     
-    SetCapacity(capacity, buff);
+    SetCapacity(real_capacity, buff);
     SetMagicNumber(MAGIC_NUMBER, buff);
     SetReadIndex(0, buff);
     SetWriteIndex(0, buff);
@@ -117,7 +118,7 @@ int CbuffIsEmpty(const cbuff_t* buff)
 
 size_t CbuffBufSize(const cbuff_t* buff)
 {
-    return GetCapacity((cbuff_t*)buff);
+    return GetCapacity((cbuff_t*)buff) - 1;
 }
 
 void CbuffFlush(cbuff_t* buff)
@@ -128,7 +129,7 @@ void CbuffFlush(cbuff_t* buff)
 
 size_t CbuffGetFreeSpace(const cbuff_t* buff)
 {
-    return GetCapacity((cbuff_t*)buff) - GetWriteIndex((cbuff_t*)buff) + GetReadIndex((cbuff_t*)buff);
+    return GetCapacity((cbuff_t*)buff) - GetWriteIndex((cbuff_t*)buff) + GetReadIndex((cbuff_t*)buff) - 1;
 }
 
 ssize_t CbuffWrite(cbuff_t* buff, const void* src, size_t num_bytes)
@@ -156,7 +157,7 @@ ssize_t CbuffWrite(cbuff_t* buff, const void* src, size_t num_bytes)
 
     
     memmove(GetArr(buff) + write_pos, src, first_chunk);
-    memmove(GetArr(buff), (const char*)src + first_chunk, second_chunk);
+    memmove(GetArr(buff), ((char*)src) + first_chunk, second_chunk);
     SetWriteIndex(GetWriteIndex(buff) + bytes_to_write, buff);
     
     return (ssize_t)bytes_to_write;
@@ -187,7 +188,7 @@ ssize_t CbuffRead(cbuff_t* buff, void* dst, size_t num_bytes)
 
     
     memmove(dst, GetArr(buff) + read_pos, first_chunk);
-	memmove((char*)dst + first_chunk, GetArr(buff), second_chunk);
+	memmove(((char*)dst) + first_chunk, GetArr(buff), second_chunk);
     SetReadIndex(GetReadIndex(buff) + bytes_to_read, buff);
     
     return (ssize_t)bytes_to_read;
