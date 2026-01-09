@@ -383,11 +383,6 @@ void DListSplice(dlist_iter_t from, dlist_iter_t to, dlist_iter_t where)
 	assert (NULL != to_n);
 	assert (NULL != where_n);
 	
-	if (DListIsIterEqual(from, to))
-	{
-		return;
-	}
-	
 	where_prev = NodeGetPrev(where_n);
 	DlistSetNext(NodeGetPrev(to_n), where_n);
 	DlistSetPrev(where_n, NodeGetPrev(to_n));
