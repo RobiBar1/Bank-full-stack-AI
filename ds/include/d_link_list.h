@@ -49,7 +49,7 @@ dlist_iter_t DListGetNext(const dlist_iter_t iter);
 /**
  * @desc gets the iterator previous to iter
  * @param[in] iter - iterator
- * @pre iter != start of list (head)
+ * @pre iter != return value of DListBegin
  * @return iter_t - the prev iterator
  * @complexity: O(1)
  */
@@ -122,7 +122,7 @@ int DListPushBack(dlist_t* list, const void* data);
  */
 void* DListPopFront(dlist_t* list);
 /**
- * @desc removes the last element in the list and returns its value
+ * @desc removes the last range of element [from, to)element in the list and returns its value
  * @param[in] list - doubly linked list pointer
  * @pre list isn't empty
  * @return the value of the extracted value
@@ -136,15 +136,15 @@ void* DListPopBack(dlist_t* list);
  * @param[in] data - value to search for
  * @param[in] dll_is_match - a comparison function for data (returns 1 if it is a match, 0 otherwise)
  * @pre dll_is_match != NULL 
- * @pre 'from' and 'to' belong to the same slist
- * @pre 'from' appears before (or is equal to) 'to' in slist
- * @return dlist_iter_t - an iterator to the matched data, or the to upon failure
+ * @pre 'from' and 'to' belong to the same list
+ * @pre 'from' appears before (or is equal to) 'to' in list
+ * @return dlist_iter_t - an iterator to the matched data, or the return value of DListEnd() upon failure
  * @complexity: O(n)
  * */
 dlist_iter_t DListFind(dlist_iter_t from, dlist_iter_t to, const void* data, int (*dll_is_match) (const void * data, const void* param));
 /**
  * @desc finds all instances of value in the range [from, to)
- * @param[in] from - iterator to start the search from
+ * @param[in] from - iterarange of element [from, to)tor to start the search from
  * @param[in] to - iterator to end the search on
  * @param[in] data - value to search for
  * @param[in] dll_is_match - a comparison function for val (returns 1 if it is a match, 0 otherwise).
