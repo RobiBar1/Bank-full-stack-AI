@@ -8,7 +8,6 @@ Data:    10.01.2026
 #include <stdlib.h>      /* malloc, free */
 
 #include "sorted_list.h" /* our api      */
-#include "d_link_list.h" /* our dll api  */
 
 #define UNUSED(X) (void)(X)
 
@@ -92,6 +91,11 @@ size_t SortedLCount(const sorted_list_t* list)
 
 int SortedLIsIterEqual(sorted_list_iter_t one, sorted_list_iter_t other)
 {
+	
+	#ifndef NDEBUG
+	assert (one.internal_list == other.internal_list);
+	#endif
+	
 	return DListIsIterEqual(SorterIterToDListIter(one),
 							SorterIterToDListIter(other));
 }
