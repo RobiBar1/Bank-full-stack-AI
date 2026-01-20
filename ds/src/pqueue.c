@@ -1,3 +1,9 @@
+/*
+Writer:  Robi
+Checker: Shahar
+Date: 	 21.01.2026
+*/
+
 #include <assert.h> 	  /* assert 			 */
 #include <stdlib.h> 	  /* malloc, free 		 */
 #include <stdio.h>  	  /* printf 			 */

@@ -1,15 +1,21 @@
+/*
+Writer:  Robi
+Checker: Shahar
+Date: 	 20.01.2026
+*/
+
 #include "task.h"
 
 #include <time.h>
 
 struct task
 {
+	void* param;
 	size_t time_interval_sec;
-	ilrd_uid_t uid;
-	time_t time_ready;
 	task_fanc_t task_func;
 	task_cleanup_t task_cleanup;
-	void* param;
+	time_t time_ready;
+	ilrd_uid_t uid;
 };
 
 task_t* TaskCreate(task_func_t task_func, cleanup_func_t cleanup_func, size_t time_interval, const void* param)

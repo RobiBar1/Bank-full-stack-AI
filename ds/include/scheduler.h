@@ -5,8 +5,8 @@
 
 #include "uid.h"        /* ilrd_uid_t */
 
-typedef enum  
-{
+/* return status of task_func indecationg for the scheduler how it should proceed */
+typedef enum  {
     FAILURE,
     REPEAT,
     DO_NOT_REPEAT       /* DO_NOT_REPEAT frees the task */
@@ -44,23 +44,24 @@ void SchedulerDestroy(scheduler_t* scheduler);
  * @desc creates a new task and returns its uid
  * @return the ilrd_uid
  * @param[in] scheduler
- * @param[in] time_interval is the priority( curr time + time interval = time to run) TODO not the priority we changed that. what is the time unit?
- * @param[in] task_func - the task function TODO what are the invalid values
- * @param[in] cleanup_func TODO what are the invalid values
+ * @param[in] time_interval in seconds. helps determine the priority in accordance with the time at addition.
+ * @param[in] task_func - the task function 
+ * @param[in] cleanup_func 
  * @param[in] param - the parameter for the task functions - cleanup and task
  * @pre task_func != NULL
+ * @pre cleanup_func != NULL
  * @complexity: O(1)
  */
 ilrd_uid_t SchedulerAddTask(scheduler_t* scheduler, size_t time_interval, task_func_t task_func, 
-                            cleanup_func_t cleanup_func, void* param);
+                            cleanup_func_t cleanup_func, const void* param);
 
 /**
- * @desc removes task fron scheduler //TODO from not fron
+ * @desc removes task from scheduler 
  * @param[in] scheduler
  * @param[in] uid - find the task to be remove by uid
  * @pre scheduler != NULL
  * @pre uid != bad_uid
- * @complexity: O(1)
+ * @complexity: O(N)
  */
 void SchedulerRemoveTask(scheduler_t* scheduler, ilrd_uid_t uid);
 
@@ -75,7 +76,7 @@ void SchedulerRemoveTask(scheduler_t* scheduler, ilrd_uid_t uid);
 int SchedulerRun(scheduler_t* scheduler);
 
 /**
- * @desc stops the schedulers run and returns to user process // TODO no need to state that we are returning to the user process it is obvious
+ * @desc stops the schedulers run
  * @param[in] running scheduler
  * @pre scheduler != NULL
  * @return void
@@ -83,8 +84,8 @@ int SchedulerRun(scheduler_t* scheduler);
 void SchedulerStop(scheduler_t* scheduler);
 
 /**
- * @desc counts the number of tasks in the queue //TODO the user shouldn't know that there is a queue
- * @return size_t - number of tasks in the queue //TODO the user shouldn't know that there is a queue
+ * @desc counts the number of tasks in the scheduler
+ * @return size_t - number of tasks in the scheduler
  * @param[in] scheduler  
  * @pre scheduler != NULL
  * @complexity: O(n)
@@ -98,8 +99,9 @@ size_t SchedulerCount(const scheduler_t* scheduler);
  * @return if the scheduler is empty with no current task running.
  * @complexity: O(1) 
  **/
-int SchedulerIsEmpty (const scheduler_t* scheduler);
+int SchedulerIsEmpty(const scheduler_t* scheduler);
 
 
 
 #endif /* __SCHEDULER_H__ */
+
