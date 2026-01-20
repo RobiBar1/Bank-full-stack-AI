@@ -47,8 +47,6 @@ int PQueueEnqueue(pqueue_t* que, const void* data)
 	
 	return (SortedLIsIterEqual(SortedLEnd(que->sorted_list),
 										SortedLInsert(que->sorted_list, data)));
-	
-	
 }
 
 int PQueueIsEmpty(const pqueue_t* que)
@@ -61,7 +59,7 @@ int PQueueIsEmpty(const pqueue_t* que)
 void* PQueueDequeue(pqueue_t* que)
 {
 	assert (NULL != que);
-	assert (!PQueueIsEmpty(que->sorted_list));
+	assert (!PQueueIsEmpty(que));
 	
 	return SortedLPopFront(que->sorted_list);
 }
@@ -69,7 +67,7 @@ void* PQueueDequeue(pqueue_t* que)
 void* PQueuePeek(const pqueue_t* que)
 {
 	assert (NULL != que);
-	assert (!PQueueIsEmpty(que->sorted_list));
+	assert (!PQueueIsEmpty(que));
 	
 	return SortedLGetData(SortedLBegin(que->sorted_list));
 }
@@ -88,7 +86,7 @@ void* PQueueRemove(pqueue_t* que,const void* param, int (*is_match)(const void* 
 	void* data = NULL;
 	
 	assert (NULL != que);
-	assert (!PQueueIsEmpty(que->sorted_list));
+	assert (!PQueueIsEmpty(que));
 	assert (NULL != is_match);
 	
 	to = SortedLEnd(que->sorted_list);
@@ -104,12 +102,15 @@ void* PQueueRemove(pqueue_t* que,const void* param, int (*is_match)(const void* 
 	return data;
 }
 
-int (*is_match)(const void* data, const void* param);
+int is_match(const void* one, const void* two)
+{
+	return (*(int*)one - *(int*)two);	
+}
 
 int main()
 {
 	pqueue_t* pq = PQueueCreate(is_match);
-	int x = 5;
+	int x = 9;
 	if (NULL != pq)
 	{
 		printf("create work\n");
@@ -125,21 +126,20 @@ int main()
 	printf("size is: %lu\n", PQueueSize(pq));
 	printf("pq isemtpy is: %d\n", PQueueIsEmpty(pq));
 	PQueueEnqueue(pq, &x);
-	x = 7;
+	
+	x = 5;
 	printf("size is: %lu\n", PQueueSize(pq));
 	PQueueEnqueue(pq, &x);
-	x = 9;
+	
+	x = 7;
 	PQueueEnqueue(pq, &x);
 	printf("size is: %lu\n", PQueueSize(pq));
 	printf("pq isemtpy is: %d\n", PQueueIsEmpty(pq));
 	printf("pq peek is: %d\n", *((int*)PQueuePeek(pq)));
-	
-	
-	
-	
 	
 	PQueueDestroy(pq);
 	pq = NULL;
 	
 	return 0;
 }
+
