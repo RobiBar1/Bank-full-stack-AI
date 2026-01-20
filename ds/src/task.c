@@ -4,9 +4,9 @@
 
 struct task
 {
+	size_t time_interval_sec;
 	ilrd_uid_t uid;
 	time_t time_ready;
-	size_t time_interval_sec;
 	task_fanc_t task_func;
 	task_cleanup_t task_cleanup;
 	void* param;
