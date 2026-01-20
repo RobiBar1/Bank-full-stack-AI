@@ -106,7 +106,7 @@ int is_match(const void* one, const void* two)
 {
 	return (*(int*)one - *(int*)two);	
 }
-
+/*
 int main()
 {
 	pqueue_t* pq = PQueueCreate(is_match);
@@ -142,4 +142,4 @@ int main()
 	
 	return 0;
 }
-
+*/
