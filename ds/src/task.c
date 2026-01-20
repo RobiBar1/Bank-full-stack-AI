@@ -4,7 +4,7 @@
 
 struct task
 {
-	ilrd_uid_t vid;
+	ilrd_uid_t uid;
 	time_t time_ready;
 	size_t time_interval_sec;
 	task_fanc_t task_func;
@@ -25,8 +25,8 @@ task_t* TaskCreate(task_func_t task_func, cleanup_func_t cleanup_func, size_t ti
 		return NULL;
 	}
 	
-	task->vid = ILRDUIDCreate();
-	if (IsILRDUIDEqual(task->vid, bad_uid))
+	task->uid = ILRDUIDCreate();
+	if (IsILRDUIDEqual(task->uid, bad_uid))
 	{
 		free(task); task = NULL;
 		return NULL;
@@ -47,4 +47,43 @@ void TaskDestroy(task_t* task)
 	free(task); task = NULL;
 }
 
+task_status TaskDoFunc(const task_t* task)
+{
+	assert (NULL != task);
+	
+	return task->task_func(task->param);
+}
+
+void TaskDoCleanupFunc(const task_t* task)
+{
+	assert (NULL != task); 
+	
+	task->task_cleanup(task->param);
+}
+
+ilrd_uid_t TaskGetUid(const task_t* task)
+{
+	assert (NULL != task); 
+	
+	return task->uid;
+}
+
+size_t TaskGetTimeInterval(const task_t* task)
+{
+	assert (NULL != task); 
+	
+	return task->time_interval_sec;
+}
+
+time_t TaskGetReadyTime(const task_t* task)
+{
+	assert (NULL != task); 
+	
+	return task->time_ready;
+}
+
+void TaskUpdateReadyTime(task_t* task)
+{
+	task->time_ready = task->time_interval_sec + time(NULL);
+}
 
