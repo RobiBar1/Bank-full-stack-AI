@@ -1,3 +1,9 @@
+/*
+Writer:  Robi
+Checker: Shahar
+Date: 	 19.01.2026
+*/
+
 #include <time.h>
 #include <unistd.h>
 
@@ -13,15 +19,6 @@
 #define IP_SIZE 16
 
 ilrd_uid_t bad_uid = {0};  
-
-/*
-struct ilrd_uid
-{
-    size_t counter;
-    pid_t pid;
-    time_t time;
-    unsigned char ip[16];  
-};*/
 
 int IsILRDUIDEqual(const ilrd_uid_t* first, const ilrd_uid_t* second)
 {
