@@ -13,13 +13,14 @@ typedef struct task task_t;
  * @desc creates a new task and returns its address
  * @return the address of the new task or NULL if fails
  * @param[in] task_func 
- * @param[in] time_interval ( curr time + time interval =  ready_time(priority)) 
+ * @param[in] time_interval int seconds ( curr time + time interval =  ready_time(priority)) 
  * @param[in] cleanup_func
+ * @param[int] param for cleanup and  task_func
  * @pre task_func != NULL
  * @pre cleanup_func != NULL
  * @complexity: O(1)
  */
-task_t* TaskCreate(task_func_t task_func, cleanup_func_t cleanup_func, size_t time_interval);
+task_t* TaskCreate(task_func_t task_func, cleanup_func_t cleanup_func, size_t time_interval, const void* param);
 
 
 /**
@@ -34,19 +35,17 @@ void TaskDestroy(task_t* task);
  * @desc Does the task's function 
  * @param[in] task - the task whose function we're going to do
  * @pre task is not NULL
- * @pre task's function is not NULL
  * @complexity: O(1)
  */
 task_status TaskDoFunc(const task_t* task);
 
 /**
- * @desc Does the task's function 
+ * @desc Does the task's cleanup function
  * @param[in] task - the task whose cleanup we're going to do
  * @pre task is not NULL
- * @pre task's function is not NULL
  * @complexity: O(1)
  */
-void TaskDoCleanupFunc(const task_t* task, void* param);
+void TaskDoCleanupFunc(const task_t* task);
 
 /**
  * @desc returns the UID of the task
@@ -81,5 +80,6 @@ time_t TaskGetReadyTime(const task_t* task);
  * @complexity: O(1)
  */
 void TaskUpdateReadyTime(task_t* task);
+
 
 #endif /* __TASK_H__ */
