@@ -15,6 +15,9 @@ Date: 	 21.01.2026
 
 #define UNUSED(x) void(x)
 #define SECCESS (0)
+#define TIME_FAIL (-1)
+#define PQ_ENQUEUE_FAIL (1)
+
 struct scheduler
 {
 	task_t* current;
@@ -23,13 +26,76 @@ struct scheduler
 	int need_to_remove_self;
 };
 
-static int cmp_func(const void* one, const void* two)
+/*----------------------- Start Helper Functions -----------------------------*/
+static void SchedulerCleanDestroyTask(scheduler_t* sc)
 {
-	ilrd_uid_t uid_one = TaskGetUid((const task_t*)one);
-	ilrd_uid_t uid_two = TaskGetUid((const task_t*)two);
+	TaskDoCleanupFunc(sc->current);
+	TaskDestroy(sc->current);
+	sc->need_to_remove_self = 0;
+}
+
+static int ActiveFuncRoutine(scheduler_t* sc)
+{
+	task_status status = REPEAT;
 	
-	 return !(IsILRDUIDEqual((const ilrd_uid_t*)(&uid_one),
-	 						 (const ilrd_uid_t*)(&uid_two)));		
+	assert (NULL != sc);
+		
+	status = TaskDoFunc(sc->current);
+	if (sc->need_to_remove_self || FAILURE == status 
+								|| DO_NOT_REPEAT == status)
+	{
+		SchedulerCleanDestroyTask(sc);
+	}
+	else if (REPEAT == status)
+	{	
+		TaskUpdateReadyTime(sc->current);
+		if (SECCESS != PQueueEnqueue(sc->pq, (const void*)sc->current))
+		{
+			SchedulerCleanDestroyTask(sc);
+			
+			return PQ_ENQUEUE_FAIL;
+		}
+	}
+	
+	return SECCESS;
+}
+
+static int TimeCheckUntilRun(scheduler_t* sc)
+{
+	time_t current_time = 0;
+	double time_remain = 1;
+	
+	assert (NULL != sc);
+	
+	sc->current = (task_t*)(PQueueDequeue(sc->pq));
+	while (time_remain > 0)
+	{
+		time(&current_time);
+		if (TIME_FAIL == current_time)
+		{
+			return current_time;
+		}
+		
+		time_remain = difftime((TaskGetReadyTime((const task_t*)sc->current))
+											, current_time);
+		sleep(time_remain);
+	}
+	
+	return SECCESS;
+}
+/*----------------------- End Helper Functions -------------------------------*/
+
+/*----------------------- Start H.file Functions -----------------------------*/
+
+
+/*------------------- Start Pointers Functions -----------------------*/
+static int CmpFunc(const void* left, const void* right)
+{
+	ilrd_uid_t uid_left = TaskGetUid((const task_t*)left);
+	ilrd_uid_t uid_right = TaskGetUid((const task_t*)right);
+	
+	 return !(IsILRDUIDEqual((const ilrd_uid_t*)(&uid_left),
+	 						 (const ilrd_uid_t*)(&uid_right)));		
 }
 
 static int PriorityCmp(const void* one, const void* two)
@@ -40,6 +106,7 @@ static int PriorityCmp(const void* one, const void* two)
 	return TaskGetReadyTime((const task_t*)one) -
 		   TaskGetReadyTime((const task_t*)two);	
 }
+/*------------------- End Pointers Functions -----------------------*/
 
 scheduler_t* SchedulerCreate(void)
 {
@@ -65,11 +132,16 @@ scheduler_t* SchedulerCreate(void)
 
 void SchedulerDestroy(scheduler_t* sc)
 {
+	void* task = NULL;
+	
 	assert (NULL != sc);
 	
 	while (!PQueueIsEmpty(sc->pq))
     {
-        TaskDestroy(PQueueDequeue(sc->pq));
+    	task = PQueueDequeue(sc->pq);
+    	
+		TaskDoCleanupFunc(task);
+        TaskDestroy(task);
     }
 
 	PQueueDestroy(sc->pq);
@@ -77,12 +149,20 @@ void SchedulerDestroy(scheduler_t* sc)
 	sc->current = NULL;
 	free(sc); sc = NULL;
 }
-                            
+
+void SchedulerRemoveTask(scheduler_t* sc, ilrd_uid_t uid)
+{
+	assert (NULL != sc);
+	assert (!IsILRDUIDEqual(&uid, &bad_uid));
+	assert (!PQueueIsEmpty(sc->pq));
+	
+	TaskDestroy(PQueueRemove(sc->pq, (const void*)&uid, CmpFunc));	
+}
+                    
 ilrd_uid_t SchedulerAddTask(scheduler_t* sc, size_t time_interval,
 		task_func_t task_func, cleanup_func_t cleanup_func,const void* param)
 {
 	task_t* task = NULL;
-	ilrd_uid_t uid = {0};
 	
 	assert (NULL != sc);
 	
@@ -99,59 +179,32 @@ ilrd_uid_t SchedulerAddTask(scheduler_t* sc, size_t time_interval,
 		
 		return bad_uid;
 	}
-	
-	uid = TaskGetUid(task);
 
-	
-	return uid;
-}
-
-void SchedulerRemoveTask(scheduler_t* sc, ilrd_uid_t uid)
-{
-	assert (NULL != sc);
-	assert (!IsILRDUIDEqual(&uid, &bad_uid));
-	assert (!PQueueIsEmpty(sc->pq));
-	
-	TaskDestroy(PQueueRemove(sc->pq, (const void*)&uid, cmp_func));	
+	return TaskGetUid(task);
 }
 
 int SchedulerRun(scheduler_t* sc)
 {
-	task_status status = REPEAT;
-	time_t current_time = 0;
-	double time_remain = 0;
+	int func_status = 0;
+	int time_status = 0;
 	
 	assert (NULL != sc);
 	
 	while (!PQueueIsEmpty(sc->pq) && !(sc->flag_is_stoped))
 	{
-		sc->current = (task_t*)(PQueueDequeue(sc->pq));
-		time(&current_time);
-		time_remain = difftime((TaskGetReadyTime((const task_t*)sc->current))
-												, current_time);
-		if (time_remain > 0)
-		{
-			sleep(time_remain);
-		}
+		time_status = TimeCheckUntilRun(sc);
+		func_status = ActiveFuncRoutine(sc);
 		
-		status = TaskDoFunc(sc->current);
-		if (sc->need_to_remove_self || FAILURE == status)
+		if (SECCESS != func_status || SECCESS != time_status)
 		{
-			TaskDoCleanupFunc(sc->current);
-			TaskDestroy(sc->current);
-			sc->need_to_remove_self = 0;
+			return func_status;
 		}
-		else if (REPEAT == status)
-		{	
-			TaskUpdateReadyTime(sc->current);
-			PQueueEnqueue(sc->pq, (const void*)sc->current);
-		}
-		
 	}
 	
 	sc->current = NULL;
+	sc->flag_is_stoped = 0;
 	
-	return status;
+	return SECCESS;
 }
 
 void SchedulerStop(scheduler_t* sc)
@@ -165,10 +218,11 @@ size_t SchedulerCount(const scheduler_t* sc)
 {
 	assert (NULL != sc);
 	
-	return PQueueSize(sc->pq);
+	return PQueueSize(sc->pq) + (sc->current != NULL);
 }
 
 int SchedulerIsEmpty(const scheduler_t* sc)
 {
 	return (sc->current == NULL && PQueueIsEmpty(sc->pq));
 }
+/*----------------------- End H.file Functions -----------------------------*/

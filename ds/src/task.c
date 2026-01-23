@@ -94,6 +94,6 @@ time_t TaskGetReadyTime(const task_t* task)
 
 void TaskUpdateReadyTime(task_t* task)
 {
-	task->time_ready = task->time_interval_sec + time(NULL);
+	task->time_ready = TaskGetTimeInterval(task) + time(NULL);
 }
 

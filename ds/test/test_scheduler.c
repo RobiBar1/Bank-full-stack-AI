@@ -1,40 +1,36 @@
-/*gd -I include src/scheduler.c src/task.c src/pqueue.c src/uid.c src/sorted_list.c src/d_link_list.c 
-*/
+#include <stdio.h> /* printf */
+#include <assert.h> /* assert */
+#include <stdlib.h> /* malloc, free */
 
-#include <stdio.h>
-#include <assert.h>
-#include <time.h>
-#include <stdlib.h>
-
-#include "task.h"
+#include "uid.h"
 #include "scheduler.h"
 
 #define RESET   "\033[0m"
 #define RED     "\033[31m"
 #define GREEN   "\033[32m"
 
-/* gd ../c/pointers2/String.c src/uid.c src/scheduler.c src/task.c src/pqueue.c -I include -I ../c/pointers2 src/sorted_list.c src/doubly_linked_list.c test/test_scheduler.c */
+#define APPLY_TEST(func_call) CheckTest(func_call, #func_call)
+#define UNUSED(x) ((void)(x))
 
-typedef enum {TEST_STATUS_SUCCESS, TEST_STATUS_FAILURE} test_status_t;
+typedef enum {TEST_STATUS_SUCCESS, TEST_STATUS_FAILURE, TEST_INNER_FAILURE} test_status_t;
+
+/* gd test_scheduler.c ../src/scheduler.c ../src/pqueue.c  ../src/sorted_list.c ../src/dlist.c ../src/task.c ../src/uid.c -I ../include/ */
+
+/* ==== FORWARD DELARATIONS ==== */
 
 static void CheckTest(test_status_t result, char* name);
-static test_status_t SchedulerCreate_UnitTest(void);
-static test_status_t TaskCreate_UnitTest(void);
-static test_status_t SchedulerAddTask_UnitTest(void);
-static test_status_t SchedulerAddTaskMultiple_Test(void);
-static test_status_t SchedulerRun_BasicTest(void);
-static test_status_t SchedulerRun_ExtensiveTest(void);
 
-/*
-static test_status_t QueueEnqueueMultiple_Test(void);
-static test_status_t QueuePeek_UnitTest(void);
-static test_status_t QueueDequeue_UnitTest(void);
-static test_status_t QueueDequeueMultiple_Test(void);
-static test_status_t QueueIsEmpty_Test(void);
-static test_status_t QueueSize_Test(void);
-static test_status_t QueueAppend_Test(void);
-static test_status_t QueueAppendWithEmpty_Test(void);
-*/
+static test_status_t SchedulerCreate_SmokeTest(void);
+static test_status_t SchedulerAddTask_SmokeTest(void);
+static test_status_t SchedulerIsEmptyCount_BasicTest(void);
+static test_status_t SchedulerRun_BasicTest(void);
+static test_status_t SchedulerRun_CheckRepeatBasicTest(void);
+static test_status_t SchedulerRun_CheckCleanupBasicTest(void);
+static test_status_t SchedulerRun_CheckFailureBasicTest(void);
+static test_status_t SchedulerRemoveTask_CheckRemoveSelfTest(void);
+static test_status_t SchedulerRemoveTask_CheckRemoveOtherTest(void);
+
+/* ==== TEST FUNCTION ==== */
 
 static void CheckTest(test_status_t result, char* name)
 {
@@ -43,118 +39,299 @@ static void CheckTest(test_status_t result, char* name)
 		printf("-> %s: ", name);
 		printf(GREEN "PASSED\n\n" RESET);
 	}
+	else if (result == TEST_INNER_FAILURE)
+	{
+		printf("-> %s: ", name);
+		printf(GREEN "ALLOC FAILURE\n\n" RESET);
+	}
 	else 
 	{
 		printf(RED "-> %s: FAILED\n\n" RESET, name);
 	}
 }
 
+
 int main()
 {
+
 	printf("\n ---- TESTS ----\n\n");
 
-	CheckTest(SchedulerCreate_UnitTest(), "SchedulerCreate_UnitTest");
-	CheckTest(TaskCreate_UnitTest(), "TaskCreate_UnitTest");
-	CheckTest(SchedulerAddTask_UnitTest(), "SchedulerAddTask_UnitTest");
-	CheckTest(SchedulerAddTaskMultiple_Test(), "SchedulerAddTaskMultiple_Test");
-	CheckTest(SchedulerRun_BasicTest(), "SchedulerRun_BasicTest");
-	CheckTest(SchedulerRun_ExtensiveTest(), "SchedulerRun_ExtensiveTest");
-	/*
-	CheckTest(QueueEnqueue_UnitTest(), "QueueEnqueue_UnitTest");
-	CheckTest(QueueEnqueueMultiple_Test(), "QueueEnqueueMultiple_Test");
-	CheckTest(QueuePeek_UnitTest(), "QueuePeek_UnitTest");
-	CheckTest(QueueDequeue_UnitTest(), "QueueDequeue_UnitTest");
-	CheckTest(QueueDequeueMultiple_Test(), "QueueDequeueMultiple_Test");
-	CheckTest(QueueIsEmpty_Test(), "QueueIsEmpty_Test");
-	CheckTest(QueueSize_Test(), "QueueSize_Test");
-	CheckTest(QueueAppend_Test(), "QueueAppend_Test");
-	CheckTest(QueueAppendWithEmpty_Test(), "QueueAppendWithEmpty_Test");
-	*/
+	APPLY_TEST(SchedulerCreate_SmokeTest());
+	APPLY_TEST(SchedulerAddTask_SmokeTest());
+	APPLY_TEST(SchedulerIsEmptyCount_BasicTest());
+	APPLY_TEST(SchedulerRun_BasicTest());
+	APPLY_TEST(SchedulerRun_CheckRepeatBasicTest());
+	APPLY_TEST(SchedulerRun_CheckCleanupBasicTest());
+	APPLY_TEST(SchedulerRun_CheckFailureBasicTest());
+	APPLY_TEST(SchedulerRemoveTask_CheckRemoveSelfTest());
+	APPLY_TEST(SchedulerRemoveTask_CheckRemoveOtherTest());
 	
 	return 0;
 }
 
-task_status DoNothing(void* param)
-{
-    (void) param;
-    
-    return DO_NOT_REPEAT;
-}
+/* ==== HELPER FUNCTIONS ==== */
 
-void Cleanup(void* param)
-{
-    (void)param;
-}
+static size_t mars_count = 0;
+static size_t jupiter_count = 0;
+static size_t venus_count = 0;
+static size_t neptune_count = 0;
+static size_t mercury_count = 0;
 
-static test_status_t TaskCreate_UnitTest(void)
+task_status CallSchedulerStop(void* scheduler)
 {
-	task_t* task = NULL;
-    time_t interval = 10;
-        
-	task = TaskCreate(DoNothing, Cleanup, interval, NULL);
+	SchedulerStop((scheduler_t*)scheduler);
 	
-	if (NULL == task)
+	return DO_NOT_REPEAT;
+}
+
+void NothingFunction(void* param)
+{
+	UNUSED(param);
+}
+
+task_status PrintMars(void* param)
+{
+	UNUSED(param);
+
+	printf("mars %lu\n", mars_count);
+	
+	++mars_count;
+	
+	return DO_NOT_REPEAT;
+}
+
+void PrintMars_Cleanup(void* param)
+{
+	UNUSED(param);
+
+	printf("mars cleanup\n");
+}
+
+task_status PrintJupiter(void* param)
+{
+	UNUSED(param);
+
+	printf("jupiter %lu\n", jupiter_count);
+	
+	++jupiter_count;
+	
+	if (jupiter_count > 2)
 	{
-	    return TEST_STATUS_FAILURE;
+		return DO_NOT_REPEAT;
 	}
 	
-	TaskDestroy(task);
+	return REPEAT;	
+}
+
+void PrintJupiter_Cleanup(void* param)
+{
+	UNUSED(param);
+
+	printf("jupiter cleanup\n");
+}
+
+task_status PrintVenus(void* param)
+{
+	UNUSED(param);
+
+	printf("venus %lu\n", venus_count);
+	
+	if (0 == venus_count)
+	{
+		*(int**)param = (int*)malloc(sizeof(int)*10);
+	}
+	
+	++venus_count;
+	
+	if (venus_count > 2)
+	{
+		return DO_NOT_REPEAT;
+	}
+	
+	return REPEAT;	
+}
+
+void PrintVenus_Cleanup(void* param)
+{
+	free(*(int**)param);
+
+	printf("venus cleanup\n");
+}
+
+typedef struct neptune_struct
+{
+	int* arr;
+	scheduler_t* scheduler;
+} neptune_struct_t;
+
+task_status PrintNeptune(void* param)
+{
+	UNUSED(param);
+
+	printf("neptune %lu\n", neptune_count);
+	
+	if (0 == neptune_count)
+	{
+		((neptune_struct_t*)param)->arr = (int*)malloc(sizeof(int)*10);
+	}
+	
+	if (1 == neptune_count)
+	{
+		/*
+		--- Old Version
+		SchedulerAddTask(((neptune_struct_t*)param)->scheduler,
+						0, CallSchedulerStop, NothingFunction,
+						(void*)((neptune_struct_t*)param)->scheduler);
+		*/
+		SchedulerStop(((neptune_struct_t*)param)->scheduler);
+		
+		neptune_count = 20;
+		return FAILURE;
+	}
+	
+	++neptune_count;
+	
+	if (neptune_count > 5)
+	{
+		return DO_NOT_REPEAT;
+	}
+	
+	return REPEAT;	
+}
+
+void PrintNeptune_Cleanup(void* param)
+{
+	free(((neptune_struct_t*)param)->arr);
+	
+	printf("neptune cleanup\n");
+}
+
+typedef struct mercury_struct
+{
+	int* arr;
+	scheduler_t* scheduler;
+	ilrd_uid_t uid;
+} mercury_struct_t;
+
+task_status PrintMercury(void* param)
+{
+	UNUSED(param);
+
+	printf("mercury %lu\n", mercury_count);
+	
+	if (0 == mercury_count)
+	{
+		((mercury_struct_t*)param)->arr = (int*)malloc(sizeof(int)*10);
+	}
+	
+	if (2 == mercury_count)
+	{
+		SchedulerRemoveTask(((mercury_struct_t*)param)->scheduler,
+							((mercury_struct_t*)param)->uid);
+							
+		++mercury_count;					
+		return REPEAT;
+	}
+	
+	++mercury_count;
+	
+	if (mercury_count > 3)
+	{
+		return DO_NOT_REPEAT;
+	}
+	
+	return REPEAT;
+}
+
+void PrintMercury_Cleanup(void* param)
+{
+	free(((mercury_struct_t*)param)->arr);
+	
+	printf("mercury cleanup\n");
+}
+
+/* ==== TEST FUNCTIONS ==== */
+
+static test_status_t SchedulerCreate_SmokeTest(void)
+{
+	scheduler_t* scheduler = SchedulerCreate();
+	SchedulerDestroy(scheduler);
+
 	return TEST_STATUS_SUCCESS;
 }
 
-static test_status_t SchedulerCreate_UnitTest(void)
+static test_status_t SchedulerAddTask_SmokeTest(void)
 {
 	scheduler_t* scheduler = SchedulerCreate();
 	
-	if (NULL == scheduler)
+	ilrd_uid_t uid_returned = SchedulerAddTask(scheduler, 1, &PrintMars, &PrintMars_Cleanup, NULL);
+	
+	if (IsILRDUIDEqual(&bad_uid, &uid_returned))
 	{
-	    return TEST_STATUS_FAILURE;
+		printf(RED "[Recieved a bad uid]\n" RESET);
+		SchedulerDestroy(scheduler);
+		return TEST_INNER_FAILURE;
 	}
 	
 	SchedulerDestroy(scheduler);
 	return TEST_STATUS_SUCCESS;
 }
 
-static test_status_t SchedulerAddTask_UnitTest(void)
+static test_status_t SchedulerIsEmptyCount_BasicTest(void)
 {
-        scheduler_t* scheduler = SchedulerCreate();
-        time_t interval = 10;
-        
-	SchedulerAddTask(scheduler, interval, DoNothing, Cleanup, NULL);
-	
-	if (SchedulerIsEmpty(scheduler))
-	{
-	    return TEST_STATUS_FAILURE;
-	}
-	
-	SchedulerDestroy(scheduler);
-	return TEST_STATUS_SUCCESS;
-}
-
-static test_status_t SchedulerAddTaskMultiple_Test(void)
-{
-	scheduler_t* scheduler = SchedulerCreate();
 	test_status_t res = TEST_STATUS_SUCCESS;
-	time_t a = 5, b = 7, c = 9;
-	ilrd_uid_t a_uid = {0}, b_uid = {0}, c_uid = {0};
+	scheduler_t* scheduler = SchedulerCreate();
 	
-	a_uid = SchedulerAddTask(scheduler, a, DoNothing, Cleanup, NULL);
-	b_uid = SchedulerAddTask(scheduler, b, DoNothing, Cleanup, NULL);
-	c_uid = SchedulerAddTask(scheduler, c, DoNothing, Cleanup, NULL);
+	ilrd_uid_t uid_returned1 = bad_uid;
+	ilrd_uid_t uid_returned2 = bad_uid;
 	
-	if (IsILRDUIDEqual(&a_uid, &bad_uid) || IsILRDUIDEqual(&b_uid, &bad_uid) ||
-	    IsILRDUIDEqual(&c_uid, &bad_uid))
+	if (1 != SchedulerIsEmpty(scheduler))
 	{
-	    res = TEST_STATUS_FAILURE;
+		res = TEST_STATUS_FAILURE;
 	}
 	
-	if (3 != SchedulerCount(scheduler)) { res = TEST_STATUS_FAILURE; }
-	SchedulerRemoveTask(scheduler, a_uid);
+	if (0 != SchedulerCount(scheduler))
+	{
+		res = TEST_STATUS_FAILURE;
+	}
 	
-	if (2 != SchedulerCount(scheduler)) { res = TEST_STATUS_FAILURE; }
-	SchedulerRemoveTask(scheduler, b_uid);
+	uid_returned1 = SchedulerAddTask(scheduler, 1, &PrintMars, &PrintMars_Cleanup, NULL);
 	
-	if (1 != SchedulerCount(scheduler)) { res = TEST_STATUS_FAILURE; }
+	if (IsILRDUIDEqual(&bad_uid, &uid_returned1))
+	{
+		printf(RED "[Recieved a bad uid1]\n" RESET);
+		SchedulerDestroy(scheduler);
+		return TEST_INNER_FAILURE;
+	}
+	
+	if (0 != SchedulerIsEmpty(scheduler))
+	{
+		res = TEST_STATUS_FAILURE;
+	}
+	
+	if (1 != SchedulerCount(scheduler))
+	{
+		res = TEST_STATUS_FAILURE;
+	}
+
+	uid_returned2 = SchedulerAddTask(scheduler, 2, &PrintMars, &PrintMars_Cleanup, NULL);
+	
+	if (IsILRDUIDEqual(&bad_uid, &uid_returned2))
+	{
+		printf(RED "[Recieved a bad uid2]\n" RESET);
+		SchedulerDestroy(scheduler);
+		return TEST_INNER_FAILURE;
+	}
+	
+	if (0 != SchedulerIsEmpty(scheduler))
+	{
+		res = TEST_STATUS_FAILURE;
+	}
+	
+	if (2 != SchedulerCount(scheduler))
+	{
+		res = TEST_STATUS_FAILURE;
+	}
 	
 	SchedulerDestroy(scheduler);
 	return res;
@@ -162,250 +339,242 @@ static test_status_t SchedulerAddTaskMultiple_Test(void)
 
 static test_status_t SchedulerRun_BasicTest(void)
 {
+	test_status_t res = TEST_STATUS_SUCCESS;
 	scheduler_t* scheduler = SchedulerCreate();
-	test_status_t res = TEST_STATUS_SUCCESS;
-	time_t a = 1, b = 2, c = 2;
-	ilrd_uid_t a_uid = {0}, b_uid = {0}, c_uid = {0};
 	
-	a_uid = SchedulerAddTask(scheduler, a, DoNothing, Cleanup, NULL);
-	b_uid = SchedulerAddTask(scheduler, b, DoNothing, Cleanup, NULL);
-	c_uid = SchedulerAddTask(scheduler, c, DoNothing, Cleanup, NULL);
-	
-	if (IsILRDUIDEqual(&a_uid, &bad_uid) || IsILRDUIDEqual(&b_uid, &bad_uid) ||
-	    IsILRDUIDEqual(&c_uid, &bad_uid))
-	{
-	    res = TEST_STATUS_FAILURE;
-	}
-	
-	if (3 != SchedulerCount(scheduler)) { res = TEST_STATUS_FAILURE; }
-	SchedulerRemoveTask(scheduler, a_uid);
-	
-	if (2 != SchedulerCount(scheduler)) { res = TEST_STATUS_FAILURE; }
-	SchedulerRemoveTask(scheduler, b_uid);
-	
-	if (1 != SchedulerCount(scheduler)) { res = TEST_STATUS_FAILURE; }
+	SchedulerAddTask(scheduler, 1, &PrintMars, &PrintMars_Cleanup, NULL);
+	SchedulerAddTask(scheduler, 2, &PrintMars, &PrintMars_Cleanup, NULL);
 	
 	SchedulerRun(scheduler);
 	
-	if (0 != SchedulerCount(scheduler)) { res = TEST_STATUS_FAILURE; }
+	if (2 != mars_count)
+	{
+		res = TEST_STATUS_FAILURE;
+	}	
+	
+	mars_count = 0;
 	
 	SchedulerDestroy(scheduler);
 	return res;
 }
 
-task_status DoMalloc(void* param)
+static test_status_t SchedulerRun_CheckRepeatBasicTest(void)
 {
-        int* my_param = (int*) param;
-        
-        if (NULL == my_param)
-        {
-            return FAILURE;
-        }
-        
-        (*my_param)++;
-        
-        return DO_NOT_REPEAT;
-}
-
-void Cleanup_free(void* param)
-{
-        free(param);
-}
-
-static test_status_t SchedulerRun_ExtensiveTest(void)
-{
-        scheduler_t* scheduler = SchedulerCreate();
 	test_status_t res = TEST_STATUS_SUCCESS;
-	time_t a = 1;
-	int* arr = (int*)malloc(sizeof(int)*2); 
-	ilrd_uid_t a_uid = {0};
+	scheduler_t* scheduler = SchedulerCreate();
 	
-	a_uid = SchedulerAddTask(scheduler, a, DoMalloc, Cleanup_free, arr);
 	
-	if (IsILRDUIDEqual(&a_uid, &bad_uid))
-	{
-	    res = TEST_STATUS_FAILURE;
-	}
+	SchedulerAddTask(scheduler, 2, &PrintJupiter, &PrintJupiter_Cleanup, NULL);
+	SchedulerAddTask(scheduler, 3, &PrintMars, &PrintMars_Cleanup, NULL);
 	
 	SchedulerRun(scheduler);
 	
-	if (0 != SchedulerCount(scheduler)) { res = TEST_STATUS_FAILURE; }
+	if (1 != mars_count)
+	{
+		res = TEST_STATUS_FAILURE;
+	}
+	
+	if (3 != jupiter_count)
+	{
+		res = TEST_STATUS_FAILURE;
+	}
+	
+	/*
+		jupiter 0
+		mars 0
+		mars cleanup
+		jupiter 1
+		jupiter 2
+		jupiter cleanup
+	*/
+	
+	mars_count = 0;
+	jupiter_count = 0;
 	
 	SchedulerDestroy(scheduler);
 	return res;
 }
 
-/*
-
-static test_status_t QueuePeek_UnitTest(void)
+static test_status_t SchedulerRun_CheckCleanupBasicTest(void)
 {
-	queue_t* queue = QueueCreate();
-	int a = 5;
-	QueueEnqueue(queue, (void*)&a);
+	test_status_t res = TEST_STATUS_SUCCESS;
+	scheduler_t* scheduler = SchedulerCreate();
+	int* venus_malloc = NULL;
 	
-	if (a != *(int*)QueuePeek(queue))
+	SchedulerAddTask(scheduler, 2, &PrintVenus, &PrintVenus_Cleanup, &venus_malloc);
+	SchedulerAddTask(scheduler, 3, &PrintMars, &PrintMars_Cleanup, NULL);
+	
+	SchedulerRun(scheduler);
+	
+	if (1 != mars_count)
 	{
-		QueueDestroy(queue);
-		return TEST_STATUS_FAILURE;
+		res = TEST_STATUS_FAILURE;
 	}
 	
-	QueueDestroy(queue);
-	return TEST_STATUS_SUCCESS;
-}
-
-static test_status_t QueueDequeue_UnitTest(void)
-{
-	queue_t* queue = QueueCreate();
-	int a = 5;
-	QueueEnqueue(queue, (void*)&a);
-	QueueDequeue(queue);
-	QueueDestroy(queue);
-	return TEST_STATUS_SUCCESS;
-}
-
-static test_status_t QueueDequeueMultiple_Test(void)
-{
-	queue_t* queue = QueueCreate();
-	test_status_t res = TEST_STATUS_SUCCESS;
-	int a = 5, b = 7, c = 9, d = 12;
-	
-	QueueEnqueue(queue, (void*)&a);
-	QueueEnqueue(queue, (void*)&b);
-	QueueEnqueue(queue, (void*)&c);
-	QueueEnqueue(queue, (void*)&d);
-	
-	QueueDequeue(queue);
-	
-	if (b != *(int*)QueuePeek(queue)) { res = TEST_STATUS_FAILURE; }
-	QueueDequeue(queue);
-	
-	if (c != *(int*)QueuePeek(queue)) { res = TEST_STATUS_FAILURE; }
-	QueueDequeue(queue);
-	
-	if (d != *(int*)QueuePeek(queue)) { res = TEST_STATUS_FAILURE; }
-	
-	QueueDestroy(queue);
-	return res;
-}
-
-static test_status_t QueueIsEmpty_Test(void)
-{
-	queue_t* queue = QueueCreate();
-	test_status_t res = TEST_STATUS_SUCCESS;
-	int a = 5, b = 7;
-	
-	if (1 != QueueIsEmpty(queue)) { res = TEST_STATUS_FAILURE; }
-	
-	QueueEnqueue(queue, (void*)&a);
-	if (0 != QueueIsEmpty(queue)) { res = TEST_STATUS_FAILURE; }
-	
-	QueueEnqueue(queue, (void*)&b);
-	QueueDequeue(queue);
-	if (0 != QueueIsEmpty(queue)) { res = TEST_STATUS_FAILURE; }
-	
-	QueueDequeue(queue);
-	if (1 != QueueIsEmpty(queue)) { res = TEST_STATUS_FAILURE; }
-	
-	QueueDestroy(queue);
-	return res;
-}
-
-static void FillQueueWithIntArr(queue_t* queue, const int arr[], size_t arr_length)
-{
-	size_t index = 0;
-	while (index < arr_length)
+	if (3 != venus_count)
 	{
-		QueueEnqueue(queue, (void*)&arr[index]); 
-		++index;
+		res = TEST_STATUS_FAILURE;
 	}
+	
+	mars_count = 0;
+	venus_count = 0;
+	
+	/*
+		venus 0
+		mars 0
+		mars cleanup
+		venus 1
+		venus 2
+		venus cleanup
+	*/
+	
+	SchedulerDestroy(scheduler);
+	return res;
 }
 
-static int IsMatchIntArrayWithQueue(queue_t* queue, const int arr[], size_t arr_length)
+static test_status_t SchedulerRun_CheckFailureBasicTest(void)
 {
-	if (QueueSize(queue) != arr_length) { return 0; }
+	test_status_t res = TEST_STATUS_SUCCESS;
+	scheduler_t* scheduler = SchedulerCreate();
+	neptune_struct_t* neptune = {0};
+    
+    neptune = (neptune_struct_t*)malloc(sizeof(neptune_struct_t));
+    
+    neptune->scheduler = scheduler;
 	
-	while (arr_length > 0)
+	SchedulerAddTask(scheduler, 2, &PrintNeptune, &PrintNeptune_Cleanup, neptune);
+	SchedulerAddTask(scheduler, 3, &PrintMars, &PrintMars_Cleanup, NULL);
+	
+	SchedulerRun(scheduler);
+	
+	if (1 != mars_count)
 	{
-		if (*arr != *(int*)QueuePeek(queue)) { return 0; }
-		QueueDequeue(queue);
-		++arr;
-		--arr_length;
+		res = TEST_STATUS_FAILURE;
 	}
-	return 1;
-}
+	
+	if (20 != neptune_count)
+	{
+		res = TEST_STATUS_FAILURE;
+	}
 
-static test_status_t QueueSize_Test(void)
-{
-	queue_t* queue = QueueCreate();
-	test_status_t res = TEST_STATUS_SUCCESS;
-	int arr[] = {2, 4, 14, 8, 5};
-	size_t arr_length = 5;
+	mars_count = 0;
+	neptune_count = 0;
 	
-	if (0 != QueueSize(queue)) { res = TEST_STATUS_FAILURE; }
+	/*
+		neptune 0
+		mars 0
+		mars cleanup
+		neptune 1
+		neptune cleanup
+	*/
 	
-	FillQueueWithIntArr(queue, arr, arr_length);
-	if (arr_length != QueueSize(queue)) { res = TEST_STATUS_FAILURE; }
-	
-	QueueDequeue(queue);
-	if ((arr_length - 1) != QueueSize(queue)) { res = TEST_STATUS_FAILURE; }
-	
-	QueueDestroy(queue);
+	SchedulerDestroy(scheduler);
+	free(neptune);
 	return res;
 }
 
-static test_status_t QueueAppend_Test(void)
+static test_status_t SchedulerRemoveTask_CheckRemoveSelfTest(void)
 {
-	queue_t* dest = QueueCreate();
-	queue_t* src = QueueCreate();
 	test_status_t res = TEST_STATUS_SUCCESS;
-	int arr1[] = {1, 2, 3}, arr2[] = {4, 5, 6}, arr_appended[] = {1, 2, 3, 4, 5, 6};
-	int a = 7, b = 12;
+	scheduler_t* scheduler = SchedulerCreate();
+	mercury_struct_t* mercury = {0};
+	ilrd_uid_t mercury_uid = {0};
+    
+    mercury = (mercury_struct_t*)malloc(sizeof(mercury_struct_t));
+    
+    mercury->scheduler = scheduler;
 	
-	FillQueueWithIntArr(dest, arr1, 3);
-	FillQueueWithIntArr(src, arr2, 3);
+	mercury_uid = SchedulerAddTask(scheduler, 1, &PrintMercury, &PrintMercury_Cleanup, mercury);
+	SchedulerAddTask(scheduler, 6, &PrintMars, &PrintMars_Cleanup, NULL);
 	
-	QueueAppend(dest, src);
+	mercury->uid = mercury_uid;
 	
-	if (1 != QueueIsEmpty(src)) { res = TEST_STATUS_FAILURE; }
-	if (6 != QueueSize(dest)) { res = TEST_STATUS_FAILURE; }
-	if (1 != IsMatchIntArrayWithQueue(dest, arr_appended, 6)) { res = TEST_STATUS_FAILURE; }
+	SchedulerRun(scheduler);
 	
-	QueueEnqueue(dest, (void*)&a); 
-	QueueEnqueue(src, (void*)&b); 
+	if (1 != mars_count)
+	{
+		res = TEST_STATUS_FAILURE;
+	}
 	
-	if (1 != QueueSize(dest)) { res = TEST_STATUS_FAILURE; }
-	if (1 != QueueSize(src)) { res = TEST_STATUS_FAILURE; }
+	if (3 != mercury_count)
+	{
+		res = TEST_STATUS_FAILURE;
+	}
+
+	mars_count = 0;
+	mercury_count = 0;
 	
-	QueueDestroy(dest);
-	QueueDestroy(src);
+	/*
+		mercury 0
+		mercury 1
+		mercury 2
+		mercury cleanup
+		mars 0
+		mars cleanup
+	*/
+	
+	SchedulerDestroy(scheduler);
+	free(mercury);
 	return res;
 }
 
-static test_status_t QueueAppendWithEmpty_Test(void)
+static test_status_t SchedulerRemoveTask_CheckRemoveOtherTest(void)
 {
-	queue_t* dest = QueueCreate();
-	queue_t* src = QueueCreate();
 	test_status_t res = TEST_STATUS_SUCCESS;
-	int arr1[] = {1, 2, 3};
-	int a = 4, b = 12;
+	scheduler_t* scheduler = SchedulerCreate();
+	mercury_struct_t* mercury = {0};
+	int* venus_malloc = NULL;
+	ilrd_uid_t venus_uid = {0};
+    
+    mercury = (mercury_struct_t*)malloc(sizeof(mercury_struct_t));
+    
+    mercury->scheduler = scheduler;
 	
-	FillQueueWithIntArr(dest, arr1, 3);
-	QueueAppend(dest, src);
+	SchedulerAddTask(scheduler, 1, &PrintMercury, &PrintMercury_Cleanup, mercury);
+	venus_uid = SchedulerAddTask(scheduler, 2, &PrintVenus, &PrintVenus_Cleanup, &venus_malloc);
 	
-	if (1 != QueueIsEmpty(src)) { res = TEST_STATUS_FAILURE; }
-	if (3 != QueueSize(dest)) { res = TEST_STATUS_FAILURE; }
-	if (1 != IsMatchIntArrayWithQueue(dest, arr1, 3)) { res = TEST_STATUS_FAILURE; }
+	mercury->uid = venus_uid;
 	
-	QueueEnqueue(dest, (void*)&a); 
-	QueueEnqueue(src, (void*)&b); 
+	SchedulerRun(scheduler);
 	
-	if (1 != QueueSize(dest)) { res = TEST_STATUS_FAILURE; }
-	if (1 != QueueSize(src)) { res = TEST_STATUS_FAILURE; }
+	if (1 != venus_count)
+	{
+		res = TEST_STATUS_FAILURE;
+	}
 	
-	QueueDestroy(dest);
-	QueueDestroy(src);
+	if (4 != mercury_count)
+	{
+		res = TEST_STATUS_FAILURE;
+	}
+
+	venus_count = 0;
+	mercury_count = 0;
+	
+	/*
+		mercury 0
+		venus 0
+		mercury 1
+		mercury 2
+		venus cleanup
+		mercury 3
+		mercury cleanup
+	*/
+	
+	SchedulerDestroy(scheduler);
+	free(mercury);
 	return res;
 }
-*/
+
+
+
+
+
+
+
+
+
+
+
+
 
 
