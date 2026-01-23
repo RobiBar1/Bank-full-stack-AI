@@ -11,7 +11,7 @@ Date: 	 19.01.2026
 #include <string.h> 	/* strcmp, memset, strcpy		 */
 
 #include <arpa/inet.h>  /* struct sockaddr_in, socklen_t */
-#include <sys/socket.h> /*  */
+#include <sys/socket.h> /* socket, connect, getsockname  */
 
 #include "uid.h"  		/* our api 						 */
 
