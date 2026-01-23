@@ -177,12 +177,6 @@ task_status PrintNeptune(void* param)
 	
 	if (1 == neptune_count)
 	{
-		/*
-		--- Old Version
-		SchedulerAddTask(((neptune_struct_t*)param)->scheduler,
-						0, CallSchedulerStop, NothingFunction,
-						(void*)((neptune_struct_t*)param)->scheduler);
-		*/
 		SchedulerStop(((neptune_struct_t*)param)->scheduler);
 		
 		neptune_count = 20;
@@ -379,15 +373,6 @@ static test_status_t SchedulerRun_CheckRepeatBasicTest(void)
 		res = TEST_STATUS_FAILURE;
 	}
 	
-	/*
-		jupiter 0
-		mars 0
-		mars cleanup
-		jupiter 1
-		jupiter 2
-		jupiter cleanup
-	*/
-	
 	mars_count = 0;
 	jupiter_count = 0;
 	
@@ -418,15 +403,6 @@ static test_status_t SchedulerRun_CheckCleanupBasicTest(void)
 	
 	mars_count = 0;
 	venus_count = 0;
-	
-	/*
-		venus 0
-		mars 0
-		mars cleanup
-		venus 1
-		venus 2
-		venus cleanup
-	*/
 	
 	SchedulerDestroy(scheduler);
 	return res;
@@ -459,14 +435,6 @@ static test_status_t SchedulerRun_CheckFailureBasicTest(void)
 
 	mars_count = 0;
 	neptune_count = 0;
-	
-	/*
-		neptune 0
-		mars 0
-		mars cleanup
-		neptune 1
-		neptune cleanup
-	*/
 	
 	SchedulerDestroy(scheduler);
 	free(neptune);
@@ -504,14 +472,6 @@ static test_status_t SchedulerRemoveTask_CheckRemoveSelfTest(void)
 	mars_count = 0;
 	mercury_count = 0;
 	
-	/*
-		mercury 0
-		mercury 1
-		mercury 2
-		mercury cleanup
-		mars 0
-		mars cleanup
-	*/
 	
 	SchedulerDestroy(scheduler);
 	free(mercury);
@@ -550,31 +510,8 @@ static test_status_t SchedulerRemoveTask_CheckRemoveOtherTest(void)
 	venus_count = 0;
 	mercury_count = 0;
 	
-	/*
-		mercury 0
-		venus 0
-		mercury 1
-		mercury 2
-		venus cleanup
-		mercury 3
-		mercury cleanup
-	*/
 	
 	SchedulerDestroy(scheduler);
 	free(mercury);
 	return res;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-

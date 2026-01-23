@@ -4,13 +4,13 @@ Checker: Shahar
 Date: 	 21.01.2026
 */
 
-#include <time.h> /* time */
-#include <stdlib.h> /* malloc */
-#include <assert.h> /* assert */
+#include <time.h>      /* time     */
+#include <stdlib.h>    /* malloc   */
+#include <assert.h>    /* assert   */
 
-#include "scheduler.h" /* our api */
+#include "scheduler.h" /* our api  */
 #include "pqueue.h"    /* pqueue_t */
-#include "task.h"  	   /* task_t */
+#include "task.h"  	   /* task_t   */
 
 
 #define UNUSED(x) void(x)
@@ -92,19 +92,19 @@ static int TimeCheckUntilRun(scheduler_t* sc)
 static int CmpFunc(const void* left, const void* right)
 {
 	ilrd_uid_t uid_left = TaskGetUid((const task_t*)left);
-	ilrd_uid_t uid_right = TaskGetUid((const task_t*)right);
-	
-	 return !(IsILRDUIDEqual((const ilrd_uid_t*)(&uid_left),
-	 						 (const ilrd_uid_t*)(&uid_right)));		
+    
+    return (IsILRDUIDEqual((const ilrd_uid_t*)(&uid_left),
+                            ((const ilrd_uid_t*)right)));		
 }
 
-static int PriorityCmp(const void* one, const void* two)
+static int PriorityCmp(const void* left, const void* right)
 {	
-	assert (NULL != one);
-	assert (NULL != two);
+	assert (NULL != left);
+	assert (NULL != right);
 	
-	return TaskGetReadyTime((const task_t*)one) -
-		   TaskGetReadyTime((const task_t*)two);	
+	return TaskGetReadyTime((const task_t*)left) -
+		   TaskGetReadyTime((const task_t*)right);
+		   
 }
 /*------------------- End Pointers Functions -----------------------*/
 
@@ -151,12 +151,30 @@ void SchedulerDestroy(scheduler_t* sc)
 }
 
 void SchedulerRemoveTask(scheduler_t* sc, ilrd_uid_t uid)
-{
-	assert (NULL != sc);
-	assert (!IsILRDUIDEqual(&uid, &bad_uid));
-	assert (!PQueueIsEmpty(sc->pq));
+{	
+	task_t* task_to_remove = NULL;
+	ilrd_uid_t curr_uid = {0};
 	
-	TaskDestroy(PQueueRemove(sc->pq, (const void*)&uid, CmpFunc));	
+    assert (NULL != sc);
+    assert (!IsILRDUIDEqual(&uid, &bad_uid));
+        
+    if (NULL != sc->current)
+    {
+    	curr_uid = TaskGetUid(sc->current);
+		sc->need_to_remove_self = IsILRDUIDEqual(&curr_uid, &uid);
+		if (sc->need_to_remove_self)
+		{
+			return;
+		}
+    }
+    
+    if (!PQueueIsEmpty(sc->pq))
+    {
+		task_to_remove = (task_t*)PQueueRemove(sc->pq,
+											  (const void*)&uid, CmpFunc);
+        TaskDoCleanupFunc(task_to_remove); 
+        TaskDestroy(task_to_remove);
+    }
 }
                     
 ilrd_uid_t SchedulerAddTask(scheduler_t* sc, size_t time_interval,

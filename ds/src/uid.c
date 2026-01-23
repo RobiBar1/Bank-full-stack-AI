@@ -4,18 +4,16 @@ Checker: Shahar
 Date: 	 19.01.2026
 */
 
-#include <time.h>
-#include <unistd.h>
+#include <time.h>   	/* time_t, time					 */
+#include <unistd.h>		/* close, getpid			     */
 
-#include <stdio.h>
-#include <assert.h>
-#include <string.h>
+#include <assert.h> 	/* assert 						 */
+#include <string.h> 	/* strcmp, memset, strcpy		 */
 
-#include <arpa/inet.h>
-#include <sys/socket.h>
+#include <arpa/inet.h>  /* struct sockaddr_in, socklen_t */
+#include <sys/socket.h> /*  */
 
-
-#include "uid.h"
+#include "uid.h"  		/* our api 						 */
 
 #define IP_SIZE 16
 

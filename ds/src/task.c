@@ -3,12 +3,13 @@ Writer:  Robi
 Checker: Shahar
 Date: 	 20.01.2026
 */
-#include <time.h> /* time_t */
-#include <assert.h> /* assert */
-#include <stdlib.h> /* malloc */
 
-#include "task.h"
-#include "scheduler.h"
+#include <time.h> 		/* time_t  						*/
+#include <assert.h> 	/* assert  						*/
+#include <stdlib.h> 	/* malloc  						*/
+
+#include "task.h"		/* our api 						*/
+#include "scheduler.h"  /* task_func_t,  cleanup_func_t */
 
 struct task
 {
