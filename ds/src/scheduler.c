@@ -60,7 +60,7 @@ static int ActiveFuncRoutine(scheduler_t* sc)
 	return SECCESS;
 }
 
-static int TimeCheckUntilRun(scheduler_t* sc)
+static int DequeueAndTimeCheckUntilRun(scheduler_t* sc)
 {
 	time_t current_time = 0;
 	double time_remain = 1;
@@ -210,12 +210,16 @@ int SchedulerRun(scheduler_t* sc)
 	
 	while (!PQueueIsEmpty(sc->pq) && !(sc->flag_is_stoped))
 	{
-		time_status = TimeCheckUntilRun(sc);
+		time_status = DequeueAndTimeCheckUntilRun(sc);
 		func_status = ActiveFuncRoutine(sc);
 		
-		if (SECCESS != func_status || SECCESS != time_status)
+		if (SECCESS != func_status)
 		{
 			return func_status;
+		}
+		if (SECCESS != time_status)
+		{
+			return 	time_status;
 		}
 	}
 	
