@@ -149,7 +149,7 @@ sorted_list_iter_t SortedLInsert(sorted_list_t* list, const void* data)
 	end = DListEnd(list->list);
 	
 	while (!DListIsIterEqual(runner, end) && 
-	       1 != list->func(DListGetData(runner), data))
+	       0 >= list->func(DListGetData(runner), data))
 	{
 		runner = DListGetNext(runner);
 	}
