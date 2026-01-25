@@ -1,6 +1,6 @@
 /*
 Writer:  Robi
-Checker: Shahar
+Checker: Omer
 Date: 	 21.01.2026
 */
 
@@ -14,7 +14,7 @@ Date: 	 21.01.2026
 
 
 #define UNUSED(x) void(x)
-#define SECCESS (0)
+#define SUCCESS (0)
 #define TIME_FAIL (-1)
 #define PQ_ENQUEUE_FAIL (1)
 
@@ -49,7 +49,7 @@ static int ActiveFuncRoutine(scheduler_t* sc)
 	else if (REPEAT == status)
 	{	
 		TaskUpdateReadyTime(sc->current);
-		if (SECCESS != PQueueEnqueue(sc->pq, (const void*)sc->current))
+		if (SUCCESS != PQueueEnqueue(sc->pq, (const void*)sc->current))
 		{
 			SchedulerCleanDestroyTask(sc);
 			
@@ -57,7 +57,7 @@ static int ActiveFuncRoutine(scheduler_t* sc)
 		}
 	}
 	
-	return SECCESS;
+	return SUCCESS;
 }
 
 static int DequeueAndTimeCheckUntilRun(scheduler_t* sc)
@@ -81,7 +81,7 @@ static int DequeueAndTimeCheckUntilRun(scheduler_t* sc)
 		sleep(time_remain);
 	}
 	
-	return SECCESS;
+	return SUCCESS;
 }
 /*----------------------- End Helper Functions -------------------------------*/
 
@@ -204,29 +204,27 @@ ilrd_uid_t SchedulerAddTask(scheduler_t* sc, size_t time_interval,
 int SchedulerRun(scheduler_t* sc)
 {
 	int func_status = 0;
-	int time_status = 0;
 	
 	assert (NULL != sc);
 	
 	while (!PQueueIsEmpty(sc->pq) && !(sc->flag_is_stoped))
 	{
-		time_status = DequeueAndTimeCheckUntilRun(sc);
-		func_status = ActiveFuncRoutine(sc);
+		if (TIME_FAIL == DequeueAndTimeCheckUntilRun(sc))
+		{
+			return 	TIME_FAIL;
+		}
 		
-		if (SECCESS != func_status)
+		func_status = ActiveFuncRoutine(sc);
+		if (SUCCESS != func_status)
 		{
 			return func_status;
-		}
-		if (SECCESS != time_status)
-		{
-			return 	time_status;
 		}
 	}
 	
 	sc->current = NULL;
 	sc->flag_is_stoped = 0;
 	
-	return SECCESS;
+	return SUCCESS;
 }
 
 void SchedulerStop(scheduler_t* sc)
