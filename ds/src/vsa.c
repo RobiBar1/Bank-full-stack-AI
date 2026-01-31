@@ -3,16 +3,22 @@
 
 #include "vsa.h" 	/* our api */
 
-#define BLOCK_NOT_FREE(tmp) !(tmp & FLAG_BYTES_FREE)
-#define META_STRUCT_SIZE_IN_BYTES (sizeof(meta_data_t))
-#define WORD_SIZE (sizeof(size_t))
-#define MIN_FREE_SPACE_BYTES (META_STRUCT_SIZE_IN_BYTES + (2 * WORD_SIZE))
-#define FLAG_BYTES_FREE (1)
+/*-------------------- Sign numbers ---------------------------------*/
 #define MAGIC_NUMBER (0xDEADBEEF)
 #define MAGIC_NUMBER_END (0xDEADBEBE)
-
+/*-------------------- Sizes ----------------------------------------*/
+#define META_STRUCT_SIZE_IN_BYTES (sizeof(meta_data_t))
+#define WORD_SIZE (sizeof(size_t))
+/*-------------------- Calc things-----------------------------------*/
+#define BLOCK_NOT_FREE(tmp) !(tmp & FLAG_BYTES_FREE)
+#define MIN_FREE_SPACE_BYTES (META_STRUCT_SIZE_IN_BYTES + (2 * WORD_SIZE))
+/*-------------------- Magic numbers in code ------------------------*/
+#define FLAG_BYTES_FREE (1)
+#define ALL_MEM (NULL)
+/*-------------------- Return macros --------------------------------*/
 #define SUCCESS (0)
 #define END_OF_MEMORY (1)
+
 typedef struct meta
 {
 	size_t size;
@@ -47,7 +53,6 @@ static size_t AlignSizeUp(size_t num_bytes)
 
 static size_t* GetNextFreeBlock(size_t** runner)
 {
-	/*assert (NULL != vsa);*/
 	assert (NULL != runner);
 	assert (NULL != *runner);
 	
@@ -172,7 +177,7 @@ void* VSAAlloc(vsa_t vsa, size_t num_bytes)
 	assert (0 < num_bytes);
 	
 	num_bytes = AlignSizeUp(num_bytes);
-	DeFreg(vsa, NULL);
+	DeFreg(vsa, ALL_MEM);
 	
 	while (num_bytes > 0)
 	{
@@ -216,8 +221,7 @@ size_t VSALargestFreeChunk(vsa_t vsa)
 	
 	assert (NULL != vsa);
 	
-	DeFreg(vsa, NULL);
-	
+	DeFreg(vsa, ALL_MEM);
 	runner = (size_t*)vsa;
 	GetNextFreeBlock(&runner);
 	while (NULL != runner)
