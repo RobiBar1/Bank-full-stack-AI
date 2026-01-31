@@ -4,17 +4,13 @@
 #include "vsa.h" 	/* our api */
 
 #define BLOCK_NOT_FREE(tmp) !(tmp & FLAG_BYTES_FREE)
-#define META_STRUCT_SIZE (sizeof(meta_data_t))
+#define META_STRUCT_SIZE_IN_BYTES (sizeof(meta_data_t))
 #define WORD_SIZE (sizeof(size_t))
-#define MIN_FREE_SPACE_BYTES (META_STRUCT_SIZE + (2 * WORD_SIZE))
+#define MIN_FREE_SPACE_BYTES (META_STRUCT_SIZE_IN_BYTES + (2 * WORD_SIZE))
 #define FLAG_BYTES_FREE (1)
 #define MAGIC_NUMBER (0xDEADBEEF)
 #define MAGIC_NUMBER_END (0xDEADBEBE)
-#define NEXT_META_PLACE_FROM_USED(runner) \
-					   ((runner) + sizeof(meta_data_t) + (*(runner)))
-#define NEXT_META_PLACE_FROM_FREE(runner) \
-					   ((runner) + sizeof(meta_data_t) \
-					    + (*(runner)) - FLAG_BYTES_FREE)
+
 #define SUCCESS (0)
 #define END_OF_MEMORY (1)
 typedef struct meta
@@ -26,6 +22,17 @@ typedef struct meta
 }meta_data_t;
 
 /*--------------------------- Start Helper Functions -------------------------*/
+static int IsMemFree(const meta_data_t* metadata)
+{
+	return metadata->size & FLAG_BYTES_FREE;
+}
+
+static meta_data_t* GetNext(const meta_data_t* metadata)
+{
+	return (meta_data_t*)((char*)(metadata) + META_STRUCT_SIZE_IN_BYTES
+	 	   + metadata->size - IsMemFree(metadata));
+}
+
 static size_t AlignSizeUp(size_t num_bytes)
 {
 	assert (0 < num_bytes);
@@ -38,9 +45,9 @@ static size_t AlignSizeUp(size_t num_bytes)
 	return ((sizeof(size_t) + num_bytes - (num_bytes & (sizeof(size_t) - 1))));
 }
 
-static size_t* GetNextFreeBlock(size_t* vsa, size_t** runner)
+static size_t* GetNextFreeBlock(size_t** runner)
 {
-	assert (NULL != vsa);
+	/*assert (NULL != vsa);*/
 	assert (NULL != runner);
 	assert (NULL != *runner);
 	
@@ -48,7 +55,7 @@ static size_t* GetNextFreeBlock(size_t* vsa, size_t** runner)
 	{
 		if (BLOCK_NOT_FREE(**runner))
 		{
-			*runner = NEXT_META_PLACE_FROM_USED(*runner);
+			*runner = (size_t*)GetNext((meta_data_t*)(*runner));
 		}
 		else
 		{
@@ -56,13 +63,15 @@ static size_t* GetNextFreeBlock(size_t* vsa, size_t** runner)
 		}
 	}
 	
-	return NULL;
+	*runner = NULL;
+	
+	return *runner;
 }
 
 static int DeFregUntilBlock(size_t** first_free_block,
 						    size_t** second_free_block)
 {	
-	*second_free_block = NEXT_META_PLACE_FROM_FREE(*first_free_block);
+	*second_free_block = (size_t*)GetNext((meta_data_t*)(*first_free_block));
 	while (MAGIC_NUMBER_END != **second_free_block)
 	{
 		if (BLOCK_NOT_FREE(**second_free_block))
@@ -72,7 +81,8 @@ static int DeFregUntilBlock(size_t** first_free_block,
 		
 		**first_free_block += **second_free_block - FLAG_BYTES_FREE
 							 + sizeof(meta_data_t);
-		*second_free_block = NEXT_META_PLACE_FROM_FREE(*second_free_block);
+		*second_free_block = (size_t*)
+							 GetNext((meta_data_t*)(*second_free_block));
 	}
 	
 	return END_OF_MEMORY;
@@ -87,13 +97,14 @@ static vsa_t DeFreg(vsa_t vsa, size_t* num_bytes)
 	assert (NULL != vsa);
 	
 	first_free_block = (size_t*)vsa;
-	GetNextFreeBlock((size_t*)vsa, &first_free_block);
+	GetNextFreeBlock(&first_free_block);
 	if(NULL == num_bytes)
 	{
 		while (NULL != first_free_block
 		 	   && !DeFregUntilBlock(&first_free_block, &second_free_block))
 		{
-			GetNextFreeBlock(first_free_block, &first_free_block);
+			first_free_block = second_free_block;
+			GetNextFreeBlock(&first_free_block);
 		}
 	}
 	else
@@ -106,14 +117,15 @@ static vsa_t DeFreg(vsa_t vsa, size_t* num_bytes)
 			}
 			else
 			{
-				tmp = NEXT_META_PLACE_FROM_FREE(first_free_block);
+				tmp = (size_t*)GetNext((meta_data_t*)(first_free_block));
 				if (MAGIC_NUMBER_END == *tmp)
 				{
 					return NULL;
 				}
 				else if (BLOCK_NOT_FREE(*tmp))
 				{
-					GetNextFreeBlock(tmp, &first_free_block);
+					first_free_block = tmp;
+					GetNextFreeBlock(&first_free_block);
 				}
 				else
 				{
@@ -138,13 +150,13 @@ vsa_t VSAInit(void* memory_pool, size_t num_bytes)
 	assert (num_bytes >= MIN_FREE_SPACE_BYTES);
 	assert (!(((size_t)memory_pool) & (sizeof(size_t) - 1)));
 	
-	meta.size = (num_bytes - META_STRUCT_SIZE - WORD_SIZE) | FLAG_BYTES_FREE;
+	meta.size = (num_bytes - META_STRUCT_SIZE_IN_BYTES - WORD_SIZE) | FLAG_BYTES_FREE;
 	#ifndef NDEBUG
 	meta.sign = MAGIC_NUMBER;
 	#endif
 	
 	*((meta_data_t*)memory_pool) = meta;
-	*((size_t*)((char*)memory_pool) + num_bytes - WORD_SIZE) = MAGIC_NUMBER_END;  
+	*(size_t*)((char*)memory_pool + num_bytes - WORD_SIZE) = MAGIC_NUMBER_END;  
 	 
 	return (vsa_t)(memory_pool);
 }
@@ -160,10 +172,11 @@ void* VSAAlloc(vsa_t vsa, size_t num_bytes)
 	assert (0 < num_bytes);
 	
 	num_bytes = AlignSizeUp(num_bytes);
+	DeFreg(vsa, NULL);
+	
 	while (num_bytes > 0)
 	{
-		DeFreg(vsa, &num_bytes);
-		GetNextFreeBlock((size_t*)vsa, &runner);
+		GetNextFreeBlock(&runner);
 		if (NULL == runner)
 		{
 			return NULL;
@@ -173,16 +186,15 @@ void* VSAAlloc(vsa_t vsa, size_t num_bytes)
 			if (*runner - num_bytes - FLAG_BYTES_FREE <= sizeof(meta_data_t))
 			{
 				--(*runner);
-				return runner + sizeof(meta_data_t);
+				return ((void*)((char*)runner + sizeof(meta_data_t)));
 			}
 			else
 			{
 				last_num = *runner;
 				*runner = num_bytes;
 				addres_to_return = runner;
-				runner = NEXT_META_PLACE_FROM_USED(runner);
-				meta.size = last_num - num_bytes - sizeof(meta_data_t)
-				 - FLAG_BYTES_FREE;
+				runner = (size_t*)GetNext((meta_data_t*)(runner));
+				meta.size = last_num - num_bytes - sizeof(meta_data_t);
 				#ifndef NDEBUG
 				meta.sign = MAGIC_NUMBER;
 				#endif
@@ -200,20 +212,24 @@ size_t VSALargestFreeChunk(vsa_t vsa)
 {
 	size_t* runner = NULL;
 	size_t max = 0;
+	size_t is_mem_free = 0;
 	
 	assert (NULL != vsa);
 	
+	DeFreg(vsa, NULL);
+	
 	runner = (size_t*)vsa;
-	GetNextFreeBlock((size_t*)vsa, &runner);
+	GetNextFreeBlock(&runner);
 	while (NULL != runner)
 	{
-		if (max < *runner && !(BLOCK_NOT_FREE(*runner)))
+		is_mem_free = (size_t)IsMemFree((meta_data_t*)runner);
+		if (is_mem_free && max < *runner - is_mem_free)
 		{
-			max = *runner;
+			max = *runner - is_mem_free;
 		}
 		
-		runner = NEXT_META_PLACE_FROM_FREE(runner);
-		GetNextFreeBlock(runner, &runner);
+		runner = (size_t*)GetNext((meta_data_t*)runner);
+		GetNextFreeBlock(&runner);
 	}
 	
 	return max;
