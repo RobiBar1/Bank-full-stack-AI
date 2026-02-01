@@ -9,7 +9,7 @@
 #define RED   "\033[0;31m"
 #define RESET "\033[0m"
 
-#define ARR_SIZE 100000
+#define ARR_SIZE 5000
 
 #define NOT_SORTED (0)
 #define SORTED (1)

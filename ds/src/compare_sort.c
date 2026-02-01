@@ -1,3 +1,9 @@
+/*
+Writer:  Robi
+Checker: Roie
+Date:    01.02.2026
+*/
+
 #include <assert.h>
 #include <stddef.h>
 #include <stdlib.h> /* calloc */
@@ -119,14 +125,21 @@ void InsertionSort(int *arr, size_t size)
 int CountingSort(int* arr, size_t size)
 {
 	size_t i = 0;
-	size_t* counting_arr = (size_t*)calloc(1, 
-						sizeof(size_t) * (COUNTING_RANGE + 1));
-	size_t* new_arr = (size_t*)malloc(sizeof(size_t) * size);
+	size_t* counting_arr;
+	size_t* new_arr;
 	size_t val = 0;
 	
+	counting_arr = (size_t*)calloc(1, 
+						sizeof(size_t) * (COUNTING_RANGE + 1));
 	if (NULL == counting_arr)
 	{
 		return NOT_SUCCESS;
+	}
+	new_arr = (size_t*)malloc(sizeof(size_t) * size);
+	if (NULL == new_arr)
+	{
+		free(counting_arr); counting_arr = NULL;
+		return;
 	}
 	
 	for (; i < size; ++i)
@@ -149,6 +162,9 @@ int CountingSort(int* arr, size_t size)
 	{
 		arr[i] = new_arr[i];
 	}
+	
+	free(counting_arr); counting_arr = NULL;
+	free(new_arr); new_arr = NULL;	
 	
 	return SUCCESS;	
 }
