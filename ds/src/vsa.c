@@ -12,6 +12,7 @@
 /*-------------------- Calc things-----------------------------------*/
 #define BLOCK_NOT_FREE(tmp) !(tmp & FLAG_BYTES_FREE)
 #define MIN_FREE_SPACE_BYTES (META_STRUCT_SIZE_IN_BYTES + (2 * WORD_SIZE))
+#define TURN_FREE_BIT_OFF(tmp) (tmp) - 1 
 /*-------------------- Magic numbers in code ------------------------*/
 #define FLAG_BYTES_FREE (1)
 #define ALL_MEM (NULL)
@@ -50,6 +51,7 @@ static size_t AlignSizeUp(size_t num_bytes)
 	
 	return ((sizeof(size_t) + num_bytes - (num_bytes & (sizeof(size_t) - 1))));
 }
+
 
 static size_t* GetNextFreeBlock(size_t** runner)
 {
@@ -134,7 +136,8 @@ static vsa_t DeFreg(vsa_t vsa, size_t* num_bytes)
 				}
 				else
 				{
-					*first_free_block += *tmp - 1 + sizeof(meta_data_t);
+					*first_free_block += 
+					TURN_FREE_BIT_OFF(*tmp)+ sizeof(meta_data_t);
 				}
 			}
 		} 
@@ -171,13 +174,16 @@ void* VSAAlloc(vsa_t vsa, size_t num_bytes)
 	size_t* runner = (size_t*)vsa;
 	size_t* addres_to_return = NULL;
 	size_t last_num = 0;
+	size_t total_bytes_need = 0;
 	meta_data_t meta = {0};
 	
 	assert (NULL != vsa);
 	assert (0 < num_bytes);
+	assert (MAGIC_NUMBER == ((meta_data_t*)vsa)->sign);
 	
 	num_bytes = AlignSizeUp(num_bytes);
-	DeFreg(vsa, ALL_MEM);
+	total_bytes_need = num_bytes + sizeof(meta_data_t);
+	DeFreg(vsa, &total_bytes_need);
 	
 	while (num_bytes > 0)
 	{
@@ -220,6 +226,7 @@ size_t VSALargestFreeChunk(vsa_t vsa)
 	size_t is_mem_free = 0;
 	
 	assert (NULL != vsa);
+	assert (MAGIC_NUMBER == ((meta_data_t*)vsa)->sign);
 	
 	DeFreg(vsa, ALL_MEM);
 	runner = (size_t*)vsa;
@@ -243,8 +250,8 @@ void VSAFree(void* allocated_memory)
 {
 	assert (NULL != allocated_memory);
 	
-	*(size_t*)((char*)allocated_memory - sizeof(meta_data_t)) = 
-	(*((size_t*)((char*)allocated_memory - sizeof(meta_data_t)))) | 1;
+	((meta_data_t*)((char*)allocated_memory - sizeof(meta_data_t)))->size = 
+	(((meta_data_t*)((char*)allocated_memory - sizeof(meta_data_t)))->size) | 1;
 }
 
 /*--------------------------- End H.file Functions ---------------------------*/
