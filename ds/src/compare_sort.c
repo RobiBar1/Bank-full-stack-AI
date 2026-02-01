@@ -13,7 +13,7 @@ Date:    01.02.2026
 #define COUNTING_RANGE 100
 #define SUCCESS 0
 #define NOT_SUCCESS -1
-
+#define MAX_NONE_ZERO(x) ((x) - 1) != SIZE_MAX ? ((x) - 1) : 0
 static void swap(int* a, int* b)
 {
 	int temp = 0;
@@ -139,7 +139,7 @@ int CountingSort(int* arr, size_t size)
 	if (NULL == new_arr)
 	{
 		free(counting_arr); counting_arr = NULL;
-		return;
+		return NOT_SUCCESS;
 	}
 	
 	for (; i < size; ++i)
@@ -154,7 +154,8 @@ int CountingSort(int* arr, size_t size)
 	
 	for (i = size - 1; i != SIZE_MAX ; --i)
 	{
-		val = --counting_arr[arr[i]];
+		counting_arr[arr[i]] = MAX_NONE_ZERO(counting_arr[arr[i]]);
+		val = counting_arr[arr[i]];
 		new_arr[val] = arr[i];
 	}
 	
