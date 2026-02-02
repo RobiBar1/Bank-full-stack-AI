@@ -18,14 +18,14 @@ static CheckIfSorted(int* arr, size_t size)
 {
 	size_t i = 0;
 	
-	for (; i < ARR_SIZE - 1; ++i)
+	for (; i < size - 1; ++i)
 	{
 		if (arr[i] > arr[i + 1])
 		{
 			return NOT_SORTED;
 		}
 	}
-	
+
 	return SORTED;
 }
 
@@ -132,16 +132,49 @@ static void TestCountingSort(int *arr)
 	printf("CountingSort" GREEN " passed" RESET "\n");	
 }
 
-static InitArr(int* arr, int max_out, int min_out)
+static void InitArr(int* arr, int max_out, int min_out)
 {
 	long min = min_out;
 	long max = max_out;
 	int i = 0;
+	srand(time(NULL));
 	
 	for (; i < ARR_SIZE; ++i)
 	{
 		arr[i] = (rand() % (max - min + 1)) + min;
 	}
+}
+
+static void InitRadixArr(int* arr, int max_out, int min_out)
+{
+	long min = min_out;
+	long max = max_out;
+	int i = 0;
+	
+	srand(time(NULL));
+	for (; i < ARR_SIZE; ++i)
+	{
+		arr[i] = (rand() % (max - min + 1)) + min;
+	}
+}
+
+static void TestRadixSort(int *arr)
+{	
+	clock_t end = {0};
+	clock_t start = clock();
+	
+	RadixSort(arr, ARR_SIZE);
+	end = clock();
+		printf("time  RadixSort is: " GREEN " %lf" RESET "\n", ((double)(end) - (double)(start)) / CLOCKS_PER_SEC);	
+	
+	
+	if (!CheckIfSorted(arr, ARR_SIZE))
+	{
+		printf("RadixSort" RED " failed" RESET "\n");	
+		return;
+	}
+	
+	printf("RadixSort" GREEN " passed" RESET "\n");	
 }
 
 int main() 
@@ -200,11 +233,27 @@ int main()
 	
 	InitArr(arr, max_counting_sort, min_counting_sort);
 	CopyArr(arr, arr1);
+	CopyArr(arr, arr_copy);
+	
 	TestCountingSort(arr);
 	qsort(arr1, ARR_SIZE, sizeof(int), compareInts);
 	if (CmpQArr(arr, arr1))
 	{
-		printf("qsort vs InsertionSort" RED " failed" RESET "\n");	
+		printf("qsort vs TestCountingSort" RED " failed" RESET "\n");	
+		free(arr); arr = NULL;
+		free(arr1); arr1 = NULL;
+		free(arr_copy); arr_copy = NULL;
+		return;
+	}
+	
+	InitRadixArr(arr, 9999999, 1000000);
+	CopyArr(arr, arr1);
+	TestRadixSort(arr);
+	qsort(arr1, ARR_SIZE, sizeof(int), compareInts);
+	
+	if (CmpQArr(arr, arr1))
+	{
+		printf("qsort vs TestInsertionSort" RED " failed" RESET "\n");	
 		free(arr); arr = NULL;
 		free(arr1); arr1 = NULL;
 		free(arr_copy); arr_copy = NULL;
