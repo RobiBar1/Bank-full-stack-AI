@@ -367,7 +367,7 @@ static void HelperRemoveForLeafOrOneChild(bst_node_t* current)
 	{
 		child_side = (NULL == current->children[LEFT] ? RIGHT : LEFT); 
 		current->parent->children[side] = current->children[child_side];
-		current->children[child_side]->parent =  current->parent;
+		current->children[child_side]->parent = current->parent;
 		free(current); current = NULL;
 	}
 }
