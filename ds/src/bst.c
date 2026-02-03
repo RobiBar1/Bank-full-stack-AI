@@ -1,3 +1,9 @@
+/*
+Writer:  robi
+Checker: Ofek
+Date:	 03.02.2026
+*/
+
 #include <assert.h> /* assert  */
 #include <stdlib.h> /* malloc  */
 
@@ -24,12 +30,7 @@ struct bst
     int (*cmp)(const void* data, const void* param);
 };
 
-/*
-typedef struct bst_node* bst_iter_t;
-typedef struct bst bst_t;
-*/
-
-bst_node_t* CreateBSTNode(const void* data, const bst_node_t* parent,
+static bst_node_t* CreateBSTNode(const void* data, const bst_node_t* parent,
 		   const bst_node_t* left, const bst_node_t* right)
 {
 	bst_node_t* new_bst_node = (bst_node_t*)malloc(sizeof(bst_node_t));
@@ -124,10 +125,11 @@ static bst_node_t* ConvertIterToBSTNode(bst_iter_t iter)
 	return ((bst_node_t*)iter);
 }
 
-bst_node_t* BSTFindPlace(bst_node_t** parent, 
-						 int* side, bst_t* bst, void* data)
+static bst_node_t* BSTFindPlace(bst_node_t** parent, 
+						 children_t* side, bst_t* bst, void* data)
 {
 	int result = 0;
+	children_t side_local = 0;
 	bst_node_t* current = NULL;
 	bst_node_t* prev = NULL;
 	
@@ -135,28 +137,32 @@ bst_node_t* BSTFindPlace(bst_node_t** parent,
 	
 	current = bst->end->children[LEFT];
 	*parent = bst->end;
-	*side = LEFT;
+	side_local = LEFT;
 	while (NULL != current)
 	{
 		result = bst->cmp(current->data, data);
 		prev = current;
 		if (FOUND_ELEMNT(result))
 		{	
+			*parent = prev;
+			*side = side_local;
+			
 			return current;
 		}
 		else if (RIGHT_BIGGER(result))
 		{
-			*parent = prev;
-			*side = RIGHT;
+			side_local = RIGHT;
 			current = current->children[RIGHT];
 		}
 		else
 		{	
-			*parent = prev;
-			*side = LEFT;
+			side_local = LEFT;
 			current = current->children[LEFT];
 		}
 	}
+	
+	*side = side_local;
+	*parent = prev;
 	
 	return bst->end;
 }
@@ -165,7 +171,9 @@ bst_iter_t BSTFind(const bst_t* bst, const void* data)
 {
 	bst_node_t* parent = NULL;
 	bst_node_t* current = NULL;
-	int side = 0;
+	children_t side = 0;
+	
+	assert (NULL != bst);
 	
 	UNUSED(parent);
 	UNUSED(current);
@@ -178,10 +186,10 @@ bst_iter_t BSTInsert(bst_t* bst, const void* data)
 {
 	bst_node_t* parent = NULL;
 	bst_node_t* current = NULL;
-	int side = 0;
+	children_t side = 0;
 	
 	assert (NULL != bst);
-	
+	/*add assert that data is not already in*/
 	if (BSTIsEmpty(bst))
 	{
 		bst->end->children[LEFT] = CreateBSTNode(data, bst->end, NULL, NULL);
@@ -225,12 +233,12 @@ int BSTIsEmpty(const bst_t* bst)
 {
 	assert (NULL != bst);
 	
-	return (bst->end->children[LEFT] == NULL);
+	return (NULL == bst->end->children[LEFT]);
 }
 
 static bst_node_t* GetMostLeft(bst_node_t* current)
 {
-	assert (NULL != current);
+	assert(NULL != current);
 	
 	while (NULL != current->children[LEFT])
 	{
@@ -244,16 +252,7 @@ bst_iter_t BSTBegin(const bst_t* bst)
 {	
 	assert (NULL != bst);
 	
-	if (NULL != bst->end->children[LEFT])
-	{
-		return ConvertBSTNodeToIter(GetMostLeft(bst->end));	
-	}
-	else if (NULL != bst->end->children[RIGHT])
-	{
-		return ConvertBSTNodeToIter(GetMostLeft(bst->end->children[RIGHT]));	
-	}
-	
-	return ConvertBSTNodeToIter(bst->end);
+	return ConvertBSTNodeToIter(GetMostLeft(bst->end));	
 }
 
 int BSTIsIterEqual(const bst_iter_t iter1, const bst_iter_t iter2)
@@ -287,6 +286,7 @@ static int IsBSTNodeEquals(bst_node_t* left, bst_node_t* right)
 static bst_node_t* GetPrev(bst_node_t* current)
 {
 	assert (NULL != current);
+	/*check that your arnt the first logic*/
 	
 	if (NULL != current->children[LEFT])
 	{
@@ -298,7 +298,7 @@ static bst_node_t* GetPrev(bst_node_t* current)
 		while (IsBSTNodeEquals(current, current->parent->children[LEFT]))
 		{
 			current = current->parent;
-		}
+		}/*enter to function "go up while im left child"*/
 	}
 	
 	return current->parent;
@@ -312,7 +312,8 @@ bst_iter_t BSTGetPrev(bst_iter_t iter)
 static bst_node_t* GetNext(bst_node_t* current)
 {
 	assert (NULL != current);
-	
+		/*assert that im not dumy*/
+		
 	if (NULL != current->children[RIGHT])
 	{
 		current = current->children[RIGHT];
@@ -323,7 +324,7 @@ static bst_node_t* GetNext(bst_node_t* current)
 		while (IsBSTNodeEquals(current, current->parent->children[RIGHT]))
 		{
 			current = current->parent;
-		}
+		}/*enter to function "go up while im right child"*/
 	}
 	
 	return current->parent;
@@ -380,7 +381,7 @@ bst_iter_t BSTRemove(bst_iter_t iter)
 	assert (NULL != current);
 	assert (NULL != current->parent);
 	
-	next = ConvertBSTNodeToIter(GetNext(current));
+	next = ConrtBSTNodeToItever(GetNext(current));
 	if (NULL == current->children[LEFT] || NULL == current->children[RIGHT])
 	{
 		HelperRemoveForLeafOrOneChild(current);
@@ -394,7 +395,9 @@ bst_iter_t BSTRemove(bst_iter_t iter)
 }
 
 static int counting(void* data, void* param)
-{
+{	
+	assert (NULL != param);
+	
 	UNUSED(data);
 	++(*(size_t*)param);
 	
