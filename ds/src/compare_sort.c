@@ -4,9 +4,9 @@ Checker: Roie
 Date:    01.02.2026
 */
 
-#include <assert.h>
-#include <stddef.h>
-#include <stdlib.h> /* calloc */
+#include <assert.h> /* assert   */
+#include <stddef.h> /* malloc   */
+#include <stdlib.h> /* calloc   */
 #include <stdint.h> /* SIZE_MAX */
 #include "compare_sort.h"
 
