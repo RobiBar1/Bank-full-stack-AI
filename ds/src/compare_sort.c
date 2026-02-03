@@ -18,7 +18,6 @@ Date:    01.02.2026
 #define SUCCESS 0
 #define NOT_SUCCESS -1
 
-#define NONE_NEGETIVE_INDEX(x) ((x) - 1) != SIZE_MAX ? ((x) - 1) : 0
 #define BASE(x) x
 #define GET_NUM(num, devide_by) ((num) / (devide_by)) % BASE(10)
 
@@ -135,16 +134,36 @@ int CountingSort(int* arr, size_t size)
 	size_t i = 0;
 	size_t* counting_arr;
 	size_t* new_arr;
-	size_t val = 0;
+	/*size_t val = 0;*/
+	int max = 0;
+	int min = 0;
+	size_t counting_size = 0;
 	
 	assert (NULL != arr);
 	
+	min = arr[i];
+	max = arr[i++];
+	for (; i < size; ++i)
+	{
+		if (max < arr[i])
+		{
+			max = arr[i];
+		}
+		
+		if (min > arr[i])
+		{
+			min = arr[i];
+		}
+	}
+	
+	counting_size = max - min + 1;
 	counting_arr = (size_t*)calloc(1, 
-						sizeof(size_t) * (COUNTING_RANGE + 1));
+						sizeof(size_t) * counting_size);
 	if (NULL == counting_arr)
 	{
 		return NOT_SUCCESS;
 	}
+	
 	new_arr = (size_t*)malloc(sizeof(size_t) * size);
 	if (NULL == new_arr)
 	{
@@ -152,21 +171,20 @@ int CountingSort(int* arr, size_t size)
 		return NOT_SUCCESS;
 	}
 	
-	for (; i < size; ++i)
+	for (i = 0; i < size; ++i)
 	{
-		++counting_arr[arr[i]];
+		++counting_arr[arr[i] - min];
 	}
 	
-	for (i = 1; i < COUNTING_RANGE + 1; ++i)
+	for (i = 1; i < counting_size; ++i)
 	{
 		counting_arr[i] += counting_arr[i - 1];
 	}
 	
 	for (i = size - 1; i != SIZE_MAX ; --i)
 	{
-		counting_arr[arr[i]] = NONE_NEGETIVE_INDEX(counting_arr[arr[i]]);
-		val = counting_arr[arr[i]];
-		new_arr[val] = arr[i];
+		/*val = --counting_arr[arr[i] - min];*/
+		new_arr[--counting_arr[arr[i] - min]] = arr[i];
 	}
 	
 	for (i = 0; i < size; ++i)
