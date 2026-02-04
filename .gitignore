@@ -1,0 +1,11 @@
+*
+!**/
+!*.c
+!*.h
+!*.md
+!.gitignore
+!.myfuncs
+!makefile
+
+**/bin/
+
