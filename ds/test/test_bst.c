@@ -30,6 +30,17 @@ p *(int*)bst->end->children[LEFT]->data
 static size_t tests_run = 0;
 static size_t tests_passed = 0;
 
+static void PrintStart(char* name_function)
+{
+	printf("================================================================\n");
+	printf("------------------- Start Test: %s ------------------------\n", name_function);
+}
+static void PrintEnd(char* name_function)
+{
+	printf("================================================================\n");
+	printf("------------------- End Test: %s --------------------------\n", name_function);
+}
+
 static int CmpFunc(const void* left, const void* right)
 {
 	return *(int*)left - *(int*)right;
@@ -187,6 +198,7 @@ static void TestBSTGetPrev(void)
 {
 	bst_t* bst = BSTCreate(CmpFunc);
 	int arr[] = {10, 50, 30, 0, 15, 75, 100};
+	/*0, 10, 15, 30, 50, 75, 100*/
 	int arr_size = sizeof(arr) / sizeof(int);
 	int i = 0;
 	bst_iter_t iter = NULL;
@@ -202,6 +214,20 @@ static void TestBSTGetPrev(void)
 	iter = BSTGetPrev(iter);
 	
 	TEST("TestBSTGetPrev", *(int*)BSTGetData(iter), 10);
+	
+	#ifndef NDEBUG
+	PrintStart("Debug-Mode_Check-only");
+	printf(RED "IF YOU WONT GET ASSERT HERE YOU DID WRONG IMPLEMENT OF PREV" RESET "\n");
+	iter = BSTBegin(bst);
+	++tests_run;
+	printf("current data: %d\n", *(int*)BSTGetData(iter));
+	iter = BSTGetPrev(iter);
+	printf("current data: %lu\n", *(size_t*)BSTGetData(iter));
+	printf(GREEN "NOW YOU NEED GET ASSERT, IF U GET ASSERT LOOK ON IT AS 1 MORE SUCCESS TEST" RESET "\n");
+	printf("\nSUMMARY: %lu/%lu tests passed.\n", tests_passed, tests_run);
+	iter = BSTGetPrev(iter); /* should throw assert if work fine */
+	printf(RED "fail in GetPrev - case: try to go prev from first logical element" RESET "\n");
+	#endif
 	
 	BSTDestroy(bst);
 }
@@ -287,6 +313,8 @@ static void TestBSTForEach(void)
     BSTDestroy(bst);
 }
 
+
+
 void TestBSTFind(void)
 {
     bst_t* bst = BSTCreate(CmpFunc);
@@ -296,8 +324,7 @@ void TestBSTFind(void)
     size_t i = 0;
     bst_iter_t iter = NULL;
     
-    printf("===============================================================\n");
-    printf("------------------- Start Test: BSTFind------------------------\n");
+    PrintStart("BSTFind");
     for(; i < size; ++i)
     {
         BSTInsert(bst, &arr[i]);
@@ -324,8 +351,7 @@ void TestBSTFind(void)
     ,((iter)), BSTEnd(bst));
     
     BSTDestroy(bst);
-    printf("--------------------- End Test: BSTFind------------------------\n");
-    printf("===============================================================\n");
+    PrintEnd("BSTFind");
 }
 
 
@@ -337,10 +363,10 @@ int main()
     TestBSTRemove();
     TestBSTRemoveMultiple();
     TestBSTCount();
-    TestBSTGetPrev();
     TestBSTIsEmpty();
     TestBSTForEach();
     TestBSTFind();
+    TestBSTGetPrev();
     
     printf("\nSUMMARY: %lu/%lu tests passed.\n", tests_passed, tests_run);
     return 0;

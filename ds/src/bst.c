@@ -1,5 +1,5 @@
 /*
-Writer:  robi
+Writer:  Robi
 Checker: Ofek
 Date:	 03.02.2026
 */
@@ -14,6 +14,9 @@ Date:	 03.02.2026
 #define RIGHT_BIGGER(num) ((num) < 0) 
 #define SUCCESS (0) 
 #define UNUSED(x) ((void)(x))
+#define DUMY_DATA 0xDEADBEEF
+#define SAFE_TO_USE 1
+#define NOT_SAFE_TO_USE 0
 
 typedef enum {LEFT, RIGHT, NUM_CHILDREN} children_t;
 
@@ -29,6 +32,8 @@ struct bst
     bst_node_t* end;
     int (*cmp)(const void* data, const void* param);
 };
+
+static int WhatSideChildAmI(bst_node_t* current);
 
 static bst_node_t* CreateBSTNode(const void* data, const bst_node_t* parent,
 		   const bst_node_t* left, const bst_node_t* right)
@@ -51,6 +56,7 @@ bst_t* BSTCreate(int(*cmp)(const void* data, const void* param))
 {
 	bst_node_t* dummy_node = NULL;
 	bst_t* new_bst = NULL;
+	size_t dumy_data = DUMY_DATA;
 	
 	assert (NULL != cmp);
 	
@@ -60,7 +66,7 @@ bst_t* BSTCreate(int(*cmp)(const void* data, const void* param))
 		return NULL;
 	}
 	
-	dummy_node = CreateBSTNode(NULL, NULL, NULL, NULL);
+	dummy_node = CreateBSTNode(&dumy_data, NULL, NULL, NULL);
 	if (NULL == dummy_node)
 	{
 		free(new_bst); new_bst = NULL;
@@ -189,7 +195,8 @@ bst_iter_t BSTInsert(bst_t* bst, const void* data)
 	children_t side = 0;
 	
 	assert (NULL != bst);
-	/*add assert that data is not already in*/
+	assert (BSTFind(bst, data) == bst->end);
+	
 	if (BSTIsEmpty(bst))
 	{
 		bst->end->children[LEFT] = CreateBSTNode(data, bst->end, NULL, NULL);
@@ -283,25 +290,74 @@ static int IsBSTNodeEquals(bst_node_t* left, bst_node_t* right)
 	return (left == right);
 }
 
-static bst_node_t* GetPrev(bst_node_t* current)
+
+static bst_node_t* GoUpWhileAmISideChild(bst_node_t* current, children_t side,
+										 bst_node_t** last_child)
 {
 	assert (NULL != current);
-	/*check that your arnt the first logic*/
 	
-	if (NULL != current->children[LEFT])
+	if (RIGHT == side)
 	{
-		current = current->children[LEFT];
-		return GetMostRight(current);
+		while (IsBSTNodeEquals(current, current->parent->children[RIGHT]))
+		{
+			current = current->parent;
+		}
 	}
 	else
 	{
 		while (IsBSTNodeEquals(current, current->parent->children[LEFT]))
 		{
 			current = current->parent;
-		}/*enter to function "go up while im left child"*/
+		}
 	}
 	
+	*last_child = current;
 	return current->parent;
+}
+
+#ifndef NDEBUG
+static int IsPrevSafeForUse(bst_node_t* current)
+{
+	bst_node_t* parent = NULL;
+	bst_node_t* last_child = NULL;
+	
+	assert (NULL != current);
+	
+	if (NULL != current->children[LEFT])
+	{
+		return SAFE_TO_USE;
+	}
+	
+	parent = GoUpWhileAmISideChild(current, RIGHT, &last_child);
+	if (!((*(size_t*)(parent->data)) == DUMY_DATA))
+	{
+		return NOT_SAFE_TO_USE;
+	}
+	
+	if (LEFT == WhatSideChildAmI(last_child))
+	{
+		return NOT_SAFE_TO_USE;
+	}
+	
+	return SAFE_TO_USE;
+	
+}
+#endif
+
+static bst_node_t* GetPrev(bst_node_t* current)
+{
+	bst_node_t* last_child = NULL;
+	
+	assert (NULL != current);
+	assert (SAFE_TO_USE == IsPrevSafeForUse(current));
+	
+	if (NULL != current->children[LEFT])
+	{
+		current = current->children[LEFT];
+		return GetMostRight(current);
+	}
+	
+	return GoUpWhileAmISideChild(current, LEFT, &last_child);
 }
 
 bst_iter_t BSTGetPrev(bst_iter_t iter)
@@ -311,30 +367,24 @@ bst_iter_t BSTGetPrev(bst_iter_t iter)
 
 static bst_node_t* GetNext(bst_node_t* current)
 {
+	bst_node_t* last_child = NULL;
+	
 	assert (NULL != current);
-		/*assert that im not dumy*/
+	assert (DUMY_DATA != (*(size_t*)current->data));
 		
 	if (NULL != current->children[RIGHT])
 	{
 		current = current->children[RIGHT];
 		return GetMostLeft(current);
 	}
-	else
-	{
-		while (IsBSTNodeEquals(current, current->parent->children[RIGHT]))
-		{
-			current = current->parent;
-		}/*enter to function "go up while im right child"*/
-	}
 	
-	return current->parent;
+	return GoUpWhileAmISideChild(current, RIGHT, &last_child);
 }
 
 bst_iter_t BSTGetNext(bst_iter_t iter)
 {
 	return ConvertBSTNodeToIter(GetNext(ConvertIterToBSTNode(iter)));
 }
-
 
 static int IsLeaf(bst_node_t* node)
 {
@@ -381,7 +431,7 @@ bst_iter_t BSTRemove(bst_iter_t iter)
 	assert (NULL != current);
 	assert (NULL != current->parent);
 	
-	next = ConrtBSTNodeToItever(GetNext(current));
+	next = ConvertBSTNodeToIter(GetNext(current));
 	if (NULL == current->children[LEFT] || NULL == current->children[RIGHT])
 	{
 		HelperRemoveForLeafOrOneChild(current);
