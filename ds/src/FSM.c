@@ -11,13 +11,19 @@
 #define RED   "\033[0;31m"
 #define RESET "\033[0m"
 
+typedef struct
+{
+	state_t state;
+	(*handler)(char ch);
+}trans_t;
 
-typedef enum {WAIT_FOR_NUM, WAIT_FOR_OP, ERROR, NUM_OF_STATES} states_t;
+typedef enum {WAIT_FOR_NUM, WAIT_FOR_OP, ERROR, NUM_OF_STATES} state_t;
 typedef int (*TransitionFunc)(char* input);
 
 static stack_t* g_stack_nums = NULL;
 static stack_t* g_stack_operators = NULL;
-static double g_current_result = 0;
+static  g_state = 0;
+static trans_t g_trans ;
 static states_t g_states_table[][NUM_OF_STATES] = 
 {
 /* ValidFunction return: */ /* -1 */  	/* 0 */ 		/* 1 */
@@ -38,7 +44,6 @@ static int WaitForOpTransition(char* input)
 {
 	return 1;
 }
-
 
 static int WaitForNumTransition(char* input)
 {
@@ -74,6 +79,12 @@ static int WaitForNumTransition(char* input)
 			return 0;
 }
 
+static HandleNext(char** input)
+{
+	char current = '\0';
+	
+}
+
 static int HandleTransition(char* input)
 {
 	int status = 0;
@@ -87,8 +98,10 @@ static int HandleTransition(char* input)
 	status = (g_transition_func_table[WAIT_FOR_NUM](input));
 	while ('\0' != input && ERROR != status)
 	{
-		status = (g_transition_func_table[status](input));
+		HandleNext(&input);
 	}
+	
+	status = (g_transition_func_table[status](input));
 	
 	
 }
