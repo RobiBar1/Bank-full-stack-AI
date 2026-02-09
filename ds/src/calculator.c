@@ -1,11 +1,16 @@
-#include <string.h> /* strlen  	    */
-#include <stddef.h> /* size_t 	    */
-#include <assert.h> /* assert 	    */
-#include <errno.h>  /* errno  	    */
-#include <stdlib.h> /* strtod, free */
+/*
+Writer: Robi
+Chcker: Hen
+Date:   09.02.2026
+*/
+#include <string.h> 	   /* strlen  	    */
+#include <stddef.h> 	   /* size_t 	    */
+#include <assert.h>  	   /* assert 	    */
+#include <errno.h>  	   /* errno  	    */
+#include <stdlib.h> 	   /* strtod, free  */
 
-#include "stack.h"  /* StackCreate  */
-#include "calculator.h"    /* our api */
+#include "stack.h"  	   /* StackCreate   */
+#include "calculator.h"    /* our api 		*/
 
 #define UNUSED(x) (void)(x)
 
@@ -76,6 +81,7 @@ static double Sub(double a, double b);
 static double Mult(double a, double b);
 static double Div(double a, double b);
 static double Pow(double base, double exp);
+static double DuumyFunc(double a, double b);
 static status_t HandleNum(const char** input);
 static status_t HandleNum(const char** input);
 static status_t HandleUnaryPlus(const char** input);
@@ -132,7 +138,7 @@ static void InitOpInfoLut(void)
     {
         g_op_info_lut[i].in_stack_prec = 0;
         g_op_info_lut[i].out_stack_prec = 0;
-        g_op_info_lut[i].calc_func = NULL;
+        g_op_info_lut[i].calc_func = DuumyFunc;
     }
     
     g_op_info_lut['+'].in_stack_prec = 10;
@@ -157,7 +163,7 @@ static void InitOpInfoLut(void)
     
     g_op_info_lut['('].in_stack_prec = 0;
     g_op_info_lut['('].out_stack_prec = 99;
-    g_op_info_lut['('].calc_func = NULL; /* ill build function that just return for safty?*/
+    g_op_info_lut['('].calc_func = DuumyFunc;
 }
 
 static void InitTransitionLut(void)
@@ -178,10 +184,10 @@ static void InitTransitionLut(void)
     g_transition_lut[WAIT_FOR_NUM][CHAR_DIGIT].next_state = WAIT_FOR_OP;
     g_transition_lut[WAIT_FOR_NUM][CHAR_DIGIT].handler = HandleNum;
     
-    g_transition_lut[WAIT_FOR_NUM][CHAR_PLUS].next_state = WAIT_FOR_OP;
+    g_transition_lut[WAIT_FOR_NUM][CHAR_PLUS].next_state = WAIT_FOR_NUM;
     g_transition_lut[WAIT_FOR_NUM][CHAR_PLUS].handler = HandleUnaryPlus;
     
-    g_transition_lut[WAIT_FOR_NUM][CHAR_MINUS].next_state = WAIT_FOR_OP;
+    g_transition_lut[WAIT_FOR_NUM][CHAR_MINUS].next_state = WAIT_FOR_NUM;
     g_transition_lut[WAIT_FOR_NUM][CHAR_MINUS].handler = HandleUnaryMinus;
     
     g_transition_lut[WAIT_FOR_NUM][CHAR_OPEN_PAREN].next_state = WAIT_FOR_NUM;
@@ -244,6 +250,7 @@ static void InitCharTypeLut(void)
     g_char_type_lut[' '] = CHAR_SPACE;
     g_char_type_lut['\0'] = CHAR_END;
     g_char_type_lut['\n'] = CHAR_END;
+    g_char_type_lut['='] = CHAR_END;
 }
 
 
@@ -261,8 +268,6 @@ static void InitAllLuts(void)
 /* ----------------------------- Helper functions --------------------------*/
 static status_t FlushStacks(double* result)
 {
-    status_t status = SUCCESS;
-    
     assert (NULL != result);
     
     if (0 != g_paren_count)
@@ -272,10 +277,10 @@ static status_t FlushStacks(double* result)
     
     while (!StackIsEmpty(g_op_stack))
     {
-        status = ComputeTopOperator();
-        if (SUCCESS != status)
+        g_error_status = ComputeTopOperator();
+        if (SUCCESS != g_error_status)
         {
-            return status;
+            return g_error_status;
         }
     }
     
@@ -286,6 +291,8 @@ static status_t FlushStacks(double* result)
 
 static void PeekAndPop(stack_t* stack, void* val)
 {
+	assert (NULL != stack);
+	
     StackPeek(stack, val);
     StackPop(stack);   
 }
@@ -301,16 +308,11 @@ static status_t ComputeTopOperator(void)
     PeekAndPop(g_num_stack, &left);
     PeekAndPop(g_op_stack, &op);
     
-    result = g_op_info_lut[(unsigned char)op].calc_func(left, right);
-    
-    if (ERROR == g_current_state)
-    {
-        return g_error_status;
-    }
+    result = g_op_info_lut[(unsigned char)op].calc_func(left, right); 
     
     StackPush(g_num_stack, &result);
     
-    return SUCCESS;
+    return g_error_status;
 }
 
 static status_t ProcessOperator(char new_op)
@@ -319,21 +321,21 @@ static status_t ProcessOperator(char new_op)
     int new_prec = 0;
     int top_prec = 0;
     int stop_loop = 0;
-    status_t status = SUCCESS;
+
     
-    new_prec = g_op_info_lut[new_op].out_stack_prec;
+    new_prec = g_op_info_lut[(unsigned char)new_op].out_stack_prec;
     
     while (!StackIsEmpty(g_op_stack) && !stop_loop)
     {
         StackPeek(g_op_stack, &top_op);
-        top_prec = g_op_info_lut[top_op].in_stack_prec;
+        top_prec = g_op_info_lut[(unsigned char)top_op].in_stack_prec;
         
         if (top_prec >= new_prec)
         {
-            status = ComputeTopOperator();
-            if (SUCCESS != status)
+            g_error_status = ComputeTopOperator();
+            if (SUCCESS != g_error_status)
             {
-                return status;
+                return g_error_status;
             }
         }
         else
@@ -357,28 +359,31 @@ static status_t ProcessExpression(const char* expression)
 {
     char_type_t char_type = CHAR_INVALID;
     transition_t transition = {0, NULL};
-    status_t status = SUCCESS;
     
     assert(NULL != expression);
     
-    while (ERROR != g_current_state && char_type != CHAR_END)
+    while (SUCCESS == g_error_status && char_type != CHAR_END)
     {
-        char_type = g_char_type_lut[*expression];
+        char_type = g_char_type_lut[(unsigned char)*expression];
         transition = g_transition_lut[g_current_state][char_type];
-        status = transition.handler(&expression);
-        if (SUCCESS != status)
-        {
-            return status;
-        }
+        g_error_status = transition.handler(&expression);  
+        g_current_state = transition.next_state;
     }
     
-    return status;
+    return g_error_status;
 }
 
 /*==========================================================================*/
 
 
 /*---------------------------- Operators math functions ----------------------*/
+static double DuumyFunc(double a, double b)
+{
+	UNUSED(a);
+	UNUSED(b);
+	return 0.0;
+}
+
 static double Add(double a, double b)
 {
     return a + b;
@@ -414,7 +419,6 @@ static double Div(double a, double b)
     if (0.0 == b)
     {
         g_error_status = MATH_ERROR;
-        g_current_state = ERROR;
         
         return 0.0;
     }
@@ -433,7 +437,6 @@ static double Sub(double a, double b)
 static status_t HandleCloseParen(const char** input)
 {
     char top_op = '\0';
-    status_t status = SUCCESS;
     int found_open = 0;
     
     assert(NULL != input);
@@ -441,12 +444,12 @@ static status_t HandleCloseParen(const char** input)
     
     if (0 >= g_paren_count)
     {
-        g_current_state = ERROR;
         g_error_status = INVALID_EXPRESSION;
+        
         return INVALID_EXPRESSION;
     }
     
-    while (!StackIsEmpty(g_op_stack) && !found_open)
+    while (!StackIsEmpty(g_op_stack) && !found_open && SUCCESS == g_error_status)
     {
         StackPeek(g_op_stack, &top_op);
         if ('(' == top_op)
@@ -457,22 +460,16 @@ static status_t HandleCloseParen(const char** input)
         }
         else
         {
-            status = ComputeTopOperator();
-            if (SUCCESS != status)
-            {
-                return status;
-            }
+            g_error_status = ComputeTopOperator();
         }
     }
     
     if (!found_open)
     {
-        g_current_state = ERROR;
         return INVALID_EXPRESSION;
     }
     
     ++(*input);
-    g_current_state = WAIT_FOR_OP;
     
     return SUCCESS;
 }
@@ -483,7 +480,6 @@ static status_t HandleEnd(const char** input)
     
     if (g_unary_flag)
     {
-        g_current_state = ERROR;
         g_error_status = INVALID_EXPRESSION;
         return INVALID_EXPRESSION;
     }
@@ -496,7 +492,6 @@ static status_t HandleOpenParen(const char** input)
     char paren = '(';
     char op = '\0';
     double zero = 0.0;
-    status_t status = SUCCESS;
     
     assert(NULL != input);
     assert(NULL != *input);
@@ -506,10 +501,10 @@ static status_t HandleOpenParen(const char** input)
         StackPush(g_num_stack, &zero);
         op = (g_unary_mult < 0) ? '-' : '+';
         
-        status = ProcessOperator(op);
-        if (SUCCESS != status)
+        g_error_status = ProcessOperator(op);
+        if (SUCCESS != g_error_status)
         {
-            return status;
+            return g_error_status;
         }
         
         ResetUnaryState();
@@ -518,27 +513,23 @@ static status_t HandleOpenParen(const char** input)
     StackPush(g_op_stack, &paren);
     ++g_paren_count;
     ++(*input);
-    g_current_state = WAIT_FOR_NUM;
     
     return SUCCESS;
 }
 
 static status_t HandleOperator(const char** input)
-{
-    status_t status = SUCCESS;
-    
+{    
     assert(NULL != input);
     assert(NULL != *input);
     
-    status = ProcessOperator(**input);
+    g_error_status = ProcessOperator(**input);
     
-    if (SUCCESS != status)
+    if (SUCCESS != g_error_status)
     {
-        return status;
+        return g_error_status;
     }
     
     ++(*input);
-    g_current_state = WAIT_FOR_NUM;
     
     return SUCCESS;
 }
@@ -563,7 +554,6 @@ static status_t HandleUnaryMinus(const char** input)
     g_unary_flag = 1;
 
     ++(*input);
-    g_current_state = WAIT_FOR_NUM;
 
     return SUCCESS;   
 }
@@ -588,7 +578,6 @@ static status_t HandleUnaryPlus(const char** input)
     g_unary_flag = 1;
 
     ++(*input);
-    g_current_state = WAIT_FOR_NUM;
 
     return SUCCESS;
 }
@@ -610,19 +599,11 @@ static status_t HandleNum(const char** input)
         g_error_status = INVALID_EXPRESSION;
         return INVALID_EXPRESSION;
     }
-    
-    if (ERANGE == errno)
-    {
-        g_current_state = ERROR;
-        g_error_status = MATH_ERROR;
-        return MATH_ERROR;		
-    }
-    
+
     ResetUnaryState();
     
     *input = end_ptr;
     StackPush(g_num_stack, &val);
-    g_current_state = WAIT_FOR_OP;
 
     return SUCCESS;    
 }
@@ -640,8 +621,6 @@ static status_t HandleSpace(const char** input)
 static status_t HandleError(const char** input)
 {
     UNUSED(input);
-    
-    g_current_state = ERROR;
     g_error_status = INVALID_EXPRESSION;
     
     return INVALID_EXPRESSION;
@@ -659,30 +638,28 @@ static void Cleanup(void)
 
 status_t Calculator(const char* expression, double* res)
 {
-    status_t status = SUCCESS;
-
     assert (NULL != expression);
     assert (NULL != res);
     
-    status = InitProgram(expression);
-    if (SUCCESS != status)
+    g_error_status = InitProgram(expression);
+    if (SUCCESS != g_error_status)
     {
-        return status;   
+        return g_error_status;   
     }
     if (!g_luts_initialized)
     {
         InitAllLuts();
     }
     
-    status = ProcessExpression(expression);
-    if (SUCCESS != status)
+    (void)ProcessExpression(expression);
+    if (SUCCESS != g_error_status)
     {
         Cleanup();
-        return status;
+        return g_error_status;
     }
     
-    status = FlushStacks(res);
+    g_error_status = FlushStacks(res);
     Cleanup();
 
-    return status;
+    return g_error_status;
 }
