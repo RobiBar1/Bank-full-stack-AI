@@ -5,7 +5,7 @@
 #include <stdlib.h> /* strtod, free */
 
 #include "stack.h"  /* StackCreate  */
-#include "fsm.h"    /* our api */
+#include "calculator.h"    /* our api */
 
 #define UNUSED(x) (void)(x)
 
@@ -77,7 +77,10 @@ static double Mult(double a, double b);
 static double Div(double a, double b);
 static double Pow(double base, double exp);
 static status_t HandleNum(const char** input);
+static status_t HandleNum(const char** input);
 static status_t HandleUnaryPlus(const char** input);
+static status_t HandleUnaryPlus(const char** input);
+static status_t HandleUnaryMinus(const char** input);
 static status_t HandleUnaryMinus(const char** input);
 static status_t HandleOperator(const char** input);
 static status_t HandleOpenParen(const char** input);
@@ -389,14 +392,21 @@ static double Pow(double base, double exp)
 {
     double result = 1.0;
     int i = 0;
+    int is_negetive = 0;
     int n = (int)exp;
+    
+    if (exp < 0)
+    {
+    	n = n - n - n;
+    	++is_negetive;
+    }
     
     for (i = 0; i < n; ++i)
     {
         result *= base;
     }
     
-    return result;
+    return (is_negetive ? 1.0 / result : result);
 }
 
 static double Div(double a, double b)
@@ -535,6 +545,8 @@ static status_t HandleOperator(const char** input)
 
 static status_t HandleUnaryMinus(const char** input)
 {
+	char op = '*';
+	
     assert(NULL != input);
     assert(NULL != *input);
 
@@ -544,8 +556,10 @@ static status_t HandleUnaryMinus(const char** input)
         g_error_status = INVALID_EXPRESSION;
         return INVALID_EXPRESSION;;
     }
-
-    g_unary_mult = -1.0;
+    
+	g_unary_mult = -1.0;
+    StackPush(g_num_stack, &g_unary_mult);
+    StackPush(g_op_stack, &op);
     g_unary_flag = 1;
 
     ++(*input);
@@ -556,6 +570,8 @@ static status_t HandleUnaryMinus(const char** input)
 
 static status_t HandleUnaryPlus(const char** input)
 {
+	char op = '*';
+	
     assert(NULL != input);
     assert(NULL != *input);
 
@@ -567,6 +583,8 @@ static status_t HandleUnaryPlus(const char** input)
     }
 
     g_unary_mult = 1.0;
+    StackPush(g_num_stack, &g_unary_mult);
+    StackPush(g_op_stack, &op);
     g_unary_flag = 1;
 
     ++(*input);
@@ -589,6 +607,7 @@ static status_t HandleNum(const char** input)
     if (end_ptr == *input)
     {
         g_current_state = ERROR;
+        g_error_status = INVALID_EXPRESSION;
         return INVALID_EXPRESSION;
     }
     
@@ -599,7 +618,6 @@ static status_t HandleNum(const char** input)
         return MATH_ERROR;		
     }
     
-    val *= g_unary_mult;
     ResetUnaryState();
     
     *input = end_ptr;

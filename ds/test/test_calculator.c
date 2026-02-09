@@ -2,7 +2,7 @@
 #include <math.h>
 #include <float.h>
 
-#include "fsm.h"
+#include "calculator.h"
 
 #define COLOR_RED		"\033[31m"
 #define COLOR_GREEN		"\033[32m"
