@@ -12,7 +12,7 @@ typedef struct SllNode
     int data;
 } sll_node_t;
 
-int FibonacciIterative(int element_index);
+int FibonacciIteratively(int element_index);
 
 int FibonacciRecursion(int element_index);
 
