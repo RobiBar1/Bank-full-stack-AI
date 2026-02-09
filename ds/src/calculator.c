@@ -322,7 +322,6 @@ static status_t ProcessOperator(char new_op)
     int top_prec = 0;
     int stop_loop = 0;
 
-    
     new_prec = g_op_info_lut[(unsigned char)new_op].out_stack_prec;
     
     while (!StackIsEmpty(g_op_stack) && !stop_loop)
