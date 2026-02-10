@@ -3,7 +3,6 @@ Writer:  Robi
 Checker: Michael
 Date:    10.02.2026
 */
-
 #include <string.h> 	/* strncmp */
 #include <assert.h> 	/* assert  */
 
