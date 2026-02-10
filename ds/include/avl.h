@@ -94,7 +94,7 @@ size_t AVLCount(const avl_t* avl);
  * @return size_t - the height of the avl
  * @complexity: O(n)
  */
-size_t AVLHeight(const avl_t* avl);
+long AVLHeight(const avl_t* avl);
 
 /**
  * @desc finds data in the avl

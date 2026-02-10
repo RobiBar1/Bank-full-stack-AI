@@ -107,8 +107,15 @@ static long GetMax(long a, long b)
 	return (a > b ? a : b);
 }
 
-static GetNodeHight(bst_node_t* node)
+int AVLIsEmpty(const avl_t* avl)
 {
+	return (NULL == avl->dummy->children[LEFT]);
+}
+
+static long GetNodeHight(bst_node_t* node)
+{
+	assert (NULL != node);
+	
 	if (NULL == node)
 	{
 		return 0;
@@ -117,34 +124,79 @@ static GetNodeHight(bst_node_t* node)
 	return node->height;
 }
 
+long AVLHeight(const avl_t* avl)
+{
+	assert (NULL != avl);
+	
+	if (AVLIsEmpty(avl))
+	{
+		return 0;
+	}
+	
+	return avl->dummy->children[LEFT]->height;
+}
+
+static long GetMaxFromTwoChildrens(bst_node_t* current)
+{
+	assert (NULL != current);
+	
+	return GetMax(GetNodeHight(current->children[LEFT])
+				 ,GetNodeHight(current->children[RIGHT]);
+}
+
+static void UpdateParentHightIfNeed(bst_node_t* Parent
+									, int* did_height_change)
+{
+	long max = 0;
+	
+	assert (NULL != Parent);
+	assert (NULL != did_height_change);
+	
+	max = GetMaxFromTwoChildrens(Parent);
+	if (Parent->height != ++max)
+	{
+		Parent->height = max;
+	}
+	else
+	{
+		*did_height_change = 0;
+	}
+}
+
 static bst_node_t* GetMostLeft(bst_node_t* current, int* did_height_change)
 {
-	bst_node_t* ret = NULL;
-	long max = 0;
+	bst_node_t* tmp = NULL;
 	
 	assert (NULL != current);
 	
 	if (NULL != current->children[LEFT]->children[LEFT])
 	{
-		ret = GetMostLeft(current->children[LEFT], did_height_change);
+		tmp = GetMostLeft(current->children[LEFT], did_height_change);
 		if (*did_height_change)
 		{
-			max = GetMax(GetNodeHight(current->children[LEFT]), 
-									  current->children[RIGHT]);
-			current->height = max + 1;
+			UpdateParentHightIfNeed(current);
+			/*CheckBalanceAndfixIfNeed()*/
 		}
 		
-		return?;/*what return here?*/
+		return tmp;
 	}
 	if (NULL == current->children[LEFT]->children[RIGHT])
 	{
 		*did_height_change = 1;
 		return current->children[LEFT];
 	}
+	else
+	{
+		tmp = current->children[LEFT];
+		current->children[LEFT] = tmp->children[RIGHT];
+		--(tmp->children[RIGHT]->height);
+		UpdateParentHightIfNeed(current);
+		/*CheckBalanceAndfixIfNeed()*/
+		*did_height_change = 1;
+	}
 	
 	return current;
 }
-
 
 static bst_node_t* GetNext(bst_node_t* current)
 {
@@ -210,14 +262,8 @@ void AVLRemove(avl_t* avl, void* data)
 	
 	if (!AVLIsEmpty(avl))
 	{
-		RemoveAfterDummy(cur_node->children[LEFT], data
-		, avl->cmp);	
+		RemoveAfterDummy(avl->dummy->children[LEFT], data, avl->cmp);	
 	} 
-}
-
-int AVLIsEmpty(const avl_t* avl)
-{
-	return (NULL == avl->dummy->children[LEFT]);
 }
 
 
