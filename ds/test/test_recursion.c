@@ -66,10 +66,10 @@ int main()
 	APPLY_TEST(FibonacciIteratively_Second_Test());
 	APPLY_TEST(FibonacciRecursion_Simple_Test());
 	APPLY_TEST(FibonacciRecursion_Simple2_Test());
-	/*
+	
 	APPLY_TEST(Flip_Basic_Test());
 	APPLY_TEST(Flip_OnlyOne_Test());
-	*/
+	
 	APPLY_TEST(Strlen_Test());
 	APPLY_TEST(Strcmp_Test());
 	APPLY_TEST(Strcmp_Basic2_Test());
@@ -77,11 +77,11 @@ int main()
 	APPLY_TEST(StrCat_Basic_Test());
 	APPLY_TEST(StrStr_Basic_Test());
 	APPLY_TEST(StrStr_Basic2_Test());
-	/*
+	
 	APPLY_TEST(StackSort_OnlyTwo_Test());
 	APPLY_TEST(StackSort_Three_Test());
 	APPLY_TEST(StackSort_Basic_Test());
-	*/
+	
 	return 0;
 	
 }
@@ -180,7 +180,7 @@ static test_status_t FibonacciRecursion_Simple2_Test(void)
 
 	return res;
 }
-/*
+
 static test_status_t Flip_Basic_Test(void)
 {
 	test_status_t res = TEST_STATUS_SUCCESS;
@@ -245,7 +245,7 @@ static test_status_t Flip_OnlyOne_Test(void)
 
 	return res;
 }
-*/
+
 static test_status_t Strlen_Test(void)
 {
 	test_status_t res = TEST_STATUS_SUCCESS;
@@ -375,7 +375,7 @@ static test_status_t StrStr_Basic2_Test(void)
 
 	return res;
 }
-/*
+
 static test_status_t StackSort_OnlyTwo_Test(void)
 {
 	test_status_t res = TEST_STATUS_SUCCESS;
@@ -469,7 +469,7 @@ static test_status_t StackSort_Basic_Test(void)
 
 	return res;
 }
-*/
+
 
 
 

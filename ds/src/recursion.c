@@ -1,9 +1,73 @@
+/*
+Writer:  Robi
+Checker: 
+Date:    10.02.2026
+*/
+
 #include <string.h> 	/* strncmp */
 #include <assert.h> 	/* assert  */
 
 #include "recursion.h"  /* our api */
 
-stack_t* SortStack(stack_t* stack);
+static void SortStackHelp(stack_t* stack, size_t size, int num)
+{
+    int temp = 0;
+    
+    assert(NULL != stack);
+
+    if(0 == size)
+    {
+        StackPush(stack, &num);
+        return;
+    }
+
+    StackPeek(stack, &temp);
+    StackPop(stack);
+
+    if(num > temp)
+    {
+        SortStackHelp(stack, size - 1, num);
+        StackPush(stack, &temp);
+        return;
+    }
+    else
+    {
+        SortStackHelp(stack, size - 1, temp);
+        StackPush(stack, &num);
+        return;
+    }
+}
+
+static void CallStackHelp(stack_t* stack, size_t size)
+{
+    int top_stack = 0;
+
+    assert(NULL != stack);
+
+    if(1 == size)
+    {
+        return;
+    }
+    
+    StackPeek(stack, &top_stack);
+    StackPop(stack);
+    
+    SortStackHelp(stack, size - 1, top_stack);
+    CallStackHelp(stack, size - 1);
+}
+
+stack_t* SortStack(stack_t* stack)
+{
+    assert(NULL != stack);
+
+    if(StackIsEmpty(stack))
+    {
+        return stack;
+    }
+    
+    CallStackHelp(stack, StackSize(stack));
+    return stack;
+}
 
 size_t Strlen(const char* str)
 {
@@ -112,5 +176,16 @@ int FibonacciIteratively(int element_index)
 
 sll_node_t* FlipList(sll_node_t* head)
 {
-																						
+	sll_node_t* new_head = NULL;
+	
+	if (NULL == head->next)
+	{
+		return head;
+	}
+	
+	new_head = FlipList(head->next);
+	head->next->next = head;
+	head->next = NULL;
+	
+	return new_head;
 }
