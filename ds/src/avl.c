@@ -144,7 +144,7 @@ static long GetMaxFromTwoChildrens(bst_node_t* current)
 				 ,GetNodeHight(current->children[RIGHT]);
 }
 
-static void UpdateParentHightIfNeed(bst_node_t* Parent
+static int UpdateParentHightIfNeed(bst_node_t* Parent
 									, int* did_height_change)
 {
 	long max = 0;
@@ -160,61 +160,69 @@ static void UpdateParentHightIfNeed(bst_node_t* Parent
 	else
 	{
 		*did_height_change = 0;
+		
+		return 0;
+	}
+	
+	return 1;
+	
+}
+
+static void CopyAndRemove(bst_node_t* to, bst_node_t* from, children_t side)
+{
+	to->data = from->data;
+	if (NULL != from->children[side])
+	{
+		RemoveNodeOneChild(to, side);
+	}
+	else
+	{
+		free(from->children[side]); from->children[side] = NULL;
 	}
 }
 
-static bst_node_t* GetMostLeft(bst_node_t* current, int* did_height_change)
+
+static void GoToMostLeftCopyAndRemove(bst_node_t* current, 
+bst_node_t* copy_to, int* did_height_change)
 {
 	bst_node_t* tmp = NULL;
 	
 	assert (NULL != current);
 	
-	if (NULL != current->children[LEFT]->children[LEFT])
+	if (NULL != current->children[LEFT])
 	{
-		tmp = GetMostLeft(current->children[LEFT], did_height_change);
-		if (*did_height_change)
-		{
-			UpdateParentHightIfNeed(current);
-			/*CheckBalanceAndfixIfNeed()*/
-		}
-		
-		return tmp;
-	}
-	if (NULL == current->children[LEFT]->children[RIGHT])
-	{
-		*did_height_change = 1;
-		return current->children[LEFT];
+		GoToMostLeftCopyAndRemove(current->children[LEFT]
+								, copy_to, did_height_change);
+		*did_height_change ? UpdateParentHightIfNeed(current) : return;
 	}
 	else
 	{
-		tmp = current->children[LEFT];
-		current->children[LEFT] = tmp->children[RIGHT];
-		--(tmp->children[RIGHT]->height);
-		UpdateParentHightIfNeed(current);
-		/*CheckBalanceAndfixIfNeed()*/
+		CopyAndRemove(copy_to, current, RIGHT);
 		*did_height_change = 1;
+		UpdateParentHightIfNeed(current);
 	}
-	
-	return current;
 }
 
-static bst_node_t* GetNext(bst_node_t* current)
+static int FindNextLogicCopyAndRemoveIt
+   (bst_node_t* current ,int (*cmp)(const void* left, const void* right))
 {
-	bst_node_t* last_child = NULL;
+	bst_node_t* logic_next = NULL;
 	int did_height_change = 0;
 	
 	assert (NULL != current);
-		
-	current = current->children[RIGHT];
-	if (NULL == current->children[LEFT])
+	
+	logic_next = current->children[RIGHT];
+	if (NULL == logic_next->children[LEFT])
 	{
-		return current;
+		CopyAndRemove(current, logic_next, RIGHT);
+
+		return UpdateParentHightIfNeed(current);
 	}
 	
-	return GetMostLeft(current, &did_height_change);
+	return GoToMostLeftCopyAndRemove(current, &did_height_change);
 }
 
-static void RemoveAfterDummy(avl_node_t* node, void* data,
+static int RemoveAfterDummy(avl_node_t* node, void* data,
 						int (*cmp)(const void* left, const void* right))
 {
 	int res = 0;
@@ -242,17 +250,17 @@ static void RemoveAfterDummy(avl_node_t* node, void* data,
 		}
 		else
 		{
-			GetNext(node);
+			return FindNextLogicCopyAndRemoveIt(node);
 		}
 		
 	}
 	else if (0 < res)
 	{
-		
+		/* return RemoveAfterDummy(); */
 	}
 	else
 	{
-		
+		/* return RemoveAfterDummy(); */
 	}
 }
 
@@ -262,7 +270,8 @@ void AVLRemove(avl_t* avl, void* data)
 	
 	if (!AVLIsEmpty(avl))
 	{
-		RemoveAfterDummy(avl->dummy->children[LEFT], data, avl->cmp);	
+		RemoveAfterDummy(avl->dummy->children[LEFT], data, avl->cmp)
+		? UpdateParentHightIfNeed(avl->dummy->children[LEFT]) : return;
 	} 
 }
 
