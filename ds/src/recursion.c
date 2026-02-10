@@ -80,7 +80,7 @@ size_t Strlen(const char* str)
 	return 1 + Strlen(++str);
 }
 
-int StrCmp(const char *s1, const char *s2)
+int Strcmp(const char *s1, const char *s2)
 {
 	assert (NULL != s1);
 	assert (NULL != s2);
@@ -90,10 +90,10 @@ int StrCmp(const char *s1, const char *s2)
 		return *s1 - *s2;
 	}
 	
-	return StrCmp(++s1, ++s2);
+	return Strcmp(++s1, ++s2);
 }
 
-char* StrCpy(char* dst, const char* src)
+char* Strcpy(char* dst, const char* src)
 {
 	assert (NULL != dst);
 	assert (NULL != src);
@@ -104,12 +104,12 @@ char* StrCpy(char* dst, const char* src)
 		return dst;
 	}
 	
-	StrCpy(dst + 1, src + 1);
+	Strcpy(dst + 1, src + 1);
 	
 	return dst;
 }
 
-char* StrCat(char* dst, const char* src)
+char* Strcat(char* dst, const char* src)
 {
 	char* tmp = dst;
 	
@@ -117,12 +117,12 @@ char* StrCat(char* dst, const char* src)
 	assert (NULL != src);
 	
 	dst = dst + Strlen(dst);
-	StrCpy(dst, src);
+	Strcpy(dst, src);
 	
 	return tmp;
 }
 
-char* StrStr(const char* haystack, const char* needle)
+char* Strstr(const char* haystack, const char* needle)
 {
 	assert (NULL != haystack);
 	assert (NULL != needle);
@@ -137,7 +137,7 @@ char* StrStr(const char* haystack, const char* needle)
 		return (char*)haystack;
 	}
 	
-	return StrStr(haystack + 1, needle);
+	return Strstr(haystack + 1, needle);
 }
 
 int FibonacciRecursion(int element_index)
@@ -151,7 +151,7 @@ int FibonacciRecursion(int element_index)
 		   FibonacciRecursion(element_index - 2));
 }
 
-int FibonacciIteratively(int element_index)
+int FibonacciIterative(int element_index)
 {
 	int a0 = 0;
 	int sum = 0;

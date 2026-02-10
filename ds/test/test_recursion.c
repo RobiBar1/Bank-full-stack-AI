@@ -21,9 +21,9 @@ typedef enum {TEST_STATUS_SUCCESS, TEST_STATUS_FAILURE} test_status_t;
 static void CheckTest(test_status_t result, char* name);
 
 
-static test_status_t FibonacciIteratively_Simple_Test(void);
-static test_status_t FibonacciIteratively_Simple2_Test(void);
-static test_status_t FibonacciIteratively_Second_Test(void);
+static test_status_t FibonacciIterative_Simple_Test(void);
+static test_status_t FibonacciIterative_Simple2_Test(void);
+static test_status_t FibonacciIterative_Second_Test(void);
 static test_status_t FibonacciRecursion_Simple_Test(void);
 static test_status_t FibonacciRecursion_Simple2_Test(void);
 static test_status_t Flip_Basic_Test(void);
@@ -31,10 +31,10 @@ static test_status_t Flip_OnlyOne_Test(void);
 static test_status_t Strlen_Test(void);
 static test_status_t Strcmp_Test(void);
 static test_status_t Strcmp_Basic2_Test(void);
-static test_status_t StrCpy_Basic_Test(void);
-static test_status_t StrCat_Basic_Test(void);
-static test_status_t StrStr_Basic_Test(void);
-static test_status_t StrStr_Basic2_Test(void);
+static test_status_t Strcpy_Basic_Test(void);
+static test_status_t Strcat_Basic_Test(void);
+static test_status_t Strstr_Basic_Test(void);
+static test_status_t Strstr_Basic2_Test(void);
 static test_status_t StackSort_OnlyTwo_Test(void);
 static test_status_t StackSort_Three_Test(void);
 static test_status_t StackSort_Basic_Test(void);
@@ -61,29 +61,25 @@ int main()
 
 	printf("\n ---- TESTS ----\n\n");
 
-	APPLY_TEST(FibonacciIteratively_Simple_Test());
-	APPLY_TEST(FibonacciIteratively_Simple2_Test());
-	APPLY_TEST(FibonacciIteratively_Second_Test());
+	APPLY_TEST(FibonacciIterative_Simple_Test());
+	APPLY_TEST(FibonacciIterative_Simple2_Test());
+	APPLY_TEST(FibonacciIterative_Second_Test());
 	APPLY_TEST(FibonacciRecursion_Simple_Test());
 	APPLY_TEST(FibonacciRecursion_Simple2_Test());
-	
 	APPLY_TEST(Flip_Basic_Test());
 	APPLY_TEST(Flip_OnlyOne_Test());
-	
 	APPLY_TEST(Strlen_Test());
 	APPLY_TEST(Strcmp_Test());
 	APPLY_TEST(Strcmp_Basic2_Test());
-	APPLY_TEST(StrCpy_Basic_Test());
-	APPLY_TEST(StrCat_Basic_Test());
-	APPLY_TEST(StrStr_Basic_Test());
-	APPLY_TEST(StrStr_Basic2_Test());
-	
+	APPLY_TEST(Strcpy_Basic_Test());
+	APPLY_TEST(Strcat_Basic_Test());
+	APPLY_TEST(Strstr_Basic_Test());
+	APPLY_TEST(Strstr_Basic2_Test());
 	APPLY_TEST(StackSort_OnlyTwo_Test());
 	APPLY_TEST(StackSort_Three_Test());
 	APPLY_TEST(StackSort_Basic_Test());
 	
 	return 0;
-	
 }
 
 /* ==== HELPER FUNCTIONS ==== */
@@ -121,11 +117,11 @@ static int StackIsSorted(stack_t* stack)
 /* ==== TEST FUNCTIONS ==== */
 
 
-static test_status_t FibonacciIteratively_Simple_Test(void)
+static test_status_t FibonacciIterative_Simple_Test(void)
 {
 	test_status_t res = TEST_STATUS_SUCCESS;
 	
-	if (5 != FibonacciIteratively(5))
+	if (5 != FibonacciIterative(5))
 	{
 		res = TEST_STATUS_FAILURE;
 	}
@@ -133,11 +129,11 @@ static test_status_t FibonacciIteratively_Simple_Test(void)
 	return res;
 }
 
-static test_status_t FibonacciIteratively_Simple2_Test(void)
+static test_status_t FibonacciIterative_Simple2_Test(void)
 {
 	test_status_t res = TEST_STATUS_SUCCESS;
 	
-	if (21 != FibonacciIteratively(8))
+	if (21 != FibonacciIterative(8))
 	{
 		res = TEST_STATUS_FAILURE;
 	}
@@ -145,11 +141,11 @@ static test_status_t FibonacciIteratively_Simple2_Test(void)
 	return res;
 }
 
-static test_status_t FibonacciIteratively_Second_Test(void)
+static test_status_t FibonacciIterative_Second_Test(void)
 {
 	test_status_t res = TEST_STATUS_SUCCESS;
 	
-	if (1 != FibonacciIteratively(2))
+	if (1 != FibonacciIterative(2))
 	{
 		res = TEST_STATUS_FAILURE;
 	}
@@ -160,8 +156,8 @@ static test_status_t FibonacciIteratively_Second_Test(void)
 static test_status_t FibonacciRecursion_Simple_Test(void)
 {
 	test_status_t res = TEST_STATUS_SUCCESS;
-	int x = FibonacciRecursion(5);
-	if (5 != x)
+	
+	if (5 != FibonacciIterative(5))
 	{
 		res = TEST_STATUS_FAILURE;
 	}
@@ -173,7 +169,7 @@ static test_status_t FibonacciRecursion_Simple2_Test(void)
 {
 	test_status_t res = TEST_STATUS_SUCCESS;
 	
-	if (21 != FibonacciRecursion(8))
+	if (21 != FibonacciIterative(8))
 	{
 		res = TEST_STATUS_FAILURE;
 	}
@@ -269,7 +265,7 @@ static test_status_t Strcmp_Test(void)
 	char str1[] = "hello mars";
 	char str2[] = "hello mars";
 	
-	int ans = StrCmp(str1, str2);
+	int ans = Strcmp(str1, str2);
 	
 	if (0 != ans)
 	{
@@ -286,7 +282,7 @@ static test_status_t Strcmp_Basic2_Test(void)
 	char str1[] = "hello m4rs";
 	char str2[] = "hello mars";
 	
-	int ans = StrCmp(str1, str2);
+	int ans = Strcmp(str1, str2);
 	
 	if (0 <= ans)
 	{
@@ -296,21 +292,21 @@ static test_status_t Strcmp_Basic2_Test(void)
 	return res;
 }
 
-static test_status_t StrCpy_Basic_Test(void)
+static test_status_t Strcpy_Basic_Test(void)
 {
 	test_status_t res = TEST_STATUS_SUCCESS;
 
 	const char src[] = "hello mars";
 	char dst[] = "xxxxxxxxxxxxxxxxxx";
 	
-	char* dst_returned = StrCpy(dst, src);
+	char* dst_returned = Strcpy(dst, src);
 	
 	if (dst_returned != dst)
 	{
 		res = TEST_STATUS_FAILURE;
 	}
 	
-	if (0 != StrCmp(src, dst))
+	if (0 != Strcmp(src, dst))
 	{
 		res = TEST_STATUS_FAILURE;
 	}
@@ -318,7 +314,7 @@ static test_status_t StrCpy_Basic_Test(void)
 	return res;
 }
 
-static test_status_t StrCat_Basic_Test(void)
+static test_status_t Strcat_Basic_Test(void)
 {
 	test_status_t res = TEST_STATUS_SUCCESS;
 
@@ -326,14 +322,14 @@ static test_status_t StrCat_Basic_Test(void)
 	char dst[] = "hello neptune, \0xxxxxxxxxxxxxxxxxxxxx";
 	char ans[] = "hello neptune, hello mars";
 	
-	char* dst_returned = StrCat(dst, src);
+	char* dst_returned = Strcat(dst, src);
 	
 	if (dst_returned != dst)
 	{
 		res = TEST_STATUS_FAILURE;
 	}
 	
-	if (0 != StrCmp(ans, dst))
+	if (0 != Strcmp(ans, dst))
 	{
 		res = TEST_STATUS_FAILURE;
 	}
@@ -341,7 +337,7 @@ static test_status_t StrCat_Basic_Test(void)
 	return res;
 }
 
-static test_status_t StrStr_Basic_Test(void)
+static test_status_t Strstr_Basic_Test(void)
 {
 	test_status_t res = TEST_STATUS_SUCCESS;
 
@@ -349,9 +345,9 @@ static test_status_t StrStr_Basic_Test(void)
 	char needle[] = "mars";
 	char ans_ret[] = "marsagain";
 	
-	char* haystack_ret = StrStr(haystack, needle);
+	char* haystack_ret = Strstr(haystack, needle);
 	
-	if (0 != StrCmp(haystack_ret, ans_ret))
+	if (0 != Strcmp(haystack_ret, ans_ret))
 	{
 		res = TEST_STATUS_FAILURE;
 	}
@@ -359,14 +355,14 @@ static test_status_t StrStr_Basic_Test(void)
 	return res;
 }
 
-static test_status_t StrStr_Basic2_Test(void)
+static test_status_t Strstr_Basic2_Test(void)
 {
 	test_status_t res = TEST_STATUS_SUCCESS;
 
 	const char haystack[] = "hellom4rsagain";
 	char needle[] = "mars";
 	
-	char* haystack_ret = StrStr(haystack, needle);
+	char* haystack_ret = Strstr(haystack, needle);
 	
 	if (NULL != haystack_ret)
 	{
@@ -469,7 +465,6 @@ static test_status_t StackSort_Basic_Test(void)
 
 	return res;
 }
-
 
 
 

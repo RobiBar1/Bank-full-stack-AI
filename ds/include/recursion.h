@@ -12,7 +12,7 @@ typedef struct SllNode
     int data;
 } sll_node_t;
 
-int FibonacciIteratively(int element_index);
+int FibonacciIterative(int element_index);
 
 int FibonacciRecursion(int element_index);
 
@@ -23,12 +23,12 @@ stack_t* SortStack(stack_t* stack);
 
 size_t Strlen(const char* str);
 
-int StrCmp(const char *s1, const char *s2);
+int Strcmp(const char *s1, const char *s2);
 
-char* StrCpy(char* dst, const char* src);
+char* Strcpy(char* dst, const char* src);
 
-char* StrCat(char* dst, const char* src);
+char* Strcat(char* dst, const char* src);
 
-char* StrStr(const char* haystack, const char* needle);
+char* Strstr(const char* haystack, const char* needle);
 
 #endif /*__RECURSION_H__*/
