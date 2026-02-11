@@ -1,3 +1,6 @@
+#include <stdlib.h> /* malloc */
+#include <assert.h> /* assert */
+
 #include "avl.h"
 
 #define DUMY_DATA 0xDEADBEEF
@@ -19,7 +22,7 @@ struct avl
     int (*cmp)(const void* data, const void* param);
 };
 
-static bst_node_t* CreateBSTNode(const void* data, const long height,
+static avl_node_t* CreateAVLNode(const void* data, const long height,
 		   const avl_node_t* left, const avl_node_t* right)
 {
 	avl_node_t* new_avl_node = (avl_node_t*)malloc(sizeof(avl_node_t));
@@ -29,7 +32,7 @@ static bst_node_t* CreateBSTNode(const void* data, const long height,
 	}
 	
 	new_avl_node->data = (void*)data;
-	new_avl_node->height = balance_factor;
+	new_avl_node->height = height;
 	new_avl_node->children[LEFT] = (avl_node_t*)left;
 	new_avl_node->children[RIGHT] = (avl_node_t*)right;
 	
@@ -51,7 +54,7 @@ avl_t* AVLCreate(int (*cmp)(const void* first, const void* second))
 		return NULL;
 	}
 	
-	dummy_node = CreateBSTNode(&dumy_data, 0, NULL, NULL);
+	dummy_node = CreateAVLNode(&dumy_data, 0, NULL, NULL);
 	if (NULL == dummy_node)
 	{
 		free(new_avl); new_avl = NULL;
@@ -66,13 +69,13 @@ avl_t* AVLCreate(int (*cmp)(const void* first, const void* second))
 
 static void DestroyAfterDuumy(avl_node_t* node)
 {
-	if (NULL == node);
+	if (NULL == node)
 	{
 		return;
 	}
 	
-	AVLDestroy(node->children[LEFT]);
-	AVLDestroy(node->children[RIGHT]);
+	DestroyAfterDuumy(node->children[LEFT]);
+	DestroyAfterDuumy(node->children[RIGHT]);
 	free(node); node = NULL;
 }
 
@@ -83,7 +86,7 @@ void AVLDestroy(avl_t* avl)
 	DestroyAfterDuumy(avl->dummy);
 }
 
-static IsLeaf(avl_node_t* node)
+static int IsLeaf(avl_node_t* node)
 {
 	return (NULL == node->children[LEFT] && NULL == node->children[RIGHT]);
 }
@@ -112,7 +115,7 @@ int AVLIsEmpty(const avl_t* avl)
 	return (NULL == avl->dummy->children[LEFT]);
 }
 
-static long GetNodeHight(bst_node_t* node)
+static long GetNodeHight(avl_node_t* node)
 {
 	assert (NULL != node);
 	
@@ -136,39 +139,35 @@ long AVLHeight(const avl_t* avl)
 	return avl->dummy->children[LEFT]->height;
 }
 
-static long GetMaxFromTwoChildrens(bst_node_t* current)
+static long GetMaxFromTwoChildrens(avl_node_t* current)
 {
 	assert (NULL != current);
 	
 	return GetMax(GetNodeHight(current->children[LEFT])
-				 ,GetNodeHight(current->children[RIGHT]);
+				 ,GetNodeHight(current->children[RIGHT]));
 }
 
-static int UpdateParentHightIfNeed(bst_node_t* Parent
+static void UpdateParentHightIfNeed(avl_node_t* parent
 									, int* did_height_change)
 {
 	long max = 0;
 	
-	assert (NULL != Parent);
+	assert (NULL != parent);
 	assert (NULL != did_height_change);
 	
-	max = GetMaxFromTwoChildrens(Parent);
-	if (Parent->height != ++max)
+	max = GetMaxFromTwoChildrens(parent);
+	if (parent->height != ++max)
 	{
-		Parent->height = max;
+		parent->height = max;
 	}
 	else
 	{
 		*did_height_change = 0;
-		
-		return 0;
 	}
-	
-	return 1;
 	
 }
 
-static void CopyAndRemove(bst_node_t* to, bst_node_t* from, children_t side)
+static void CopyAndRemove(avl_node_t* to, avl_node_t* from, children_t side)
 {
 	to->data = from->data;
 	if (NULL != from->children[side])
@@ -182,31 +181,33 @@ static void CopyAndRemove(bst_node_t* to, bst_node_t* from, children_t side)
 }
 
 
-static void GoToMostLeftCopyAndRemove(bst_node_t* current, 
-bst_node_t* copy_to, int* did_height_change)
+static void GoToMostLeftCopyAndRemove(avl_node_t* current, 
+avl_node_t* copy_to, int* did_height_change)
 {
-	bst_node_t* tmp = NULL;
-	
 	assert (NULL != current);
 	
 	if (NULL != current->children[LEFT])
 	{
 		GoToMostLeftCopyAndRemove(current->children[LEFT]
 								, copy_to, did_height_change);
-		*did_height_change ? UpdateParentHightIfNeed(current) : return;
+		if (!*did_height_change)
+		{
+			return;
+		}
+		
+		UpdateParentHightIfNeed(current, did_height_change); 
 	}
 	else
 	{
 		CopyAndRemove(copy_to, current, RIGHT);
 		*did_height_change = 1;
-		UpdateParentHightIfNeed(current);
+		UpdateParentHightIfNeed(current, did_height_change);
 	}
 }
 
-static int FindNextLogicCopyAndRemoveIt
-   (bst_node_t* current ,int (*cmp)(const void* left, const void* right))
+static int FindNextLogicCopyAndRemoveIt(avl_node_t* current)
 {
-	bst_node_t* logic_next = NULL;
+	avl_node_t* logic_next = NULL;
 	int did_height_change = 0;
 	
 	assert (NULL != current);
@@ -215,12 +216,38 @@ static int FindNextLogicCopyAndRemoveIt
 	if (NULL == logic_next->children[LEFT])
 	{
 		CopyAndRemove(current, logic_next, RIGHT);
-
-		return UpdateParentHightIfNeed(current);
+		UpdateParentHightIfNeed(current, &did_height_change);
+		
+		return did_height_change;
 	}
 	
-	return GoToMostLeftCopyAndRemove(current, &did_height_change);
+	GoToMostLeftCopyAndRemove(logic_next, current, &did_height_change);
+	
+	return did_height_change;
 }
+
+static void DeleteNode(avl_node_t* node)
+{
+		if (IsLeaf(node))
+		{
+			free(node); node = NULL;
+		}
+		else if (NULL != node->children[LEFT] &&
+				 NULL == node->children[RIGHT])
+		{
+			RemoveNodeOneChild(node, LEFT);
+		}
+		else if (NULL == node->children[LEFT] && 
+				 NULL != node->children[RIGHT])
+		{
+			RemoveNodeOneChild(node, RIGHT);
+		}
+		else
+		{
+			FindNextLogicCopyAndRemoveIt(node);
+		}
+}
+
 
 static int RemoveAfterDummy(avl_node_t* node, void* data,
 						int (*cmp)(const void* left, const void* right))
@@ -233,26 +260,9 @@ static int RemoveAfterDummy(avl_node_t* node, void* data,
 	res = cmp(node->data, data);
 	if (0 == res)
 	{
-		if (IsLeaf(node))
-		{
-			free(node); node = NULL;
-			return 1;
-		}
-		else if (NULL != node->children[LEFT] && NULL == node->children[RIGHT])
-		{
-			RemoveNodeOneChild(node, LEFT);
-			return 1;
-		}
-		else if (NULL == node->children[LEFT] && NULL != node->children[RIGHT])
-		{
-			RemoveNodeOneChild(node, RIGHT);
-			return 1;
-		}
-		else
-		{
-			return FindNextLogicCopyAndRemoveIt(node);
-		}
+		DeleteNode(node);
 		
+		return 1;
 	}
 	else if (0 < res)
 	{
@@ -260,32 +270,128 @@ static int RemoveAfterDummy(avl_node_t* node, void* data,
 	}
 	else
 	{
-		/* return RemoveAfterDummy(); */
+		/* return RemoveAfterDummy(); */  
 	}
+	
+	return 0;
 }
 
-void AVLRemove(avl_t* avl, void* data)
+void AVLRemove(avl_t* avl, const void* data);
 {
-	assert (NULL != avl);
+	int did_height_change = 0;
 	
-	if (!AVLIsEmpty(avl))
+	assert (NULL != avl);
+	assert (!AVLIsEmpty(avl));
+	
+	if (RemoveAfterDummy(avl->dummy->children[LEFT], (void*)data, avl->cmp) &&
+	UpdateParentHightIfNeed(
+				avl->dummy->children[LEFT], &did_height_change),
+				int (*cmp)(const void* left, const void* right))
 	{
-		RemoveAfterDummy(avl->dummy->children[LEFT], data, avl->cmp)
-		? UpdateParentHightIfNeed(avl->dummy->children[LEFT]) : return;
+		/*CheckBalanceAndRotate()*/
 	} 
 }
 
+static int Insert(avl_node_t* node, const void* data, avl_node_t* new_node,
+int (*cmp)(const void* left, const void* right))
+{
+	int res = 0;
+	int did_height_change = 0;
+	children_t side = LEFT;
+	
+	assert (NULL != node);
+	assert (NULL != cmp);
+	
+	res = cmp(node->data, data);
+	side = (res < 0) * LEFT + (res > 0) * RIGHT;
+	
+	if (NULL == node->children[side])
+	{
+		node->children[side] = new_node;
+		UpdateParentHightIfNeed(node->children[side], &did_height_change))
+		if (did_height_change)
+		{
+			/*CheckBalanceAndRotate()*/
+		}
+		
+		return 0;
+	}
+	
+	res = Insert(node->children[side], data, new_node);
+	UpdateParentHightIfNeed(node->children[side], &did_height_change))
+	if (did_height_change)
+	{
+		/*CheckBalanceAndRotate()*/
+	}
+	
+	return 0;
+}
+
+int AVLInsert(avl_t* avl, const void* data)
+{
+	avl_node_t* node = NULL;
+	
+	assert (NULL != avl);
+	
+	node = CreateAVLNode(data, 0, NULL, NULL);
+	if (NULL == node->children[side])
+	{
+		return 1;
+	}
+	
+	if (AVLIsEmpty(avl))
+	{
+		avl->dummy->children[LEFT] = node;
+	}
+	else
+	{
+		Insert(avl->dummy->children[LEFT], data, node, avl->cmp);
+	}
+	
+	return 0;
+}
+
+Find(avl_node_t* node, void* data, 
+int (*cmp)(const void* left, const void* right))
+{
+	int res = 0;
+	int did_height_change = 0;
+	children_t side = LEFT;
+	
+	assert (NULL != cmp);
+	
+	if (NULL == node)
+	{
+		return NULL;
+	}
+	
+	res = cmp(node->data, data);
+	
+	if (0 == res)
+	{
+		return node->data;
+	}
+	
+	side = (res < 0) * LEFT + (res > 0) * RIGHT;
+	
+	return Find(node->children[side], data, cmp);
+}
+
+void* AVLFind(const avl_t* avl, const void* data)
+{
+	if (AVLIsEmpty(avl))
+	{
+		return NULL;
+	}
+	else
+	{
+		return Find(avl->dummy->children[LEFT], data, avl->cmp);
+	}
+}
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+int main()
+{
+	
+	return 0;
+}

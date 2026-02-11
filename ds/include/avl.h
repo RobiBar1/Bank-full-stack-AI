@@ -67,7 +67,7 @@ int AVLInsert(avl_t* avl, const void* data);
  * @pre data to remove is in the avl
  * @complexity: O(log n)
  */
-void AVLRemove(avl_t* avl, void* data);
+void AVLRemove(avl_t* avl, const void* data);
 
 /**
  * @desc checks if the avl is empty
