@@ -2,6 +2,8 @@
 #define __AVL_H__
 
 #include <stddef.h>/*size_t*/
+#include <sys/types.h> /* ssize_t */
+#include <vector.h> /* vector API */
 
 
 /*
@@ -25,7 +27,7 @@ struct avl
 
 /* ALL DATA IN THE TREE IS UNIQUE */
 
-typedef enum {POST, PRE, IN} traversal_ord_t;
+typedef enum {POST, PRE, IN, NUM_OF_TRAVERSALS} traversal_ord_t;
 
 typedef struct avl avl_t;
 
@@ -91,10 +93,10 @@ size_t AVLCount(const avl_t* avl);
  * @desc returns the height of the avl (from the root)
  * @param[in] avl - the avl
  * @pre avl != NULL
- * @return size_t - the height of the avl
- * @complexity: O(n)
+ * @return size_t - the height of the avl or -1 if the avl tree is an empty valid tree
+ * @complexity: O(1)
  */
-long AVLHeight(const avl_t* avl);
+ssize_t AVLHeight(const avl_t* avl);
 
 /**
  * @desc finds data in the avl
@@ -134,7 +136,7 @@ int AVLForEach(const avl_t* avl, int (*action)(const void* data, void* param), v
  * @return nothing
  * @complexity: O(nlog n)
  */
-void AVLMultiFind(const avl_t* avl, const void* arr, void* out_arr);
+void AVLMultiFind(const avl_t* avl, int (*is_match)(const void* data, const void* param), void* param, vector_t* out_vector);
 
 /**
  * @desc removes all the elements from arr in the avl
@@ -145,7 +147,7 @@ void AVLMultiFind(const avl_t* avl, const void* arr, void* out_arr);
  * @return nothing
  * @complexity: O(nlog n)
  */
-void MultiRemove(const avl_t* avl, const void* arr);
+void MultiRemove(avl_t* avl, int (*is_match)(const void* data, const void* param), void* param);
 
 
-#endif /* __AVL_H__ */          
+#endif /* __AVL_H__ */
