@@ -3,7 +3,7 @@
 
 #include <stddef.h>/*size_t*/
 #include <sys/types.h> /* ssize_t */
-#include <vector.h> /* vector API */
+#include "vector.h" /* vector API */
 
 
 /*

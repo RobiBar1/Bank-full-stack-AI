@@ -9,10 +9,10 @@ Date:	 12.02.2026
 
 #include "avl.h" 	/* our api */
 
-#define LEFT_HEAVY (2)
+#define LEFT_HEAVY  (2)
 #define RIGHT_HEAVY (-2)
-#define RIGHT_LEAN (-1)
-#define LEFT_LEAN (1)
+#define RIGHT_LEAN  (-1)
+#define LEFT_LEAN   (1)
 
 typedef enum {LEFT, RIGHT, NUM_CHILDREN} children_t;
 
@@ -34,7 +34,7 @@ static long GetMax(long a, long b);
 static int IsLeaf(avl_node_t* node);
 static int HasNodeOneChild(avl_node_t* node);
 static long GetMaxFromTwoChildren(avl_node_t* parent);
-static int CheckUpdateHeight(avl_node_t* parent);
+static void CheckUpdateHeight(avl_node_t* parent);
 static void RemoveNodeOneChild(avl_node_t* node, children_t side);
 static void DeleteNode(avl_node_t* parent, avl_node_t* node, children_t side);
 static void* FindRemoveNextLogic(avl_node_t* parent, avl_node_t* node, children_t side);
@@ -62,7 +62,7 @@ static long GetMaxFromTwoChildren(avl_node_t* parent)
     return parent->children[RIGHT]->height;
 }
 
-static int CheckUpdateHeight(avl_node_t* parent)
+static void CheckUpdateHeight(avl_node_t* parent)
 {
     long max = 0;
 
@@ -72,15 +72,12 @@ static int CheckUpdateHeight(avl_node_t* parent)
     if (parent->height != ++max)
     {
         parent->height = max;
-        return 1;
     }
-    
-    return 0;
 }
 
 static int IsLeaf(avl_node_t* node)
 {
-    assert(NULL != node);
+    assert (NULL != node);
     
     return (NULL == node->children[LEFT] && NULL == node->children[RIGHT]);
 }
@@ -95,9 +92,10 @@ static int HasNodeOneChild(avl_node_t* node)
 static avl_node_t* CreateNode(const void* data)
 {
     avl_node_t* new_node = (avl_node_t*)calloc(1, sizeof(avl_node_t));
+    
     if(NULL == new_node)
     {
-        return NULL;
+        return new_node;
     }
     
     new_node->data = (void*)data;
@@ -204,13 +202,13 @@ static void DestroyNodes(avl_node_t* node)
     }
     if(IsLeaf(node))
     {
-        free(node);
+        free(node); node = NULL;
         return;
     }
     
     DestroyNodes(node->children[LEFT]);
     DestroyNodes(node->children[RIGHT]);
-    free(node);
+    free(node); node = NULL;
 }
 
 void AVLDestroy(avl_t* avl)
@@ -238,21 +236,16 @@ static avl_node_t* AVLInsertHelp(avl_node_t* node, avl_node_t* new_node,
     {
         node->children[side] = new_node;
         
-        if (CheckUpdateHeight(node))
-        {
-            return CheckFixBalance(node);
-        }
+        CheckUpdateHeight(node);
         
-        return node;
-    }
-    
-    node->children[side] = AVLInsertHelp(node->children[side], new_node, cmp);
-    if (CheckUpdateHeight(node))
-    {
         return CheckFixBalance(node);
     }
     
-    return node;
+    node->children[side] = AVLInsertHelp(node->children[side], new_node, cmp);
+    CheckUpdateHeight(node);
+    
+	return CheckFixBalance(node);
+       
 }
 
 int AVLInsert(avl_t* avl, const void* data)
@@ -328,6 +321,7 @@ static void* FindRemoveNextLogic(avl_node_t* parent, avl_node_t* node, children_
         data = FindRemoveNextLogic(node, node->children[LEFT], LEFT);
         CheckUpdateHeight(node);
         parent->children[side] = CheckFixBalance(node);
+        
         return data;
     }
     
@@ -514,6 +508,7 @@ int AVLForEach(const avl_t* avl, int (*action)(const void* data, void* param), v
     }
 }
 
+
 static void AVLMultiFindHelp(const avl_node_t* node, void* param, 
      vector_t* out_vector, int (*is_match)(const void* data, const void* param))
 {
@@ -577,5 +572,3 @@ void MultiRemove(avl_t* avl,
     
     AVLMultiRemoveHelp(avl, avl->dummy->children[LEFT], param, is_match);
 }
-
-
