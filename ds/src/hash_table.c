@@ -1,9 +1,15 @@
-#include <stdlib.h>
-#include <assert.h>
-#include <math.h>
+/*
+Writer:  Robi
+Checker: Hadar
+Date:    13.02.2026
+*/
 
-#include "hash_table.h"
-#include "d_link_list.h"
+#include <stdlib.h>      /* size_t */
+#include <assert.h>      /* assert  */
+#include <math.h>        /* pow     */
+
+#include "hash_table.h"  /* our api */
+#include "d_link_list.h" /* dlist_t */
 
 #define UNUSED(x) (void)(x)
 
