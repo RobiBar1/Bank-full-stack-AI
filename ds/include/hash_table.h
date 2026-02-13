@@ -2,8 +2,8 @@
 /*
 struct hash_table
 {
-    size_t(*Hash_Func)(const void*  data);
-    int (*IsMatchFunc)(const void* data,const void* inner_key);
+    size_t(*hash_func)(const void*  data);
+    int (*is_match_func)(const void* data,const void* inner_key);
     size_t num_buckets;
     dlist_t* buckets[1];
 }

@@ -1,4 +1,6 @@
-
+#include <stdlib.h>
+#include <assert.h>
+#include <math.h>
 
 #include "hash_table.h"
 #include "d_link_list.h"
@@ -8,7 +10,7 @@
 struct hash_table
 {
     size_t(*hash_func)(const void*  data);
-    int (*is_match_func)(void* data, void* inner_key);
+    int (*is_match_func)(const void* data,const void* inner_key);
     size_t num_buckets;
     dlist_t* buckets[1];
 };
@@ -24,10 +26,11 @@ static void DestroyAllBuckets(hash_table_t* h_t, size_t num_to_create)
         DListDestroy(h_t->buckets[i]);
         h_t->buckets[i] = NULL;
     }
-    
 }
 
-hash_table_t* HashTableCreate(size_t num_buckets, size_t(*hash_func)(const void* data), int(*is_match_func)(void* data, void* param))
+
+hash_table_t* HashTableCreate(size_t num_buckets, size_t(*hash_func)(const void* data), 
+                                int(*is_match_func)(const void* data,const void* param))
 {
     hash_table_t* h_t = NULL;
     size_t i = 0;
@@ -35,7 +38,7 @@ hash_table_t* HashTableCreate(size_t num_buckets, size_t(*hash_func)(const void*
     assert (NULL != hash_func);
     assert (NULL != is_match_func);
 
-    h_t = (hash_table_t*)malloc(sizeof(hash_table_t) + sizeof(dlist_t*) * sizeof(num_buckets) - 1);
+    h_t = (hash_table_t*)malloc(sizeof(hash_table_t) + sizeof(dlist_t*) * (num_buckets - 1));
     if (NULL == h_t)
     {
         return NULL;
@@ -46,27 +49,25 @@ hash_table_t* HashTableCreate(size_t num_buckets, size_t(*hash_func)(const void*
         h_t->buckets[i] = DListCreate();
         if (NULL == h_t->buckets[i])
         {
-            DestroyAllBuckets(h_t, --i);
+            DestroyAllBuckets(h_t, i);
             free(h_t); h_t = NULL;
             return NULL;
         } 
     }
     
     h_t->num_buckets = num_buckets;
+    h_t->hash_func = hash_func;
+    h_t->is_match_func = is_match_func;
 
     return h_t;
 }
 
 void HashTableDestroy(hash_table_t* table)
-{
-    size_t i = 0;
-    
+{    
     assert (NULL != table);
 
-    for (; i < table->num_buckets; ++i)
-    {
-        DListDestroy(table->buckets[i]);
-    }
+    DestroyAllBuckets(table, table->num_buckets);
+    free(table); table = NULL;
 }
 
 static dlist_t* GetBucket(hash_table_t* table, const void* data)
@@ -93,8 +94,6 @@ void HashTableRemove(hash_table_t* table, const void* data)
 
 int HashTableInsert(hash_table_t* table, const void* data)
 {
-    dlist_t* link_list = NULL;  
-
     assert (NULL != table);
 
     return DListPushFront(GetBucket(table, data), data);
@@ -124,9 +123,6 @@ void* HashTableFind(hash_table_t* table, const void* data)
     return NULL;
 }
 
-int DListForEach(dlist_iter_t from, dlist_iter_t to, int (*dll_action_func)(void* data, void* param), void* param);
-
-
 int HashTableForEach(hash_table_t* table, int (*action_func)(void* data, void* param), void* param)
 {   
     size_t i = 0;
@@ -145,6 +141,8 @@ int HashTableForEach(hash_table_t* table, int (*action_func)(void* data, void* p
             return status;             
         }
     }
+
+    return 0;
 }
 
 static int Count(void* data, void* param)
@@ -152,6 +150,8 @@ static int Count(void* data, void* param)
     UNUSED(data);
 
     ++(*((size_t*)param));
+
+    return 0;
 }
 
 size_t HashTableCount(const hash_table_t* table)
@@ -160,7 +160,7 @@ size_t HashTableCount(const hash_table_t* table)
 
      assert (NULL != table);
 
-     HashTableForEach(table, Count, &count);
+     HashTableForEach((hash_table_t*)table, Count, &count);
 
      return count;
 }
@@ -176,7 +176,7 @@ double HashTableLoadFactor(const hash_table_t* table)
 {
     assert (NULL != table);
 
-    return (HashTableCount(table) / table->num_buckets);
+    return ((double)HashTableCount(table) / table->num_buckets);
 }
 
 double HashTableSD(const hash_table_t* table)
@@ -194,10 +194,4 @@ double HashTableSD(const hash_table_t* table)
     }
     
     return pow((sum / table->num_buckets), 0.5);
-}
-
-int main()
-{
-
-    return 0;
 }
