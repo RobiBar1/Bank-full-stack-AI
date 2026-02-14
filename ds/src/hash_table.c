@@ -13,6 +13,8 @@ Date:    13.02.2026
 
 #define UNUSED(x) (void)(x)
 #define SUCCESS 0
+#define NOT_SUCCESS 1
+
 #define IS_NOT_EMPTY 0
 #define IS_EMPTY 1
 
@@ -37,12 +39,30 @@ static void DestroyAllBuckets(hash_table_t* h_t, size_t num_to_create)
     }
 }
 
+static int InitBuckets(hash_table_t* h_t)
+{
+    size_t i = 0;
+
+    assert (NULL != h_t);
+
+    for (; i < h_t->num_buckets; ++i)
+    {
+        h_t->buckets[i] = DListCreate();
+        if (NULL == h_t->buckets[i])
+        {
+            DestroyAllBuckets(h_t, i);
+            free(h_t); h_t = NULL;
+            return NOT_SUCCESS;
+        } 
+    }
+
+    return SUCCESS;
+}
 
 hash_table_t* HashTableCreate(size_t num_buckets, size_t(*hash_func)(const void* data), 
                                 int(*is_match_func)(const void* data,const void* param))
 {
     hash_table_t* h_t = NULL;
-    size_t i = 0;
 
     assert (NULL != hash_func);
     assert (NULL != is_match_func);
@@ -53,18 +73,14 @@ hash_table_t* HashTableCreate(size_t num_buckets, size_t(*hash_func)(const void*
         return NULL;
     } 
 
-    for (; i < num_buckets; ++i)
+    h_t->num_buckets = num_buckets;
+    if (SUCCESS != InitBuckets(h_t))
     {
-        h_t->buckets[i] = DListCreate();
-        if (NULL == h_t->buckets[i])
-        {
-            DestroyAllBuckets(h_t, i);
-            free(h_t); h_t = NULL;
-            return NULL;
-        } 
+        h_t = NULL;
+        
+        return NULL;
     }
     
-    h_t->num_buckets = num_buckets;
     h_t->hash_func = hash_func;
     h_t->is_match_func = is_match_func;
 
