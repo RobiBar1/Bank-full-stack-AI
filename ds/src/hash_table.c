@@ -12,6 +12,9 @@ Date:    13.02.2026
 #include "d_link_list.h" /* dlist_t */
 
 #define UNUSED(x) (void)(x)
+#define SUCCESS 0
+#define IS_NOT_EMPTY 0
+#define IS_EMPTY 1
 
 struct hash_table
 {
@@ -142,7 +145,7 @@ int HashTableForEach(hash_table_t* table, int (*action_func)(void* data, void* p
     {
         link_list = table->buckets[i];
         status = DListForEach(DListBegin(link_list), DListEnd(link_list), action_func, param);
-        if (status)
+        if (SUCCESS != status)
         {
             return status;             
         }
@@ -173,9 +176,19 @@ size_t HashTableCount(const hash_table_t* table)
 
 int HashTableIsEmpty(const hash_table_t* table)
 {
+    size_t i = 0;
+
     assert (NULL != table);
 
-    return (0 == HashTableCount(table));
+    for (;i < table->num_buckets; ++i)
+    {
+        if (!DListIsEmpty(table->buckets[i]))
+        {
+            return IS_NOT_EMPTY;
+        }
+    }
+
+    return IS_EMPTY;
 }
 
 double HashTableLoadFactor(const hash_table_t* table)
