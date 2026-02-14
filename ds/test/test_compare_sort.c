@@ -14,7 +14,7 @@
 #define NOT_SORTED (0)
 #define SORTED (1)
 
-static CheckIfSorted(int* arr, size_t size)
+static int CheckIfSorted(int* arr, size_t size)
 {
 	size_t i = 0;
 	
@@ -46,7 +46,7 @@ static void TestInsertionSort(int* arr)
 	InsertionSort(arr, ARR_SIZE);	
 	end = clock();
 	
-	printf("time is: " GREEN " %lf" RESET "\n", ((double)(end) - (double)(start)) / CLOCKS_PER_SEC);	
+	printf("time is: " GREEN " %l" RESET "\n", ((double)(end) - (double)(start)) / CLOCKS_PER_SEC);	
 	if (!CheckIfSorted(arr, ARR_SIZE))
 	{
 		printf("InsertionSort" RED " failed" RESET "\n");	
@@ -81,7 +81,7 @@ static void TestBubbleSort(int *arr)
 	
 	BubbleSort(arr, ARR_SIZE);
 	end = clock();
-		printf("time is: " GREEN " %lf" RESET "\n", ((double)(end) - (double)(start)) / CLOCKS_PER_SEC);	
+	printf("time is: " GREEN " %lf" RESET "\n", ((double)(end) - (double)(start)) / CLOCKS_PER_SEC);	
 	
 	
 	if (!CheckIfSorted(arr, ARR_SIZE))
@@ -196,7 +196,7 @@ int main()
 	start = clock();
 	qsort(arr1, ARR_SIZE, sizeof(int), compareInts);
 	end = clock();
-		printf("qsort time is: " GREEN " %lf" RESET "\n", ((double)(end) - (double)(start)) / CLOCKS_PER_SEC);	
+	printf("qsort time is: " GREEN " %lf\n" RESET, ((double)(end) - (double)(start)) / CLOCKS_PER_SEC);	
 	
 	
 	TestBubbleSort(arr);
