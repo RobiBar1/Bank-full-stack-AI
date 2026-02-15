@@ -1,7 +1,7 @@
 /*
-Writer: Robi
-Checker: ?
-Date: 14.02.2026
+Writer:  Robi
+Checker: Mayan
+Date:    14.02.2026
 */
 
 #include <assert.h>      /* assert   */
