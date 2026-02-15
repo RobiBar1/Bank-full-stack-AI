@@ -6,7 +6,7 @@ Date: 14.02.2026
 
 #include <assert.h>      /* assert   */
 #include <stdlib.h>      /* malloc   */
-#include <stdint.h>      /* SIZE_MAX */
+#include <stdint.h>      /* SIZE_MAX */ 
 
 #include "quick_merge.h" /* our api  */
 
@@ -14,8 +14,7 @@ Date: 14.02.2026
 #define ALLOCATE_FAIL 1
 
 /*============================= Binary Serch Iterative ============================*/
-
-int BinarySerchIterative(int* arr, size_t size, int num_to_find)
+ssize_t BinarySearchIter(const int* arr, size_t size, int num_to_find)
 {
     size_t left = 0;
     size_t right = size - 1;
@@ -47,7 +46,7 @@ int BinarySerchIterative(int* arr, size_t size, int num_to_find)
 
 /*============================= Binary Serch Recursive ============================*/
 
-static int HelperRecursive(int* arr,int mid , int left, int right, int num_to_find)
+static int HelperRecursive(const int* arr,int mid , int left, int right, int num_to_find)
 {
     assert (NULL != arr);
 
@@ -75,13 +74,14 @@ static int HelperRecursive(int* arr,int mid , int left, int right, int num_to_fi
     return HelperRecursive(arr, mid, left, right, num_to_find);
 }
 
-int BinarySerchRecursive(int* arr, size_t size, int num_to_find)
+ssize_t BinarySearchRecursive(const int* arr, size_t size, int num_to_find)
 {
     assert (NULL != arr);
 
     return HelperRecursive(arr, 0, 0, size - 1, num_to_find);
 }
 /*=================================================================================*/
+
 
 /*================================== Merge Sort ===================================*/
 static void CopyElements(int *dest, const int *src, size_t count)
@@ -147,7 +147,7 @@ static void DivideConquer(int* arr, int* arr_left, size_t left, size_t right)
     }
 }
 
-int MergeSortRecursive(int* arr, size_t size)
+int MergeSort(int* arr, size_t size)
 {
     int* left_arr = NULL;
     size_t left_arr_size = 0;
@@ -274,7 +274,8 @@ static void SortRange(char* base, size_t elem_size,
     }
 }
 
-void QuickSortRecursive(int* arr, size_t arr_size, size_t element_size_in_bytes, 
+
+void Qsort(void* arr, size_t arr_size, size_t element_size_in_bytes, 
      int (*cmp_func)(const void* left, const void* right))
 {
     assert(NULL != arr);

@@ -8,7 +8,7 @@
 #define GREEN "\033[0;32m"
 #define RED   "\033[0;31m"
 #define RESET "\033[0m"
-#define ARR_SIZE 5000
+#define ARR_SIZE 50000
 
 #define NOT_SORTED (0)
 #define SORTED (1)
@@ -19,54 +19,54 @@ static void TestBinarySerchIter(char* func_name)
     int arr2[] = {1};
     size_t size = sizeof(arr) / sizeof(int);
     size_t size2 = sizeof(arr2) / sizeof(int);
-    int num_to_find = 7;
-    int expted_answer = 4;
-    int real_answer = 0;
+    ssize_t num_to_find = 7;
+    ssize_t expted_answer = 4;
+    ssize_t real_answer = 0;
 
-    real_answer = BinarySerchIterative(arr, size, num_to_find);
+    real_answer = BinarySearchIter(arr, size, num_to_find);
     if (expted_answer != real_answer)
     {
-        printf(RED " Failed on %s test, should return index %d and return %d\n" RESET
+        printf(RED " Failed on %s test, should return index %lu and return %lu\n" RESET
                         , func_name, expted_answer, real_answer);
         return;
     }
 
     num_to_find = 36;
     expted_answer = 10;
-    real_answer = BinarySerchIterative(arr, size, num_to_find);
+    real_answer = BinarySearchIter(arr, size, num_to_find);
     if (expted_answer != real_answer)
     {
-        printf(RED " Failed on %s test, should return index %d and return %d\n" RESET
+        printf(RED " Failed on %s test, should return index %lu and return %lu\n" RESET
                         , func_name, expted_answer, real_answer);
         return;
     }
 
     num_to_find = 12;
     expted_answer = -1;
-    real_answer = BinarySerchIterative(arr, size, num_to_find);
+    real_answer = BinarySearchIter(arr, size, num_to_find);
     if (expted_answer != real_answer)
     {
-        printf(RED " Failed on %s test, should return index %d and return %d\n" RESET
+        printf(RED " Failed on %s test, should return index %lu and return %lu\n" RESET
                         , func_name, expted_answer, real_answer);
         return;
     }
 
     num_to_find = 1;
     expted_answer = 0;
-    real_answer = BinarySerchIterative(arr2, size2, num_to_find);
+    real_answer = BinarySearchIter(arr2, size2, num_to_find);
     if (expted_answer != real_answer)
     {
-        printf(RED " Failed on %s test, should return index %d and return %d\n" RESET
+        printf(RED " Failed on %s test, should return index %lu and return %lu\n" RESET
                         , func_name, expted_answer, real_answer);
         return;
     }
 
     num_to_find = 0;
     expted_answer = -1;
-    real_answer = BinarySerchIterative(arr2, size2, num_to_find);
+    real_answer = BinarySearchIter(arr2, size2, num_to_find);
     if (expted_answer != real_answer)
     {
-        printf(RED " Failed on %s test, should return index %d and return %d\n" RESET
+        printf(RED " Failed on %s test, should return index %lu and return %lu\n" RESET
                         , func_name, expted_answer, real_answer);
         return;
     }
@@ -81,54 +81,54 @@ static void TestBinarySerchRecursive(char* func_name)
     int arr2[] = {1};
     size_t size = sizeof(arr) / sizeof(int);
     size_t size2 = sizeof(arr2) / sizeof(int);
-    int num_to_find = 7;
-    int expted_answer = 4;
-    int real_answer = 0;
+    ssize_t num_to_find = 7;
+    ssize_t expted_answer = 4;
+    ssize_t real_answer = 0;
 
-    real_answer = BinarySerchRecursive(arr, size, num_to_find);
+    real_answer = BinarySearchRecursive(arr, size, num_to_find);
     if (expted_answer != real_answer)
     {
-        printf(RED " Failed on %s test, should return index %d and return %d\n" RESET
+        printf(RED " Failed on %s test, should return index %lu and return %lu\n" RESET
                         , func_name, expted_answer, real_answer);
         return;
     }
 
     num_to_find = 36;
     expted_answer = 10;
-    real_answer = BinarySerchRecursive(arr, size, num_to_find);
+    real_answer = BinarySearchRecursive(arr, size, num_to_find);
     if (expted_answer != real_answer)
     {
-        printf(RED " Failed on %s test, should return index %d and return %d\n" RESET
+        printf(RED " Failed on %s test, should return index %lu and return %lu\n" RESET
                         , func_name, expted_answer, real_answer);
         return;
     }
 
     num_to_find = 12;
     expted_answer = -1;
-    real_answer = BinarySerchRecursive(arr, size, num_to_find);
+    real_answer = BinarySearchRecursive(arr, size, num_to_find);
     if (expted_answer != real_answer)
     {
-        printf(RED " Failed on %s test, should return index %d and return %d\n" RESET
+        printf(RED " Failed on %s test, should return index %lu and return %lu\n" RESET
                         , func_name, expted_answer, real_answer);
         return;
     }
 
     num_to_find = 1;
     expted_answer = 0;
-    real_answer = BinarySerchRecursive(arr2, size2, num_to_find);
+    real_answer = BinarySearchRecursive(arr2, size2, num_to_find);
     if (expted_answer != real_answer)
     {
-        printf(RED " Failed on %s test, should return index %d and return %d\n" RESET
+        printf(RED " Failed on %s test, should return index %lu and return %lu\n" RESET
                         , func_name, expted_answer, real_answer);
         return;
     }
 
     num_to_find = 0;
     expted_answer = -1;
-    real_answer = BinarySerchRecursive(arr2, size2, num_to_find);
+    real_answer = BinarySearchRecursive(arr2, size2, num_to_find);
     if (expted_answer != real_answer)
     {
-        printf(RED " Failed on %s test, should return index %d and return %d\n" RESET
+        printf(RED " Failed on %s test, should return index %lu and return %lu\n" RESET
                         , func_name, expted_answer, real_answer);
         return;
     }
@@ -194,7 +194,7 @@ static int TestMergeSort(char* func_name, int* arr, int* arr1)
 	printf("qsort time is: " GREEN " %f\n" RESET, ((double)(end) - (double)(start)) / CLOCKS_PER_SEC);
 	
     start = clock();
-	MergeSortRecursive(arr, ARR_SIZE);
+	MergeSort(arr, ARR_SIZE);
     end = clock();
     printf("%s time is: " GREEN " %f\n" RESET, func_name, 
                             ((double)(end) - (double)(start)) / CLOCKS_PER_SEC);
@@ -225,7 +225,7 @@ static int TestQuickSort(char* func_name, int* arr, int* arr1)
     }
 
     start = clock();
-	QuickSortRecursive(arr, ARR_SIZE, sizeof(int), compareInts);
+	Qsort(arr, ARR_SIZE, sizeof(int), compareInts);
     end = clock();
     printf("%s time is:" GREEN " %f\n" RESET, func_name, 
                             ((double)(end) - (double)(start)) / CLOCKS_PER_SEC);
@@ -252,9 +252,9 @@ int main()
 	CopyArr(arr, arr_copy);
 	CopyArr(arr, arr1);
 
-    TestBinarySerchIter("BinarySerchIterative");
-    TestBinarySerchRecursive("BinarySerchRecursive");
-    if (TestMergeSort("MergeSortRecursive", arr, arr1))
+    TestBinarySerchIter("BinarySearchIter");
+    TestBinarySerchRecursive("BinarySearchRecursive");
+    if (TestMergeSort("MergeSort", arr, arr1))
     {
         free(arr); arr = NULL;
 		free(arr1); arr1 = NULL;
@@ -263,7 +263,7 @@ int main()
     }
 
     CopyArr(arr_copy, arr);
-    if (TestQuickSort("QuickSortRecursive", arr, arr1))
+    if (TestQuickSort("Qsort", arr, arr1))
     {
         free(arr); arr = NULL;
 		free(arr1); arr1 = NULL;
