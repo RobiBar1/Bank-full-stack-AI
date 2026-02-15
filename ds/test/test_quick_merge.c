@@ -3,12 +3,13 @@
 #include <limits.h>
 #include <time.h>
 
-#include "quick_merge.h"
+#include "compare_sort.h"
 
-#define GREEN "\033[0;32m"
-#define RED   "\033[0;31m"
+#define GREEN "\033[4;1;32m"
+#define RED   "\033[1;9;31m"
 #define RESET "\033[0m"
-#define ARR_SIZE 50000
+
+#define ARR_SIZE 100000
 
 #define NOT_SORTED (0)
 #define SORTED (1)
@@ -72,7 +73,7 @@ static void TestBinarySerchIter(char* func_name)
     }
 
     printf(GREEN "SUCCESS on test %s\n", func_name);
-    printf("=================================================================\n" RESET);
+    printf("==========================================================\n" RESET);
 }
 
 static void TestBinarySerchRecursive(char* func_name)
@@ -134,7 +135,7 @@ static void TestBinarySerchRecursive(char* func_name)
     }
 
     printf(GREEN "SUCCESS on test %s\n", func_name);
-    printf("=================================================================\n" RESET);
+    printf("==========================================================\n" RESET);
 }
 
 

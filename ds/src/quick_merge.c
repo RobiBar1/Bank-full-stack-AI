@@ -8,7 +8,7 @@ Date:    14.02.2026
 #include <stdlib.h>      /* malloc   */
 #include <stdint.h>      /* SIZE_MAX */ 
 
-#include "quick_merge.h" /* our api  */
+#include "compare_sort.h"
 
 #define FINISH_SORTED 0
 #define ALLOCATE_FAIL 1
