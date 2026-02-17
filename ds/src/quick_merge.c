@@ -4,11 +4,11 @@ Checker: Mayan
 Date:    14.02.2026
 */
 
-#include <assert.h>      /* assert   */
-#include <stdlib.h>      /* malloc   */
-#include <stdint.h>      /* SIZE_MAX */ 
+#include <assert.h>       /* assert   */
+#include <stdlib.h>       /* malloc   */
+#include <stdint.h>       /* SIZE_MAX */ 
 
-#include "compare_sort.h"
+#include "compare_sort.h" /* our api */
 
 #define FINISH_SORTED 0
 #define ALLOCATE_FAIL 1
@@ -84,8 +84,11 @@ ssize_t BinarySearchRecursive(const int* arr, size_t size, int num_to_find)
 
 
 /*================================== Merge Sort ===================================*/
-static void CopyElements(int *dest, const int *src, size_t count)
+static void CopyElements(int* dest, const int* src, size_t count)
 {
+    assert (NULL != dest);
+    assert (NULL != src);
+
     if (0 == count--)
     {
         return;
@@ -176,7 +179,7 @@ int MergeSort(int* arr, size_t size)
 
 /*================================== Quick Sort ===================================*/
 
-static void SwapBytes(char *first, char *second, size_t remaining_bytes)
+static void SwapBytes(char* first, char* second, size_t remaining_bytes)
 {
     char temp = 0;
 
