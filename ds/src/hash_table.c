@@ -99,7 +99,7 @@ static dlist_t* GetBucket(hash_table_t* table, const void* data)
 {
     assert (NULL != table);
 
-    return table->buckets[table->hash_func(data)];
+    return table->buckets[table->hash_func(data) % table->num_buckets];
 }
 
 void HashTableRemove(hash_table_t* table, const void* data)
@@ -111,17 +111,7 @@ void HashTableRemove(hash_table_t* table, const void* data)
 
     link_list = GetBucket(table, data);
     iter_to_remove = DListFind(DListBegin(link_list), DListEnd(link_list), data, table->is_match_func);
-    if (!DListIsIterEqual(iter_to_remove, DListEnd(link_list)))
-    {
-        DListRemove(iter_to_remove);
-    }
-}
-
-int HashTableInsert(hash_table_t* table, const void* data)
-{
-    assert (NULL != table);
-
-    return DListPushFront(GetBucket(table, data), data);
+    DListRemove(iter_to_remove);
 }
 
 void* HashTableFind(hash_table_t* table, const void* data)
@@ -146,6 +136,22 @@ void* HashTableFind(hash_table_t* table, const void* data)
     }
 
     return NULL;
+}
+
+int HashTableInsert(hash_table_t* table, const void* data)
+{
+    dlist_t* found_node = NULL;
+    assert (NULL != table);
+
+    found_node = HashTableFind(table, data);
+    if (NULL != found_node)
+    {
+        DListSetData(DListBegin(GetBucket(table, data)), data);
+
+        return SUCCESS;
+    }
+
+    return DListPushFront(GetBucket(table, data), data);
 }
 
 int HashTableForEach(hash_table_t* table, int (*action_func)(void* data, void* param), void* param)
