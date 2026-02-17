@@ -1,3 +1,9 @@
+/*
+Writer:  Robi
+Checker: Shahar
+Date:    17.02.2026
+*/
+
 #include <assert.h> /* assert       */
 #include <stdlib.h> /* malloc       */
 
@@ -67,6 +73,7 @@ size_t HeapCount(const heap_t* heap)
 void* HeapPeek(const heap_t* heap)
 {
     assert (NULL != heap);
+    assert (1 != HeapIsEmpty(heap));
 
     return *(void**)VectorGetAccess(heap->vector, 0);
 }
