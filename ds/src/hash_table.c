@@ -138,9 +138,6 @@ void* HashTableFind(hash_table_t* table, const void* data)
     return NULL;
 }
 
-void* HashTableFind(hash_table_t* table, const void* data)
-
-
 int HashTableInsert(hash_table_t* table, const void* data)
 {
     dlist_t* found_node = NULL;
