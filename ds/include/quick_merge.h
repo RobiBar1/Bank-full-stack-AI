@@ -1,28 +1,7 @@
-#ifndef __SORTINGS_H__
-#define __SORTINGS_H__
+#ifndef __QUICK_MERGE_H__
+#define __QUICK_MERGE_H__
 
-#include <stddef.h>     /* size_t */
 #include <unistd.h>    /* ssize_t */
-
-/*#include "compare_sort.h"*/
-
-
-void BubbleSort(int* arr, size_t size);
-
-void SelectionSort(int* arr, size_t size);
-
-void InsertionSort(int* arr, size_t size);
-
-/**
- * @returns 0 on success and non 0 on failure
- **/
-int CountingSort(int* arr, size_t size);
-
-/**
- * 
- * @returns 0 on success and non 0 on failure
- **/
-int RadixSort(int* arr, size_t size);
 
 /*
 * @pre: arr != NULL.
@@ -52,4 +31,4 @@ int MergeSort(int* arr, size_t size);
 */
 void Qsort(void* arr, size_t arr_len, size_t element_size, int (*compar)(const void*, const void*));
 
-#endif /* __SORTINGS_H__ */
+#endif /* __QUICK_MERGE_H__ */
