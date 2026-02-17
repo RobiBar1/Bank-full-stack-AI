@@ -234,5 +234,5 @@ double HashTableSD(const hash_table_t* table)
         sum += pow((DListCount(table->buckets[i]) - mean), 2);
     }
     
-    return pow((sum / table->num_buckets), 0.5);
+    return sqrt((sum / table->num_buckets));
 }
