@@ -95,7 +95,7 @@ void TrieFree(trie_t* trie, const unsigned char* word);
  * 
  * complexity: O(?) 
  */
-size_t TrieCountPrefix(const trie_t* trie, const unsigned char* prefix);
+size_t TrieCountPrefix(const trie_t* trie);
 
 int TrieIsEmpty(const trie_t* trie);
 

@@ -91,39 +91,117 @@ int TrieIsEmpty(const trie_t* trie)
     return (NULL == trie->root->childrens[LEFT] && NULL == trie->root->childrens[RIGHT]);
 }
 
+static trie_status_t GoNextChild(const unsigned char* word, size_t mask, trie_node_t* runner, size_t i)
+{
+    if (NULL == runner->childrens[!!(word[i] & mask)])
+    {
+        runner->childrens[!!(word[i] & mask)] = CreateTrieNode(runner);
+        if (NULL == runner->childrens[!!(word[i] & mask)])
+        {
+            return ALLOC_FAIL;
+        }
+    }
+    
+    runner = runner->childrens[!!(word[i] & mask)];
+
+    return SUCCESS;
+}
+
+static void UpdateParentOccupied(trie_node_t* runner)
+{
+    while (NULL != runner->parent)
+    {
+        if (NULL != runner->childrens[LEFT] && NULL != runner->childrens[RIGHT])    
+        {
+            runner->is_occupied = runner->childrens[LEFT]->is_occupied && runner->childrens[RIGHT]->is_occupied;
+        }
+    }
+}
+
 trie_status_t TrieInsert(trie_t* trie, const unsigned char* word)
 {
     trie_node_t* runner = NULL;
-    size_t ip_num = 0;
+    trie_status_t status = SUCCESS;
+    size_t tmp_hight = 0;
     size_t i = 0;
     size_t j = 0;
-    int mask = 0;
+    size_t mask = 0;
 
     assert (NULL != trie);
     assert (NULL != word);
 
-    ip_num = trie->depth;
+    tmp_hight = trie->depth;
     runner = trie->root;
-    mask = 0x01 << (ip_num & (CHAR_BIT - 1));
-    for (; i < trie->depth; i += j - 1)
+    mask = 0x01 << (tmp_hight & (CHAR_BIT - 1));
+    for (; tmp_hight; ++i)
     {
-        for (j = 0; j < (ip_num & (CHAR_BIT - 1)); ++j, --ip_num)
+        for (j = 0; j < (tmp_hight & (CHAR_BIT - 1)); ++j, --tmp_hight)
         {
-            if (NULL == runner->childrens[!!(word[i] & mask)])
+            status = GoNextChild(word, mask, runner, i);///
+            if (SUCCESS != status)
             {
-                runner->childrens[!!(word[i] & mask)] = CreateTrieNode(runner);
-                if (NULL == runner->childrens[!!(word[i] & mask)])
-                {
-                    return ALLOC_FAIL;
-                }
+                return status;
             }
 
-            runner = runner->childrens[!!(word[i] & mask)];
             mask = mask >> 1;
         }
 
         mask = 0x01 << (CHAR_BIT - 1);
     }
 
+    runner->is_occupied = 1;
+    UpdateParentOccupied(runner->parent);
+    
     return SUCCESS;
 }
+
+static size_t HelperCount(const trie_node_t* node)
+{
+    size_t sum = 1;
+
+    if (NULL == node)
+    {
+        return 0;
+    }
+
+    sum += NULL != node->childrens[LEFT] ? HelperCount(node->childrens[LEFT]) : 0;
+    sum += NULL != node->childrens[RIGHT] ? HelperCount(node->childrens[RIGHT]) : 0;
+
+    return sum;
+}
+
+size_t TrieCount(const trie_t* trie)
+{
+    assert (NULL != trie);
+
+    return HelperCount(trie->root) - 1;
+}
+
+/*@pre: */
+int TrieFind(trie_t* trie, const unsigned char* word)
+{
+    trie_node_t* runner = NULL;
+    trie_status_t status = SUCCESS;
+    size_t tmp_hight = 0;
+    size_t i = 0;
+    size_t j = 0;
+    size_t mask = 0;
+
+    assert (NULL != trie);
+    assert (NULL != word);
+
+    tmp_hight = trie->depth;
+    runner = trie->root;
+    mask = 0x01 << (tmp_hight & (CHAR_BIT - 1));
+    for (; i < trie->depth; i += j - 1)
+    {
+        
+    }
+
+    assert (NULL != trie);
+    
+
+}
+
+
+
