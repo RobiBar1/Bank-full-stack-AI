@@ -13,14 +13,19 @@ Date:    22.02.2026
 
 #define NOT_FOUND 0
 #define IS_LEAF(depth) (0 == (depth))
-typedef enum {LEFT, RIGHT, NUM_OF_CHILDRENS} childrens_t;
+typedef enum
+{
+    LEFT,
+    RIGHT,
+    NUM_OF_CHILDRENS
+} childrens_t;
 
 typedef struct trie_node
 {
     struct trie_node* childrens[2];
     struct trie_node* parent;
     int is_occupied;
-}trie_node_t;
+} trie_node_t;
 
 struct trie
 {
@@ -53,7 +58,8 @@ trie_t* TrieCreate(size_t depth)
     trie->root = CreateTrieNode(NULL);
     if (NULL == trie->root)
     {
-        free(trie); trie = NULL;
+        free(trie);
+        trie = NULL;
         return NULL;
     }
 
@@ -81,42 +87,46 @@ static void HelperDestory(trie_node_t* node)
         node->childrens[RIGHT] = NULL;
     }
 
-    free(node); node = NULL;
+    free(node);
+    node = NULL;
 }
 
 void TrieDestroy(trie_t* trie)
 {
-    assert (NULL != trie);
+    assert(NULL != trie);
 
     HelperDestory(trie->root);
     trie->root = NULL;
-    free(trie); trie = NULL;
+    free(trie);
+    trie = NULL;
 }
 
 int TrieIsEmpty(const trie_t* trie)
 {
-    assert (NULL != trie);
+    assert(NULL != trie);
 
-    return (NULL == trie->root->childrens[LEFT] && NULL == trie->root->childrens[RIGHT]);
+    return (NULL == trie->root->childrens[LEFT] &&
+            NULL == trie->root->childrens[RIGHT]);
 }
 
-static trie_status_t GoNextChild(const unsigned char* word, size_t height, trie_node_t** runner)
+static trie_status_t GoNextChild(const unsigned char* word, size_t height,
+                                 trie_node_t** runner)
 {
     childrens_t side = LEFT;
 
     assert(NULL != word);
 
-    side = !!(word[height / CHAR_BIT] & (0x80 >> (height & (CHAR_BIT - 1))));
-    if  (NULL == (*runner)->childrens[side])
+    side = !!(word[height / CHAR_BIT] & (0x1 << (height & (CHAR_BIT - 1))));
+    if (NULL == (*runner)->childrens[side])
+    {
+        (*runner)->childrens[side] = CreateTrieNode(*runner);
+        if (NULL == (*runner)->childrens[side])
         {
-            (*runner)->childrens[side] = CreateTrieNode(*runner);
-            if (NULL == (*runner)->childrens[side])
-            {
-                return ALLOC_FAIL;
-            }
+            return ALLOC_FAIL;
         }
-    
-        (*runner) = (*runner)->childrens[side];
+    }
+
+    (*runner) = (*runner)->childrens[side];
 
     return SUCCESS;
 }
@@ -128,11 +138,15 @@ static void UpdateParentOccupied(trie_node_t* runner)
 
     while (NULL != runner)
     {
-        left = NULL != runner->childrens[LEFT] ? runner->childrens[LEFT]->is_occupied : 0;
-        right = NULL != runner->childrens[RIGHT] ? runner->childrens[RIGHT]->is_occupied : 0;
-        
+        left = NULL != runner->childrens[LEFT]
+                   ? runner->childrens[LEFT]->is_occupied
+                   : 0;
+        right = NULL != runner->childrens[RIGHT]
+                    ? runner->childrens[RIGHT]->is_occupied
+                    : 0;
+
         runner->is_occupied = (left && right);
-    
+
         runner = runner->parent;
     }
 }
@@ -150,7 +164,7 @@ trie_status_t TrieInsert(trie_t* trie, const unsigned char* word)
     for (; height < trie->depth; ++height)
     {
         status = GoNextChild(word, height, &runner);
-        if (SUCCESS != status) 
+        if (SUCCESS != status)
         {
             return status;
         }
@@ -180,16 +194,18 @@ static size_t HelperCount(const trie_node_t* node, size_t depth)
         return node->is_occupied;
     }
 
-    return (HelperCount(node->childrens[LEFT], depth) + HelperCount(node->childrens[RIGHT], depth));
+    return (HelperCount(node->childrens[LEFT], depth) +
+HelperCount(node->childrens[RIGHT], depth));
 }
 */
 
 size_t TrieCount(const trie_t* trie)
 {
-    assert (NULL != trie);
+    assert(NULL != trie);
 
     /*return HelperCount(trie->root, trie->depth);*/
-    return trie->count;
+
+    return (trie->count);
 }
 
 int TrieFind(trie_t* trie, const unsigned char* word)
@@ -198,14 +214,14 @@ int TrieFind(trie_t* trie, const unsigned char* word)
     childrens_t side = LEFT;
     size_t height = 0;
 
-
-    assert (NULL != trie);
-    assert (NULL != word);
+    assert(NULL != trie);
+    assert(NULL != word);
 
     runner = trie->root;
     for (; height < trie->depth; ++height)
     {
-        side = !!(word[height / CHAR_BIT] & (0x80 >> (height & (CHAR_BIT - 1))));
+        side =
+            !!(word[height / CHAR_BIT] & (0x80 >> (height & (CHAR_BIT - 1))));
         if (NULL == runner->childrens[side])
         {
             return 0;
@@ -217,7 +233,6 @@ int TrieFind(trie_t* trie, const unsigned char* word)
     return runner->is_occupied;
 }
 
-
 static int GetBit(const unsigned char* word, size_t height)
 {
     return !!(word[height / CHAR_BIT] & (0x80 >> (height % CHAR_BIT)));
@@ -226,7 +241,8 @@ static int GetBit(const unsigned char* word, size_t height)
 static void SetBit(unsigned char* word, size_t height, childrens_t value)
 {
     unsigned char mask = 0x80 >> (height & (CHAR_BIT - 1));
-    word[height / CHAR_BIT] = (word[height / CHAR_BIT] & ~mask) | (value ? mask : 0);
+    word[height / CHAR_BIT] =
+        (word[height / CHAR_BIT] & ~mask) | (value ? mask : 0);
 }
 
 static int IsFree(trie_node_t* node)
@@ -234,7 +250,8 @@ static int IsFree(trie_node_t* node)
     return (NULL == node || !node->is_occupied);
 }
 
-static void FillFirstFree(trie_node_t* node, unsigned char* out_word, size_t height, size_t depth)
+static void FillFirstFree(trie_node_t* node, unsigned char* out_word,
+                          size_t height, size_t depth)
 {
     childrens_t side = 0;
 
@@ -246,7 +263,8 @@ static void FillFirstFree(trie_node_t* node, unsigned char* out_word, size_t hei
     }
 }
 
-trie_status_t GetNextFree(trie_t* trie, const unsigned char* word,  unsigned char* out_word)
+trie_status_t TrieGetFreeNext(trie_t* trie, const unsigned char* word,
+                              unsigned char* out_word)
 {
     trie_node_t* runner = NULL;
     size_t height = 0;
@@ -295,7 +313,7 @@ void TrieFree(trie_t* trie, const unsigned char* word)
         side = GetBit(word, height);
         if (NULL == runner->childrens[side])
         {
-            return; 
+            return;
         }
 
         runner = runner->childrens[side];
@@ -305,4 +323,3 @@ void TrieFree(trie_t* trie, const unsigned char* word)
     --(trie->count);
     UpdateParentOccupied(runner->parent);
 }
-

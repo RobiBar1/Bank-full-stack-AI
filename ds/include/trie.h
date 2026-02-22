@@ -72,7 +72,7 @@ int TrieFind(trie_t* trie, const unsigned char* word);
  * @return status if success
  * @complexity: O(len(word)) 
  */
-trie_status_t GetNext(trie_t* trie, const unsigned char* word,  unsigned char* out_word);
+trie_status_t TrieGetFreeNext(trie_t* trie, const unsigned char* word,  unsigned char* out_word);
 
 /**
  * @brief sets the last node's char entry (for last letter in word) from 0xCAFEBABE to NULL (implementation detail)
@@ -95,7 +95,7 @@ void TrieFree(trie_t* trie, const unsigned char* word);
  * 
  * complexity: O(?) 
  */
-size_t TrieCountPrefix(const trie_t* trie);
+size_t TrieCount(const trie_t* trie);
 
 int TrieIsEmpty(const trie_t* trie);
 
