@@ -6,7 +6,7 @@
 /* #define ALPHABET_SIZE 256 OR 2 you deicide */
 
 
-typedef enum {SUCCESS, TAKEN, ALLOC_FAIL} trie_status_t;
+typedef enum {SUCCESS, TAKEN, ALLOC_FAIL, NOT_EXIST} trie_status_t;
 
 typedef struct trie trie_t;
 
