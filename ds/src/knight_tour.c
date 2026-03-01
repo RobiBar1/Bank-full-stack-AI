@@ -1,5 +1,10 @@
+/*
+Writer: Robi
+Chcker: Maayan
+Date:   01.03.2026
+*/
+
 #include <assert.h> /* assert */
-#include <stdio.h>  /* printf */
 #include <time.h>   /* time_t */
 
 #include "knight_tour.h" /* our api  */
