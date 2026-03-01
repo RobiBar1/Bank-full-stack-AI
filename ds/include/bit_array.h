@@ -20,7 +20,8 @@ bitarr_t BitArrSetAllOff(bitarr_t bit_arr);
 /** @desc sets or clears a specific bit
  * @param[in,out] bit_arr - value representing a bit array
  * @param[in] index - location of the bit that is going to be set
- * @param[in] boolean_value - value indicating whether to set the bit to 1 or to 0
+ * @param[in] boolean_value - value indicating whether to set the bit to 1 or to
+ *0
  * @return the modified bitarr_t
  **/
 bitarr_t BitArrSetBit(bitarr_t bit_arr, size_t index, int boolean_value);
@@ -28,7 +29,8 @@ bitarr_t BitArrSetBit(bitarr_t bit_arr, size_t index, int boolean_value);
 /** @desc gets the value of a specific bit in the given bit array.
  * @param[in] bit_arr - value representing a bit array
  * @param[in] index - the index of the bit to retrieve
- * @param[in] boolean_value - any value other than zero is treated as 1 (non-zero)
+ * @param[in] boolean_value - any value other than zero is treated as 1
+ *(non-zero)
  * @return int - the modified bitarr_t
  **/
 int BitArrGetBit(bitarr_t bit_arr, size_t index);
@@ -74,6 +76,6 @@ bitarr_t BitArrRotateRight(bitarr_t bit_arr, size_t num_rotations);
  * @param[in,out] bit_arr - value representing a bit array
  * @return char* - the transformed string
  **/
-char* BitArrToString(bitarr_t bit_arr, char* dest);
+char *BitArrToString(bitarr_t bit_arr, char *dest);
 
 #endif /*__BIT_ARRAY_H__*/

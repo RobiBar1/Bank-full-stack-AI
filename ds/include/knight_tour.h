@@ -1,48 +1,10 @@
 #ifndef __KNIGHT_TOUR_H__
 #define __KNIGHT_TOUR_H__
 
+#include "bit_array.h" /* bitarray */
+
 #define BOARD_SIZE (64)
 #define NUM_MOVES (8)
-
-/** in src
-#include "bit_array.h" /* bitarray */
-/** in src
-
-typedef struct move_delta
-{
-    signed char dx;
-    signed char dy;
-} move_delta_t;
-
-
-
-*/
-/*
-
-typedef struct move_delta
-{
-    signed char dx;
-    signed char dy;
-} move_delta_t;
-
-
-
-static const move_delta_t knight_moves[] =
-{
-    {1,2},   {2,1},   {2,-1}, {1,-2},
-    {-1,-2}, {-2,-1}, {-2,1}, {-1,2}
-};
-
-
-typedef struct square_moves
-{
-    unsigned char dst_squares[NUM_MOVES];
-    unsigned char num_legal_squares;
-} square_moves_t;
-
-square_moves_t board_moves[BOARD_SIZE] = {0};
-
-*/
 
 typedef enum knight_status { SUCCESS = 0, NOT_FOUND, TIMEOUT } knight_status_t;
 
@@ -79,13 +41,13 @@ unsigned char XYToPosition(unsigned char x, unsigned char y);
  * @pre - y != NULL
  * @returns void
  */
-void positionToXY(unsigned char position, unsigned char *x, unsigned char *y);
+void PositionToXY(unsigned char position, unsigned char *x, unsigned char *y);
 
 /**
  * @brief - checks if a position is valid
  * @param[in] - position_xy - position index
  * @returns 1 if Valid, 0 if invalid
  */
-int isValidPosition(unsigned char position_xy);
+int IsValidPosition(unsigned char position_xy, bitarr_t free_map);
 
 #endif /* __KNIGHT_TOUR_H__ */
