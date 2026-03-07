@@ -1,7 +1,7 @@
 /*
 Writer:  Robi
 Checker: ?
-Date:    22.02.2026
+Date:    07.03.2026
 */
 
 #include <assert.h> /* assert   */
@@ -116,7 +116,7 @@ static trie_status_t GoNextChild(const unsigned char* word, size_t height,
 
     assert(NULL != word);
 
-    side = !!(word[height / CHAR_BIT] & (0x1 << (height & (CHAR_BIT - 1))));
+    side = !!(word[height / CHAR_BIT] & (0x80 >> (height & (CHAR_BIT - 1))));
     if (NULL == (*runner)->childrens[side])
     {
         (*runner)->childrens[side] = CreateTrieNode(*runner);
