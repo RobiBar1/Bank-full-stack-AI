@@ -114,6 +114,11 @@ void DHCPDestroy(dhcp_t* dhcp)
     dhcp = NULL;
 }
 
+/*not truly suuport ipv6, becuase even if i
+ * make the calc suuport it, the return
+ * type in lab header is size_t so it wont
+ * be able to represent this number..
+ * */
 size_t DHCPCount(const dhcp_t* dhcp)
 {
     assert(NULL != dhcp);
