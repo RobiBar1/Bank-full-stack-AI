@@ -89,9 +89,11 @@ static void SortMoves(unsigned char position)
     size_t i = 0;
     size_t j = 0;
     unsigned char tmp = 0;
+    int is_swap = 0;
 
     for (i = 0; i < board_moves[position].num_legal_squares; ++i)
     {
+        is_swap = 0;
         for (j = 0; j < board_moves[position].num_legal_squares - 1 - i; ++j)
         {
             if (board_moves[board_moves[position].dst_squares[j]]
@@ -103,7 +105,13 @@ static void SortMoves(unsigned char position)
                 board_moves[position].dst_squares[j] =
                     board_moves[position].dst_squares[j + 1];
                 board_moves[position].dst_squares[j + 1] = tmp;
+                is_swap = 1;
             }
+        }
+
+        if (!is_swap)
+        {
+            return;
         }
     }
 }
@@ -139,13 +147,9 @@ KnightTourRecursiveStep(unsigned char position,
     assert(NULL != result_path);
 
     ++call_count;
-    if (BOARD_SIZE == step_counter)
+    if (BOARD_SIZE - 1 == step_counter)
     {
         return SUCCESS;
-    }
-    if (!IsValidPosition(position, free_map))
-    {
-        return NOT_FOUND;
     }
     if (0 == (call_count & 0xFFF) && time(NULL) - start_time > time_out_sec)
     {
@@ -156,14 +160,17 @@ KnightTourRecursiveStep(unsigned char position,
     for (; i < board_moves[position].num_legal_squares && TIMEOUT != status;
          ++i)
     {
-        status = KnightTourRecursiveStep(
-            board_moves[position].dst_squares[i], result_path, free_map,
-            step_counter + 1, start_time, time_out_sec);
-        if (SUCCESS == status)
+        if (IsValidPosition(board_moves[position].dst_squares[i], free_map))
         {
-            result_path[step_counter] = position;
+            status = KnightTourRecursiveStep(
+                board_moves[position].dst_squares[i], result_path, free_map,
+                step_counter + 1, start_time, time_out_sec);
+            if (SUCCESS == status)
+            {
+                result_path[step_counter] = position;
 
-            return status;
+                return status;
+            }
         }
     }
 
@@ -179,6 +186,11 @@ knight_status_t KnightTour(unsigned char position_xy,
     time_t start_time = 0;
 
     assert(NULL != result_path);
+
+    if (!IsValidPosition(position_xy, free_places))
+    {
+        return NOT_FOUND;
+    }
 
     InitBoard(use_heuristic);
     start_time = time(NULL);
