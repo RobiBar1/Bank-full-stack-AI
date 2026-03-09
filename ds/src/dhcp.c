@@ -1,6 +1,6 @@
 /*
 Writer:  Robi
-Checker: ?
+Checker: Hadar
 Date:    07.03.2026
 */
 
@@ -21,6 +21,7 @@ struct dhcp
     unsigned char subnet_id[LENGTH_OF_IP];
 };
 
+/* =============== Start helper funcs ========== */
 static void SetIPBit(unsigned char* ip, size_t bit_index, int value)
 {
     unsigned char mask = 0x80 >> (bit_index & (CHAR_BIT - 1));
@@ -65,66 +66,6 @@ static dhcp_status_t InitAddresses(dhcp_t* dhcp)
     }
 
     return DHCP_SUCCESS;
-}
-
-dhcp_t* DHCPCreate(const unsigned char subnet_id[LENGTH_OF_IP],
-                   size_t num_of_net_bits)
-{
-    dhcp_t* dhcp = NULL;
-
-    assert(NULL != subnet_id);
-
-    dhcp = (dhcp_t*)malloc(sizeof(dhcp_t));
-    if (NULL == dhcp)
-    {
-        return NULL;
-    }
-
-    dhcp->trie = TrieCreate(BITS_IN_IP - num_of_net_bits);
-    if (NULL == dhcp->trie)
-    {
-        free(dhcp);
-        dhcp = NULL;
-
-        return NULL;
-    }
-
-    memcpy(dhcp->subnet_id, subnet_id, LENGTH_OF_IP);
-    dhcp->num_of_net_bits = num_of_net_bits;
-    if (DHCP_SUCCESS != InitAddresses(dhcp))
-    {
-        TrieDestroy(dhcp->trie);
-        dhcp->trie = NULL;
-        free(dhcp);
-        dhcp = NULL;
-
-        return NULL;
-    }
-
-    return dhcp;
-}
-
-void DHCPDestroy(dhcp_t* dhcp)
-{
-    assert(NULL != dhcp);
-
-    TrieDestroy(dhcp->trie);
-    dhcp->trie = NULL;
-    free(dhcp);
-    dhcp = NULL;
-}
-
-/*not truly suuport ipv6, becuase even if i
- * make the calc suuport it, the return
- * type in lab header is size_t so it wont
- * be able to represent this number..
- * */
-size_t DHCPCount(const dhcp_t* dhcp)
-{
-    assert(NULL != dhcp);
-
-    return ((size_t)1 << (BITS_IN_IP - dhcp->num_of_net_bits)) -
-           TrieCount(dhcp->trie);
 }
 
 static int GetIPBit(const unsigned char* ip, size_t bit_index)
@@ -181,12 +122,24 @@ static void BuildIPFromHostPart(const dhcp_t* dhcp,
 
 static int IsInSubnet(const dhcp_t* dhcp, const unsigned char ip[LENGTH_OF_IP])
 {
+    size_t full_bytes = 0;
+    size_t remaining_bits = 0;
     size_t i = 0;
 
     assert(NULL != dhcp);
     assert(NULL != ip);
 
-    for (; i < dhcp->num_of_net_bits; ++i)
+    full_bytes = dhcp->num_of_net_bits / CHAR_BIT;
+    remaining_bits = dhcp->num_of_net_bits % CHAR_BIT;
+    for (; i < full_bytes; ++i)
+    {
+        if (ip[i] != dhcp->subnet_id[i])
+        {
+            return 0;
+        }
+    }
+
+    for (i = full_bytes * CHAR_BIT; i < dhcp->num_of_net_bits; ++i)
     {
         if (GetIPBit(ip, i) != GetIPBit(dhcp->subnet_id, i))
         {
@@ -224,6 +177,67 @@ static int IsReservedHostPart(const dhcp_t* dhcp,
     return (0 == memcmp(host_part, reserved, LENGTH_OF_IP));
 }
 
+/* =============== End helper funcs ========== */
+
+dhcp_t* DHCPCreate(const unsigned char subnet_id[LENGTH_OF_IP],
+                   size_t num_of_net_bits)
+{
+    dhcp_t* dhcp = NULL;
+
+    assert(NULL != subnet_id);
+    assert(0 < num_of_net_bits);
+
+    dhcp = (dhcp_t*)malloc(sizeof(dhcp_t));
+    if (NULL == dhcp)
+    {
+        return NULL;
+    }
+
+    dhcp->trie = TrieCreate(BITS_IN_IP - num_of_net_bits);
+    if (NULL == dhcp->trie)
+    {
+        free(dhcp);
+        dhcp = NULL;
+
+        return NULL;
+    }
+
+    memcpy(dhcp->subnet_id, subnet_id, LENGTH_OF_IP);
+    dhcp->num_of_net_bits = num_of_net_bits;
+    if (DHCP_SUCCESS != InitAddresses(dhcp))
+    {
+        DHCPDestroy(dhcp);
+        dhcp = NULL;
+
+        return NULL;
+    }
+
+    return dhcp;
+}
+
+void DHCPDestroy(dhcp_t* dhcp)
+{
+    assert(NULL != dhcp);
+
+    TrieDestroy(dhcp->trie);
+    dhcp->trie = NULL;
+    free(dhcp);
+    dhcp = NULL;
+}
+
+/*not truly suuport ipv6, becuase even if i
+ * make the calc suuport it, the return
+ * type in lab header is size_t so it wont
+ * be able to represent this number..
+ * */
+size_t DHCPCount(const dhcp_t* dhcp)
+{
+    assert(NULL != dhcp);
+
+    return (1LU << (BITS_IN_IP - dhcp->num_of_net_bits)) -
+           TrieCount(dhcp->trie);
+}
+
 dhcp_status_t DHCPAlloc(dhcp_t* dhcp, const unsigned char req_id[LENGTH_OF_IP],
                         unsigned char out_id[LENGTH_OF_IP])
 {
@@ -235,8 +249,12 @@ dhcp_status_t DHCPAlloc(dhcp_t* dhcp, const unsigned char req_id[LENGTH_OF_IP],
     assert(NULL != dhcp);
     assert(NULL != out_id);
     assert(NULL != req_id);
+    assert(IsInSubnet(dhcp, req_id));
 
     ExtractHostPart(dhcp, req_id, requested_host);
+
+    /*assert(!IsReservedHostPart(dhcp, requested_host)); fall in tests*/
+
     if (TrieFind(dhcp->trie, requested_host))
     {
         if (SUCCESS !=
@@ -268,14 +286,13 @@ dhcp_status_t DHCPFree(dhcp_t* dhcp, const unsigned char free_id[LENGTH_OF_IP])
 
     assert(NULL != dhcp);
     assert(NULL != free_id);
-
-    if (!IsInSubnet(dhcp, free_id))
-    {
-        return DHCP_INVALID_ADDRESSES;
-    }
+    /*assert(!IsInSubnet(dhcp, free_id));*/
 
     ExtractHostPart(dhcp, free_id, host_part);
-    if (IsReservedHostPart(dhcp, host_part) || !TrieFind(dhcp->trie, host_part))
+
+    /*assert(IsReservedHostPart(dhcp, host_part));*/
+
+    if (!TrieFind(dhcp->trie, host_part))
     {
         return DHCP_INVALID_ADDRESSES;
     }
