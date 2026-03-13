@@ -1,4 +1,10 @@
 /*
+Writer:  Robi
+Checker: Alon
+Date:    13.03.2026
+*/
+
+/*
 psodo Q1:
     producers:
         while(num_of_msgeges)
@@ -186,11 +192,11 @@ static void InitShared1(exercise1_shared_t* shared)
     shared->total_messages = EX1_MESSAGE_COUNT;
 }
 
-static void InitThreadArg(exercise1_thread_arg_t* x_arg,
+static void InitThreadArg(exercise1_thread_arg_t* thread_arg,
                           exercise1_shared_t* shared)
 {
-    x_arg->shared = shared;
-    x_arg->thread_id = 0;
+    thread_arg->shared = shared;
+    thread_arg->thread_id = 0;
 }
 
 static void EX1(void)
@@ -729,150 +735,163 @@ static void EX4(void)
 /*======================= End Ex4 ==================*/
 
 /*===========================Start Ex5=======================*/
-/*===========================Start Ex5=======================*/
-#define EX5_MESSAGE_COUNT 100
+/* psodo:
+* Producer:
+*   while(more_msg_to_produce) do:
+        FSQEnqueue(BuildMsg())
+        print(Msg)
+
+* FSQEnqueue(val):
+    WaitSemSignal(fsq.empty_slots)
+    mutex_luck(fsq.write)
+    fsq.buffer[fsq.write_index] = val
+    MoveAhed(fsq.write_index)
+    mutex_unluck(fsq.write)
+    SendSemSignal(fsq.full_slot)
+
+* Consumer:
+    while(more_msg_to_read) do:
+        print(FSQDequeue())
+
+* FSQDequeue()
+    WaitSemSignal(fsq.full_slot)
+    mutex_luck(fsq.read)
+    val = fsq.buffer[fsq.read_index]
+    MoveAhed(fsq.read_index)
+    mutex_unluck(fsq.read)
+    SendSemSignal(fsq.empty_slots)
+    return val
+
+* Main:
+    CreateFSQ()
+    masse_need_to_preduce_per_producer = calc(EX5_MESSAGE_COUNT,
+                                              EX5_NUM_PRODUCERS)
+    masse_need_to_read_per_consumer = calc(EX5_MESSAGE_COUNT,
+                                             EX5_NUM_CONSUMERS)
+    CreateAllProducers()
+    CreateAllConsumers()
+    JoinAllProducers()
+    JoinAllConsumers()
+    CleanUp()
+*/
+#define EX5_MESSAGE_COUNT 50
 #define EX5_NUM_PRODUCERS 6
 #define EX5_NUM_CONSUMERS 3
 #define EX5_QUEUE_CAPACITY 10
 
 typedef struct fsq
 {
-    dlist_t* list;
+    int* buffer;
+    size_t capacity;
+    size_t read_index;
+    size_t write_index;
     pthread_mutex_t read_mutex;
     pthread_mutex_t write_mutex;
     sem_t empty_slots;
     sem_t full_slots;
 } fsq_t;
 
-typedef struct exercise5_shared
-{
-    fsq_t* fsq;
-    size_t produced;
-    size_t producers_done;
-    pthread_mutex_t prod_mutex;
-} exercise5_shared_t;
-
-typedef struct exercise5_thread_arg
-{
-    exercise5_shared_t* shared;
-    int thread_id;
-} exercise5_thread_arg_t;
-
-static fsq_t* FsqCreate(size_t capacity)
+static fsq_t* FSQCreate(size_t capacity)
 {
     fsq_t* fsq = NULL;
 
-    assert(0 != capacity);
+    assert(0 < capacity);
 
     fsq = (fsq_t*)malloc(sizeof(fsq_t));
     if (NULL == fsq)
     {
-        exit(1);
+        return NULL;
     }
 
-    fsq->list = DListCreate();
-    if (NULL == fsq->list)
+    fsq->buffer = (int*)malloc(sizeof(int) * capacity);
+    if (NULL == fsq->buffer)
     {
         free(fsq);
         fsq = NULL;
-        exit(1);
+
+        return NULL;
     }
 
-    CheckSysCalls(pthread_mutex_init(&(fsq->read_mutex), NULL), "mutex_init");
-    CheckSysCalls(pthread_mutex_init(&(fsq->write_mutex), NULL), "mutex_init");
-    CheckSysCalls(sem_init(&(fsq->empty_slots), 0, (unsigned int)capacity),
+    fsq->capacity = capacity;
+    fsq->read_index = 0;
+    fsq->write_index = 0;
+    CheckSysCalls(pthread_mutex_init(&fsq->read_mutex, NULL), "mutex_init");
+    CheckSysCalls(pthread_mutex_init(&fsq->write_mutex, NULL), "mutex_init");
+    CheckSysCalls(sem_init(&fsq->empty_slots, 0, (unsigned int)capacity),
                   "sem_init");
-    CheckSysCalls(sem_init(&(fsq->full_slots), 0, 0), "sem_init");
+    CheckSysCalls(sem_init(&fsq->full_slots, 0, 0), "sem_init");
 
     return fsq;
 }
 
-static void FsqDestroy(fsq_t* fsq)
+static void FSQDestroy(fsq_t* fsq)
 {
     assert(NULL != fsq);
 
-    CheckSysCalls(pthread_mutex_destroy(&(fsq->read_mutex)), "mutex_destroy");
-    CheckSysCalls(pthread_mutex_destroy(&(fsq->write_mutex)), "mutex_destroy");
-    CheckSysCalls(sem_destroy(&(fsq->empty_slots)), "sem_destroy");
-    CheckSysCalls(sem_destroy(&(fsq->full_slots)), "sem_destroy");
-    DListDestroy(fsq->list);
-    fsq->list = NULL;
+    CheckSysCalls(pthread_mutex_destroy(&fsq->read_mutex), "mutex_destroy");
+    CheckSysCalls(pthread_mutex_destroy(&fsq->write_mutex), "mutex_destroy");
+    CheckSysCalls(sem_destroy(&fsq->empty_slots), "sem_destroy");
+    CheckSysCalls(sem_destroy(&fsq->full_slots), "sem_destroy");
+    free(fsq->buffer);
+    fsq->buffer = NULL;
     free(fsq);
     fsq = NULL;
 }
 
-static void FsqEnqueue(fsq_t* fsq, int data)
+static void FSQEnqueue(fsq_t* fsq, int value)
 {
-    int status = 0;
+    assert(NULL != fsq);
+
+    CheckSysCalls(sem_wait(&fsq->empty_slots), "sem_wait in FSQEnqueue()");
+    CheckSysCalls(pthread_mutex_lock(&fsq->write_mutex),
+                  "mutex_lock in FSQEnqueue()");
+    fsq->buffer[fsq->write_index] = value;
+    fsq->write_index = (fsq->write_index + 1) % fsq->capacity;
+    CheckSysCalls(pthread_mutex_unlock(&fsq->write_mutex),
+                  "mutex_unlock in FSQEnqueue()");
+    CheckSysCalls(sem_post(&fsq->full_slots), "sem_post in FSQEnqueue()");
+}
+
+static int FSQDequeue(fsq_t* fsq)
+{
+    int value = 0;
 
     assert(NULL != fsq);
 
-    CheckSysCalls(sem_wait(&(fsq->empty_slots)), "sem_wait in FsqEnqueue");
-    CheckSysCalls(pthread_mutex_lock(&(fsq->write_mutex)),
-                  "mutex_lock in FsqEnqueue");
-    status = DListPushBack(fsq->list, (void*)((size_t)data));
-    CheckSysCalls(pthread_mutex_unlock(&(fsq->write_mutex)),
-                  "mutex_unlock in FsqEnqueue");
-    CheckSysCalls(status, "DListPushBack in FsqEnqueue");
-    CheckSysCalls(sem_post(&(fsq->full_slots)), "sem_post in FsqEnqueue");
+    CheckSysCalls(sem_wait(&fsq->full_slots), "sem_wait in FSQDequeue()");
+    CheckSysCalls(pthread_mutex_lock(&fsq->read_mutex),
+                  "mutex_lock in FSQDequeue()");
+    value = fsq->buffer[fsq->read_index];
+    fsq->read_index = (fsq->read_index + 1) % fsq->capacity;
+    CheckSysCalls(pthread_mutex_unlock(&fsq->read_mutex),
+                  "mutex_unlock in FSQDequeue()");
+    CheckSysCalls(sem_post(&fsq->empty_slots), "sem_post in FSQDequeue()");
+
+    return value;
 }
 
-static int FsqDequeue(fsq_t* fsq)
+typedef struct exercise5_thread_arg
 {
-    int data = 0;
-
-    assert(NULL != fsq);
-
-    CheckSysCalls(sem_wait(&(fsq->full_slots)), "sem_wait in FsqDequeue");
-    CheckSysCalls(pthread_mutex_lock(&(fsq->read_mutex)),
-                  "mutex_lock in FsqDequeue");
-    /*CheckSysCalls(pthread_mutex_lock(&(fsq->write_mutex)),
-                  "mutex_lock in FsqDequeue");*/
-    data = (int)(size_t)DListPopFront(fsq->list);
-    /*CheckSysCalls(pthread_mutex_unlock(&(fsq->write_mutex)),
-                  "mutex_unlock in FsqDequeue");*/
-    CheckSysCalls(pthread_mutex_unlock(&(fsq->read_mutex)),
-                  "mutex_unlock in FsqDequeue");
-    CheckSysCalls(sem_post(&(fsq->empty_slots)), "sem_post in FsqDequeue");
-
-    return data;
-}
+    fsq_t* fsq;
+    size_t thread_id;
+    size_t my_count;
+    size_t my_start;
+} exercise5_thread_arg_t;
 
 static void* Exercise5Producer(void* arg)
 {
     exercise5_thread_arg_t* thread_arg = NULL;
     int value = 0;
-    int is_last = 0;
+    size_t i = 0;
 
     assert(NULL != arg);
-    assert(NULL != ((exercise5_thread_arg_t*)arg)->shared);
 
     thread_arg = (exercise5_thread_arg_t*)arg;
-    while (1)
+    for (; i < thread_arg->my_count; ++i)
     {
-        CheckSysCalls(pthread_mutex_lock(&(thread_arg->shared->prod_mutex)),
-                      "mutex_lock in Exercise5Producer");
-        if (EX5_MESSAGE_COUNT <= thread_arg->shared->produced)
-        {
-            ++thread_arg->shared->producers_done;
-            is_last = (EX5_NUM_PRODUCERS == thread_arg->shared->producers_done);
-            CheckSysCalls(
-                pthread_mutex_unlock(&(thread_arg->shared->prod_mutex)),
-                "mutex_unlock in Exercise5Producer");
-            if (is_last)
-            {
-                FsqEnqueue(thread_arg->shared->fsq, -1);
-            }
-
-            return NULL;
-        }
-
-        value = thread_arg->shared->produced++;
-        CheckSysCalls(pthread_mutex_unlock(&(thread_arg->shared->prod_mutex)),
-                      "mutex_unlock in Exercise5Producer");
-        value += 777;
-        FsqEnqueue(thread_arg->shared->fsq, value);
-        printf("Exercise5 producer[%d] -> %d\n", thread_arg->thread_id, value);
+        value = 777 + (int)(thread_arg->my_start + i);
+        FSQEnqueue(thread_arg->fsq, value);
+        printf("Exercise5 producer[%lu] -> %d\n", thread_arg->thread_id, value);
     }
 
     return NULL;
@@ -881,25 +900,15 @@ static void* Exercise5Producer(void* arg)
 static void* Exercise5Consumer(void* arg)
 {
     exercise5_thread_arg_t* thread_arg = NULL;
-    int value = 0;
+    size_t i = 0;
 
     assert(NULL != arg);
-    assert(NULL != ((exercise5_thread_arg_t*)arg)->shared);
 
     thread_arg = (exercise5_thread_arg_t*)arg;
-    while (1)
+    for (; i < thread_arg->my_count; ++i)
     {
-        if (thread_arg->shared->) /* check here only if last element so check
-                                     lock writer mutex either */
-            value = FsqDequeue(thread_arg->shared->fsq);
-        if (-1 == value)
-        {
-            FsqEnqueue(thread_arg->shared->fsq, -1);
-
-            return NULL;
-        }
-
-        printf("Exercise5 consumer[%d] <- %d\n", thread_arg->thread_id, value);
+        printf("Exercise5 consumer[%lu] <- %d\n", thread_arg->thread_id,
+               FSQDequeue(thread_arg->fsq));
     }
 
     return NULL;
@@ -911,27 +920,40 @@ static void EX5(void)
     exercise5_thread_arg_t consumer_args[EX5_NUM_CONSUMERS] = {0};
     pthread_t producers[EX5_NUM_PRODUCERS] = {0};
     pthread_t consumers[EX5_NUM_CONSUMERS] = {0};
-    exercise5_shared_t shared = {0};
+    fsq_t* fsq = NULL;
+    size_t base = 0;
+    size_t remainder = 0;
+    size_t offset = 0;
     size_t i = 0;
 
-    shared.fsq = FsqCreate(EX5_QUEUE_CAPACITY);
-    shared.produced = 0;
-    shared.producers_done = 0;
-    CheckSysCalls(pthread_mutex_init(&(shared.prod_mutex), NULL), "mutex_init");
+    fsq = FSQCreate(EX5_QUEUE_CAPACITY);
+    if (NULL == fsq)
+    {
+        printf("FSQCreate failed\n");
+        exit(1);
+    }
 
+    base = EX5_MESSAGE_COUNT / EX5_NUM_PRODUCERS;      /* 20 / 3 = 6 */
+    remainder = EX5_MESSAGE_COUNT % EX5_NUM_PRODUCERS; /* 20 % 3 = 2*/
     for (; i < EX5_NUM_PRODUCERS; ++i)
     {
-        producer_args[i].shared = &shared;
-        producer_args[i].thread_id = (int)i;
+        producer_args[i].fsq = fsq;
+        producer_args[i].thread_id = i;
+        producer_args[i].my_count = base + (i < remainder);
+        producer_args[i].my_start = offset;
+        offset += producer_args[i].my_count;
         CheckSysCalls(pthread_create(&producers[i], NULL, Exercise5Producer,
                                      &producer_args[i]),
                       "pthread_create");
     }
 
+    base = EX5_MESSAGE_COUNT / EX5_NUM_CONSUMERS;
+    remainder = EX5_MESSAGE_COUNT % EX5_NUM_CONSUMERS;
     for (i = 0; i < EX5_NUM_CONSUMERS; ++i)
     {
-        consumer_args[i].shared = &shared;
-        consumer_args[i].thread_id = (int)i;
+        consumer_args[i].fsq = fsq;
+        consumer_args[i].thread_id = i;
+        consumer_args[i].my_count = base + (i < remainder);
         CheckSysCalls(pthread_create(&consumers[i], NULL, Exercise5Consumer,
                                      &consumer_args[i]),
                       "pthread_create");
@@ -947,11 +969,195 @@ static void EX5(void)
         CheckSysCalls(pthread_join(consumers[i], NULL), "pthread_join");
     }
 
-    CheckSysCalls(pthread_mutex_destroy(&(shared.prod_mutex)), "mutex_destroy");
-    FsqDestroy(shared.fsq);
-    shared.fsq = NULL;
+    FSQDestroy(fsq);
 }
-/*======================= End Ex5 ==================*/
+
+/*======================= End Ex5 ====================*/
+
+/*===========================Start Ex6=======================*/
+/* psodo:
+*  Producer:
+   while(more_msg_to_produce) do:
+        CreateBarrier(shared.consumers_ready) (Will wait until all the
+                                                consumers are ready)
+        LockMutex(shared.mutex)
+        CreateMsg()
+        UpdateVersionChange()
+        UnLockMutex(shared.mutex)
+        print
+        BroudcastAllLisnter(shared.cond) (will wake up all consumers)
+
+    CreateBarrier(shared.consumers_ready)
+    LockMutex(shared.mutex)
+    MarkAsFinished()
+    UpdateVersionChange()
+    UnLockMutex(shared.mutex)
+    BroudcastAllLisnter(shared.cond)
+
+*   Consumer:
+    loop forever and do:
+        TakeTicket(shared.consumers_ready)
+        LockMutex(shared.mutex)
+        sleep while VersionDidntUpdate() and UnLockMutex(shared.mutex)
+        LockMutex(shared.mutex)
+        if IsDoneRunning()
+            UnLockMutex(shared.mutex)
+            return
+        msg = ReadMsg()
+        my_version = UpdateVersion()
+        UnLockMutex(shared.mutex)
+        print
+*/
+
+#define EX6_MESSAGE_COUNT 10
+#define EX6_NUM_CONSUMERS 4
+
+typedef struct exercise6_shared
+{
+    pthread_mutex_t mutex;
+    pthread_cond_t cond;
+    sem_t consumers_ready;
+    int message;
+    int version;
+    int done;
+} exercise6_shared_t;
+
+typedef struct exercise6_consumer_arg
+{
+    exercise6_shared_t* shared;
+    size_t thread_id;
+    int last_version;
+} exercise6_consumer_arg_t;
+
+static void* Exercise6Producer(void* arg)
+{
+    exercise6_shared_t* shared = NULL;
+    size_t index = 0;
+    size_t i = 0;
+    int shared_msg_local = 0;
+    int shared_ver_local = 0;
+
+    assert(NULL != arg);
+
+    shared = (exercise6_shared_t*)arg;
+    for (; index < EX6_MESSAGE_COUNT; ++index)
+    {
+        for (i = 0; i < EX6_NUM_CONSUMERS; ++i)
+        {
+            CheckSysCalls(sem_wait(&shared->consumers_ready),
+                          "sem_wait in Exercise6Producer()");
+        }
+
+        CheckSysCalls(pthread_mutex_lock(&shared->mutex),
+                      "mutex_lock in Exercise6Producer()");
+        shared->message = 777 + index;
+        shared_msg_local = shared->message;
+        shared_ver_local = shared->version++;
+        CheckSysCalls(pthread_mutex_unlock(&shared->mutex),
+                      "mutex_unlock in Exercise6Producer()");
+        printf("Exercise6 producer -> %d (version %d)\n", shared_msg_local,
+               shared_ver_local);
+        CheckSysCalls(pthread_cond_broadcast(&shared->cond),
+                      "cond_broadcast in Exercise6Producer()");
+    }
+
+    for (i = 0; i < EX6_NUM_CONSUMERS; ++i)
+    {
+        CheckSysCalls(sem_wait(&shared->consumers_ready),
+                      "sem_wait in Exercise6Producer()");
+    }
+
+    CheckSysCalls(pthread_mutex_lock(&shared->mutex),
+                  "mutex_lock in Exercise6Producer()");
+    shared->done = 1;
+    ++shared->version;
+    CheckSysCalls(pthread_mutex_unlock(&shared->mutex),
+                  "mutex_unlock in Exercise6Producer()");
+    CheckSysCalls(pthread_cond_broadcast(&shared->cond),
+                  "cond_broadcast in Exercise6Producer()");
+
+    return NULL;
+}
+
+static void* Exercise6Consumer(void* arg)
+{
+    exercise6_consumer_arg_t* thread_arg = (exercise6_consumer_arg_t*)arg;
+    int msg = 0;
+
+    assert(NULL != thread_arg);
+
+    while (1)
+    {
+        CheckSysCalls(sem_post(&thread_arg->shared->consumers_ready),
+                      "sem_post in Exercise6Consumer()");
+        CheckSysCalls(pthread_mutex_lock(&thread_arg->shared->mutex),
+                      "mutex_lock in Exercise6Consumer()");
+        while (thread_arg->last_version == thread_arg->shared->version)
+        {
+            CheckSysCalls(pthread_cond_wait(&thread_arg->shared->cond,
+                                            &thread_arg->shared->mutex),
+                          "cond_wait in Exercise6Consumer()");
+        }
+
+        if (thread_arg->shared->done)
+        {
+            CheckSysCalls(pthread_mutex_unlock(&thread_arg->shared->mutex),
+                          "mutex_unlock in Exercise6Consumer()");
+
+            return NULL;
+        }
+
+        msg = thread_arg->shared->message;
+        thread_arg->last_version = thread_arg->shared->version;
+        CheckSysCalls(pthread_mutex_unlock(&thread_arg->shared->mutex),
+                      "mutex_unlock in Exercise6Consumer()");
+        printf("Exercise6 consumer[%lu] <- %d\n", thread_arg->thread_id, msg);
+    }
+
+    return NULL;
+}
+
+static void EX6(void)
+{
+    exercise6_consumer_arg_t consumer_args[EX6_NUM_CONSUMERS] = {0};
+    pthread_t consumers[EX6_NUM_CONSUMERS] = {0};
+    pthread_t producer_thread = {0};
+    exercise6_shared_t shared = {0};
+    size_t i = 0;
+
+    shared.version = 0;
+    shared.done = 0;
+    shared.message = 0;
+    CheckSysCalls(pthread_mutex_init(&shared.mutex, NULL), "mutex_init");
+    CheckSysCalls(pthread_cond_init(&shared.cond, NULL), "cond_init");
+    CheckSysCalls(sem_init(&shared.consumers_ready, 0, 0), "sem_init");
+
+    for (; i < EX6_NUM_CONSUMERS; ++i)
+    {
+        consumer_args[i].shared = &shared;
+        consumer_args[i].thread_id = i;
+        consumer_args[i].last_version = 0;
+        CheckSysCalls(pthread_create(&consumers[i], NULL, Exercise6Consumer,
+                                     &consumer_args[i]),
+                      "pthread_create");
+    }
+
+    CheckSysCalls(
+        pthread_create(&producer_thread, NULL, Exercise6Producer, &shared),
+        "pthread_create");
+    CheckSysCalls(pthread_join(producer_thread, NULL), "pthread_join");
+
+    for (i = 0; i < EX6_NUM_CONSUMERS; ++i)
+    {
+        CheckSysCalls(pthread_join(consumers[i], NULL), "pthread_join");
+    }
+
+    CheckSysCalls(pthread_mutex_destroy(&shared.mutex), "mutex_destroy");
+    CheckSysCalls(pthread_cond_destroy(&shared.cond), "cond_destroy");
+    CheckSysCalls(sem_destroy(&shared.consumers_ready), "sem_destroy");
+}
+
+/*======================= End Ex6 ====================*/
 
 /*======================= Start Main ==================*/
 static void PrintStart(char* func_name)
@@ -984,6 +1190,7 @@ int main()
     ActiveEx(EX3, "EX3");
     ActiveEx(EX4, "EX4");
     ActiveEx(EX5, "EX5");
+    ActiveEx(EX6, "EX6");
 
     return 0;
 }
