@@ -255,7 +255,7 @@ void BubbleSort(int* arr, size_t size)
         return;
     }
 
-    for (i = 0; i < size - 1; ++i)
+    for (; i < size - 1; ++i)
     {
         swapped = 0;
         for (j = 0; j < size - 1 - i; ++j)
