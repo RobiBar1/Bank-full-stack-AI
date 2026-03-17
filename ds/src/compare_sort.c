@@ -342,7 +342,6 @@ int CountingSort(int* arr, size_t size)
     size_t i = 0;
     size_t* counting_arr;
     size_t* new_arr;
-    /*size_t val = 0;*/
     int max = 0;
     int min = 0;
     size_t counting_size = 0;
@@ -391,7 +390,6 @@ int CountingSort(int* arr, size_t size)
 
     for (i = size - 1; i != SIZE_MAX; --i)
     {
-        /*val = --counting_arr[arr[i] - min];*/
         new_arr[--counting_arr[arr[i] - min]] = arr[i];
     }
 
