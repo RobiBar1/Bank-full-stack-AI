@@ -4,29 +4,12 @@ Checker: Alon
 Date:    13.03.2026
 */
 
-/*
-psodo Q1:
-    producers:
-        while(num_of_msgeges)
-        {
-            msg = CreateMsg();
-            UpdateShareMsg(msg);
-            --num_of_msgeges;
-            SleepUntilConsumerRead();
-        }
-    consumer:
-        while(num_of_msgeges)
-        {
-            msg = WaitToMsgFromProducers();
-            print(msg);
-        }
-*/
-
 #include <assert.h>    /* assert */
 #include <errno.h>     /* errno, EINTR */
 #include <pthread.h>   /* pthreads, mutex */
 #include <sched.h>     /* sched_yield */
 #include <semaphore.h> /* sem_t, sem_init, sem_wait, sem_post */
+#include <signal.h>    /* sig_atomic_t */
 #include <stdio.h>     /* printf, fprintf, perror */
 #include <stdlib.h>    /* malloc, free, exit */
 #include <string.h>    /* memset */
@@ -40,107 +23,67 @@ psodo Q1:
 #define GREEN "\x1B[32m"
 #define RED "\033[1;31m"
 
+#define UNUSED(x) (void)(x)
+
+/*================================ Start Ex1 ==============================*/
+/*
+psodo Q1:
+    Producer:
+        while messages_to_produce:
+            produce value
+            spin while has_message == 1:
+                yield
+            shared_message = value
+            has_message = 1
+            messages_to_produce -= 1
+
+    Consumer:
+        while messages_to_read:
+            spin while has_message == 0:
+                yield
+            value = shared_message
+            has_message = 0
+            consume value
+            messages_to_read -= 1
+*/
+
 #define EX1_MESSAGE_COUNT 7
 #define SUCCESS 0
+#define MARK_AS_HAVE_MESSAGE 1
+#define MARK_AS_HAVE_NO_MESSAGE 0
 
-typedef struct spin_lock
-{
-    volatile int flag;
-} spin_lock_t;
-
-typedef struct exercise1_shared
-{
-    spin_lock_t lock;
-    int has_message;
-    int message;
-    int total_messages;
-} exercise1_shared_t;
-
-typedef struct exercise1_thread_arg
-{
-    exercise1_shared_t* shared;
-    int thread_id;
-} exercise1_thread_arg_t;
+static volatile sig_atomic_t g_ex1_message = 0;
+static volatile sig_atomic_t g_ex1_has_message = 0;
 
 static void CheckSysCalls(int status, const char* text)
 {
     assert(NULL != text);
 
+    UNUSED(text);
     if (0 != status)
     {
-        printf("%s failed with status: %d\n", text, status);
         exit(status);
     }
 }
 
-static void SpinInit(spin_lock_t* lock)
-{
-    assert(NULL != lock);
-
-    lock->flag = 0;
-
-    return;
-}
-
-static void SpinLock(spin_lock_t* lock)
-{
-    assert(NULL != lock);
-
-    while (1)
-    {
-        if (SUCCESS == __atomic_test_and_set(&(lock->flag), __ATOMIC_ACQUIRE))
-        {
-            return;
-        }
-
-        while (0 != lock->flag)
-        {
-            CheckSysCalls(sched_yield(), "sched_yield on SpinLock");
-        }
-    }
-}
-
-static void SpinUnlock(spin_lock_t* lock)
-{
-    assert(NULL != lock);
-
-    __atomic_store_n(&(lock->flag), 0, __ATOMIC_RELEASE);
-}
-
 static void* Exercise1Producer(void* arg)
 {
-    exercise1_thread_arg_t* thread_arg = NULL;
     int index = 0;
     int value = 0;
-    int placed = 0;
 
-    assert(NULL != arg);
-    assert(NULL != ((exercise1_thread_arg_t*)arg)->shared);
-
-    thread_arg = (exercise1_thread_arg_t*)arg;
-    for (; index < thread_arg->shared->total_messages; ++index)
+    UNUSED(arg);
+    for (; index < EX1_MESSAGE_COUNT; ++index)
     {
         value = 777 + index;
-        placed = 0;
-        while (0 == placed)
+        while (MARK_AS_HAVE_MESSAGE ==
+               __atomic_load_n(&g_ex1_has_message, __ATOMIC_ACQUIRE))
         {
-            SpinLock(&(thread_arg->shared->lock));
-            if (0 == thread_arg->shared->has_message)
-            {
-                thread_arg->shared->message = value;
-                thread_arg->shared->has_message = 1;
-                placed = 1;
-            }
-
-            SpinUnlock(&(thread_arg->shared->lock));
-            if (0 == placed)
-            {
-                CheckSysCalls(sched_yield(),
-                              "sched_yield on Exercise1Producer");
-            }
+            sched_yield();
         }
 
-        printf("Exercise1 producer -> %d\n", value);
+        g_ex1_message = value;
+        __atomic_store_n(&g_ex1_has_message, MARK_AS_HAVE_MESSAGE,
+                         __ATOMIC_RELEASE);
     }
 
     return NULL;
@@ -148,82 +91,81 @@ static void* Exercise1Producer(void* arg)
 
 static void* Exercise1Consumer(void* arg)
 {
-    exercise1_thread_arg_t* thread_arg = NULL;
     int consumed_count = 0;
     int value = 0;
-    int taken = 0;
 
-    assert(NULL != arg);
-    assert(NULL != ((exercise1_thread_arg_t*)arg)->shared);
-
-    thread_arg = (exercise1_thread_arg_t*)arg;
-    while (consumed_count < thread_arg->shared->total_messages)
+    UNUSED(arg);
+    for (; EX1_MESSAGE_COUNT > consumed_count; ++consumed_count)
     {
-        taken = 0;
-        while (0 == taken)
+        while (MARK_AS_HAVE_NO_MESSAGE ==
+               __atomic_load_n(&g_ex1_has_message, __ATOMIC_ACQUIRE))
         {
-            SpinLock(&(thread_arg->shared->lock));
-            if (0 != thread_arg->shared->has_message)
-            {
-                value = thread_arg->shared->message;
-                thread_arg->shared->has_message = 0;
-                taken = 1;
-            }
-
-            SpinUnlock(&(thread_arg->shared->lock));
-            if (0 == taken)
-            {
-                CheckSysCalls(sched_yield(),
-                              "sched_yield on Exercise1Consumer");
-            }
+            sched_yield();
         }
 
-        printf("Exercise1 consumer <- %d\n", value);
-        ++consumed_count;
+        value = g_ex1_message;
+        UNUSED(value);
+        __atomic_store_n(&g_ex1_has_message, MARK_AS_HAVE_NO_MESSAGE,
+                         __ATOMIC_RELEASE);
     }
 
     return NULL;
 }
 
-static void InitShared1(exercise1_shared_t* shared)
-{
-    shared->has_message = 0;
-    shared->message = 0;
-    shared->total_messages = EX1_MESSAGE_COUNT;
-}
-
-static void InitThreadArg(exercise1_thread_arg_t* thread_arg,
-                          exercise1_shared_t* shared)
-{
-    thread_arg->shared = shared;
-    thread_arg->thread_id = 0;
-}
-
 static void EX1(void)
 {
-    exercise1_thread_arg_t producer_arg = {0};
-    exercise1_thread_arg_t consumer_arg = {0};
-    exercise1_shared_t shared = {0};
     pthread_t producer_thread = {0};
     pthread_t consumer_thread = {0};
 
-    InitShared1(&shared);
-    SpinInit(&shared.lock);
-
-    InitThreadArg(&producer_arg, &shared);
-    InitThreadArg(&consumer_arg, &shared);
-
-    CheckSysCalls(pthread_create(&producer_thread, NULL, Exercise1Producer,
-                                 &producer_arg),
-                  "pthread_create");
-    CheckSysCalls(pthread_create(&consumer_thread, NULL, Exercise1Consumer,
-                                 &consumer_arg),
-                  "pthread_create");
-    CheckSysCalls(pthread_join(producer_thread, NULL), "pthread_join");
-    CheckSysCalls(pthread_join(consumer_thread, NULL), "pthread_join");
+    CheckSysCalls(
+        pthread_create(&producer_thread, NULL, Exercise1Producer, NULL),
+        "pthread_create in EX1");
+    CheckSysCalls(
+        pthread_create(&consumer_thread, NULL, Exercise1Consumer, NULL),
+        "pthread_create in EX1");
+    CheckSysCalls(pthread_join(producer_thread, NULL), "pthread_join in EX1");
+    CheckSysCalls(pthread_join(consumer_thread, NULL), "pthread_join in EX1");
 }
 
 /*===========================Start Ex2=======================*/
+
+/*
+Psodo Ex2:
+    Producer:
+        loop forever:
+            lock mutex
+            if produced >= MAX:
+                producers_done += 1
+                local_done = 1
+            else
+                value = produced;
+                produced += 1
+            unlock mutex
+            if local_done == 1
+                return
+            val = CalcValue(val)
+            lock mutex
+            status = PushToList(value)
+            unlock mutex
+            if status == FAIL
+                exit(FAIL)
+
+    Consumer:
+        loop forever:
+            lock mutex
+            if list not empty:
+                val = pop value from list
+            else:
+                val = no_val_flag
+
+            if val != no_val_flag
+                do_action(val)
+            else
+                if all producers done:
+                    return
+            yield
+
+*/
 #define EX2_MESSAGE_COUNT 100
 #define EX2_NUM_PRODUCERS 6
 #define EX2_NUM_CONSUMERS 3
@@ -244,34 +186,42 @@ typedef struct exercise2_thread_arg
 
 static void* Exercise2Producer(void* arg)
 {
-    exercise2_thread_arg_t* thread_arg = NULL;
+    exercise2_thread_arg_t* thread_arg = (exercise2_thread_arg_t*)arg;
     int value = 0;
     int status = 0;
+    int is_done = 0;
 
-    assert(NULL != arg);
-    assert(NULL != ((exercise2_thread_arg_t*)arg)->shared);
+    assert(NULL != thread_arg);
+    assert(NULL != thread_arg->shared);
 
-    thread_arg = (exercise2_thread_arg_t*)arg;
     while (1)
     {
-        CheckSysCalls(pthread_mutex_lock(&(thread_arg->shared)->mutex),
-                      "mutex_lock in Exercise2Producer()");
+        pthread_mutex_lock(&(thread_arg->shared)->mutex);
         if (thread_arg->shared->produced >= EX2_MESSAGE_COUNT)
         {
             ++(thread_arg->shared->producers_done);
-            CheckSysCalls(pthread_mutex_unlock(&(thread_arg->shared)->mutex),
-                          "mutex_unlock in Exercise2Producer()");
+            is_done = 1;
+        }
+        else
+        {
+            value = thread_arg->shared->produced++;
+        }
 
+        pthread_mutex_unlock(&(thread_arg->shared)->mutex);
+        if (is_done)
+        {
             return NULL;
         }
 
-        value = 777 + thread_arg->shared->produced++;
+        value += 777;
+        pthread_mutex_lock(&(thread_arg->shared)->mutex);
         status =
             DListPushBack(thread_arg->shared->list, (void*)((size_t)value));
-        CheckSysCalls(pthread_mutex_unlock(&(thread_arg->shared)->mutex),
-                      "mutex_unlock");
-        CheckSysCalls(status, "DListPushBack in Exercise2Producer()");
-        printf("Exercise2 producer[%d] -> %d\n", thread_arg->thread_id, value);
+        pthread_mutex_unlock(&(thread_arg->shared)->mutex);
+        if (SUCCESS != status)
+        {
+            exit(status);
+        }
     }
 
     return NULL;
@@ -279,36 +229,39 @@ static void* Exercise2Producer(void* arg)
 
 static void* Exercise2Consumer(void* arg)
 {
-    exercise2_thread_arg_t* thread_arg = NULL;
+    exercise2_thread_arg_t* thread_arg = (exercise2_thread_arg_t*)arg;
     int value = 0;
+    int got_value = 0;
+    int is_done = 0;
 
-    assert(NULL != arg);
-    assert(NULL != ((exercise2_thread_arg_t*)arg)->shared);
+    assert(NULL != thread_arg);
 
-    thread_arg = (exercise2_thread_arg_t*)arg;
     while (1)
     {
-        CheckSysCalls(pthread_mutex_lock(&(thread_arg->shared->mutex)),
-                      "mutex_lock in Exercise2Consumer()");
+        pthread_mutex_lock(&(thread_arg->shared->mutex));
         if (!DListIsEmpty(thread_arg->shared->list))
         {
             value = (int)(size_t)DListPopFront(thread_arg->shared->list);
-            CheckSysCalls(pthread_mutex_unlock(&(thread_arg->shared->mutex)),
-                          "mutex_unlock in Exercise2Consumer()");
-            printf("Exercise2 consumer[%d]: %d\n", thread_arg->thread_id,
-                   value);
+            got_value = 1;
         }
         else
         {
-            CheckSysCalls(pthread_mutex_unlock(&(thread_arg->shared->mutex)),
-                          "mutex_unlock in Exercise2Consumer()");
-            if (EX2_NUM_PRODUCERS == thread_arg->shared->producers_done)
-            {
-                return NULL;
-            }
-
-            CheckSysCalls(sched_yield(), "sched_yield on Exercise2Consumer");
+            got_value = 0;
+            is_done = (EX2_NUM_PRODUCERS <= thread_arg->shared->producers_done);
         }
+
+        pthread_mutex_unlock(&(thread_arg->shared->mutex));
+        if (got_value)
+        {
+            UNUSED(value);
+            /*action(value); (print/send/calc/etc..)*/
+        }
+        else if (is_done)
+        {
+            return NULL;
+        }
+
+        sched_yield();
     }
 
     return NULL;
@@ -369,33 +322,54 @@ static void EX2(void)
 /*===========================Start Ex3=======================
 * psodo ex3:
     producers:
-        while(num_of_msgeges)
-        {
+        forever loop and do:
             LockMutex
-                msg = CreateMsg();
-                PusQueue(msg);
-                ++num_of_msgeges;
-            UNLockMutex
-            UpdateSemaPhoreVal(+1)
-        }
+                if (produced_count >= EX3_MESSAGE_COUNT)
+                    UnLockMutex
+
+                    return
+            val = produced_count
+            produced_count += 1
+            UnLockMutex
+            msg = CreateMsg(val)
+
+            LockMutex
+                PushQueue(msg)
+            UnLockMutex
+
+            sem_post(sem)
+
     consumer:
-        while(num_of_msgeges)
+        forever while
         {
-            sleep until SemaPhoreUpdate and when wakeup, do:
+            sem_wait(sem)
             LockMutex()
-                if Queue not empty do:
-                    msg = PopQueue();
-                    UNLockMutex()
-                    Print(msg);
-                else
-                    UNLockMutex()
-                    return;
+                val = PopQueue()
+            UNLockMutex()
+            if (val == EX3_STOP_VALUE) do:
+                return
         }
+
+    EX3:
+        CreateList
+        CreateMutex
+        CreateSem
+        CreateProducers(EX3_NUM_PRODUCERS)
+        CreateConsumers(EX3_NUM_CONSUMERS)
+        JoinProducers(EX3_NUM_PRODUCERS)
+        for each Consumers do:
+            lock mutex
+            PushList(STOP_VALUE)
+            unlock mutex
+            sem_post(sem)
+        JoinConsumers(EX3_NUM_CONSUMERS)
+        CleanUp()
 */
 
 #define EX3_MESSAGE_COUNT 100
 #define EX3_NUM_PRODUCERS 6
 #define EX3_NUM_CONSUMERS 3
+#define EX3_STOP_VALUE 0
 
 typedef struct exercise3_shared
 {
@@ -413,33 +387,39 @@ typedef struct exercise3_thread_arg
 
 static void* Exercise3Producer(void* arg)
 {
-    exercise3_thread_arg_t* thread_arg = NULL;
+    exercise3_thread_arg_t* thread_arg = (exercise3_thread_arg_t*)arg;
     int value = 0;
     int status = 0;
+    int is_done = 0;
 
-    assert(NULL != arg);
-    assert(NULL != ((exercise3_thread_arg_t*)arg)->shared);
+    assert(NULL != thread_arg);
+    assert(NULL != thread_arg->shared);
 
-    thread_arg = (exercise3_thread_arg_t*)arg;
     while (1)
     {
-        CheckSysCalls(pthread_mutex_lock(&(thread_arg->shared->mutex)),
-                      "mutex_lock in Exercise3Producer()");
-        if (thread_arg->shared->produced >= EX3_MESSAGE_COUNT)
+        pthread_mutex_lock(&(thread_arg->shared->mutex));
+        if (EX3_MESSAGE_COUNT <= thread_arg->shared->produced)
         {
-            CheckSysCalls(pthread_mutex_unlock(&(thread_arg->shared->mutex)),
-                          "mutex_unlock in Exercise3Producer()");
+            is_done = 1;
+        }
+        else
+        {
+            value = thread_arg->shared->produced++;
+        }
 
+        pthread_mutex_unlock(&(thread_arg->shared->mutex));
+        if (is_done)
+        {
             return NULL;
         }
 
-        value = 777 + thread_arg->shared->produced++;
+        value += 777;
+        pthread_mutex_lock(&(thread_arg->shared->mutex));
         status =
             DListPushBack(thread_arg->shared->list, (void*)((size_t)value));
-        CheckSysCalls(pthread_mutex_unlock(&(thread_arg->shared->mutex)),
-                      "mutex_unlock in Exercise3Producer()");
+        pthread_mutex_unlock(&(thread_arg->shared->mutex));
+
         CheckSysCalls(status, "DListPushBack in Exercise3Producer()");
-        printf("Exercise3 producer[%d] -> %d\n", thread_arg->thread_id, value);
         CheckSysCalls(sem_post(&(thread_arg->shared->sem)),
                       "sem_post in Exercise3Producer()");
     }
@@ -449,31 +429,23 @@ static void* Exercise3Producer(void* arg)
 
 static void* Exercise3Consumer(void* arg)
 {
-    exercise3_thread_arg_t* thread_arg = NULL;
+    exercise3_thread_arg_t* thread_arg = (exercise3_thread_arg_t*)arg;
     int value = 0;
 
-    assert(NULL != arg);
-    assert(NULL != ((exercise3_thread_arg_t*)arg)->shared);
+    assert(NULL != thread_arg);
+    assert(NULL != thread_arg->shared);
 
-    thread_arg = (exercise3_thread_arg_t*)arg;
     while (1)
     {
         CheckSysCalls(sem_wait(&(thread_arg->shared->sem)),
                       "sem_wait in Exercise3Consumer()");
-        CheckSysCalls(pthread_mutex_lock(&(thread_arg->shared->mutex)),
-                      "mutex_lock in Exercise3Consumer()");
-        if (1 == DListIsEmpty(thread_arg->shared->list))
+        pthread_mutex_lock(&(thread_arg->shared->mutex));
+        value = (int)(size_t)DListPopFront(thread_arg->shared->list);
+        pthread_mutex_unlock(&(thread_arg->shared->mutex));
+        if (EX3_STOP_VALUE == value)
         {
-            CheckSysCalls(pthread_mutex_unlock(&(thread_arg->shared->mutex)),
-                          "mutex_unlock in Exercise3Consumer()");
-
             return NULL;
         }
-
-        value = (int)(size_t)DListPopFront(thread_arg->shared->list);
-        CheckSysCalls(pthread_mutex_unlock(&(thread_arg->shared->mutex)),
-                      "mutex_unlock in Exercise3Consumer()");
-        printf("Exercise3 consumer[%d] <- %d\n", thread_arg->thread_id, value);
     }
 
     return NULL;
@@ -487,6 +459,7 @@ static void EX3(void)
     pthread_t consumers[EX3_NUM_CONSUMERS] = {0};
     exercise3_shared_t shared = {0};
     size_t i = 0;
+    int status = 0;
 
     shared.list = DListCreate();
     if (NULL == shared.list)
@@ -522,6 +495,14 @@ static void EX3(void)
 
     for (i = 0; i < EX3_NUM_CONSUMERS; ++i)
     {
+        pthread_mutex_lock(&shared.mutex);
+        status = DListPushBack(shared.list, (void*)((size_t)EX3_STOP_VALUE));
+        pthread_mutex_unlock(&shared.mutex);
+        if (SUCCESS != status)
+        {
+            exit(status);
+        }
+
         CheckSysCalls(sem_post(&shared.sem), "sem_post for cleanup");
     }
 
@@ -541,24 +522,42 @@ static void EX3(void)
 
 /* psodo:
 * Producer:
-*   while(produced <= EX4_COUNT_MSG) do:
+*   loop forever and do:
         LockMutex
-        loadMsg
+        if (EX4_COUNT_MSG <= produced)
+            UnLockMutex
+            return
+        value = produced_count
+        produced_count += 1
         UnLockMutex
+        msg = CreateMsg(value)
         SemWait to empty_slot
         LockMutex
-        QueuePushEnd(Msg)
+        QueuePushEnd(msg)
+        UpDateFSQWritePosition()
         UnLockMutex
-        print?
         SemPost to full_slots
+
 * Consumer:
-    loop while head != tail and do:
+    loop forever and do:
         SemWait to full_slot
         LockMutex
+        if (EX4_MESSAGE_COUNT <= consumed)
+            UnLockMutex
+            SemPost to full_slots
+
+            return
+
         val = QueuePopFront()
+        UpDateFSQReadPosition()
+        consumed += 1
+        if (EX4_MESSAGE_COUNT <= consumed)
+            is_done = 1
         UnLockMutex
-        print?
         SemPost to empty_slots
+
+        if (is_done)
+            SemPost to full_slots
 */
 #define EX4_MESSAGE_COUNT 100
 #define EX4_NUM_PRODUCERS 6
@@ -586,39 +585,33 @@ typedef struct exercise4_thread_arg
 
 static void* Exercise4Producer(void* arg)
 {
-    exercise4_thread_arg_t* thread_arg = NULL;
+    exercise4_thread_arg_t* thread_arg = (exercise4_thread_arg_t*)arg;
     int value = 0;
 
-    assert(NULL != arg);
-    assert(NULL != ((exercise4_thread_arg_t*)arg)->shared);
+    assert(NULL != thread_arg);
+    assert(NULL != thread_arg->shared);
 
-    thread_arg = (exercise4_thread_arg_t*)arg;
     while (1)
     {
-        CheckSysCalls(pthread_mutex_lock(&(thread_arg->shared->mutex)),
-                      "mutex_lock in Exercise4Producer()");
+        pthread_mutex_lock(&(thread_arg->shared->mutex));
         if (EX4_MESSAGE_COUNT <= thread_arg->shared->produced)
         {
-            CheckSysCalls(pthread_mutex_unlock(&(thread_arg->shared->mutex)),
-                          "mutex_unlock in Exercise4Producer()");
+            pthread_mutex_unlock(&(thread_arg->shared->mutex));
 
             return NULL;
         }
 
         value = thread_arg->shared->produced++;
-        CheckSysCalls(pthread_mutex_unlock(&(thread_arg->shared->mutex)),
-                      "mutex_unlock in Exercise4Producer()");
+        pthread_mutex_unlock(&(thread_arg->shared->mutex));
+
         value += 777;
         CheckSysCalls(sem_wait(&(thread_arg->shared->empty_slots)),
                       "sem_wait in Exercise4Producer()");
-        CheckSysCalls(pthread_mutex_lock(&(thread_arg->shared->mutex)),
-                      "mutex_lock in Exercise4Producer()");
+        pthread_mutex_lock(&(thread_arg->shared->mutex));
         thread_arg->shared->queue[thread_arg->shared->tail] = value;
         thread_arg->shared->tail =
             (thread_arg->shared->tail + 1) % thread_arg->shared->capacity;
-        CheckSysCalls(pthread_mutex_unlock(&(thread_arg->shared->mutex)),
-                      "mutex_unlock in Exercise4Producer()");
-        printf("Exercise4 producer[%d] -> %d\n", thread_arg->thread_id, value);
+        pthread_mutex_unlock(&(thread_arg->shared->mutex));
         CheckSysCalls(sem_post(&(thread_arg->shared->full_slots)),
                       "sem_post in Exercise4Producer()");
     }
@@ -628,24 +621,21 @@ static void* Exercise4Producer(void* arg)
 
 static void* Exercise4Consumer(void* arg)
 {
-    exercise4_thread_arg_t* thread_arg = NULL;
+    exercise4_thread_arg_t* thread_arg = (exercise4_thread_arg_t*)arg;
     int value = 0;
     int is_done = 0;
 
-    assert(NULL != arg);
-    assert(NULL != ((exercise4_thread_arg_t*)arg)->shared);
+    assert(NULL != thread_arg);
+    assert(NULL != thread_arg->shared);
 
-    thread_arg = (exercise4_thread_arg_t*)arg;
     while (1)
     {
         CheckSysCalls(sem_wait(&(thread_arg->shared->full_slots)),
                       "sem_wait in Exercise4Consumer()");
-        CheckSysCalls(pthread_mutex_lock(&(thread_arg->shared->mutex)),
-                      "mutex_lock in Exercise4Consumer()");
+        pthread_mutex_lock(&(thread_arg->shared->mutex));
         if (EX4_MESSAGE_COUNT <= thread_arg->shared->consumed)
         {
-            CheckSysCalls(pthread_mutex_unlock(&(thread_arg->shared->mutex)),
-                          "mutex_unlock in Exercise4Consumer()");
+            pthread_mutex_unlock(&(thread_arg->shared->mutex));
             CheckSysCalls(sem_post(&(thread_arg->shared->full_slots)),
                           "sem_post chain in Exercise4Consumer()");
 
@@ -655,11 +645,9 @@ static void* Exercise4Consumer(void* arg)
         value = thread_arg->shared->queue[thread_arg->shared->head];
         thread_arg->shared->head =
             (thread_arg->shared->head + 1) % thread_arg->shared->capacity;
-        ++thread_arg->shared->consumed;
-        is_done = (EX4_MESSAGE_COUNT <= thread_arg->shared->consumed);
-        CheckSysCalls(pthread_mutex_unlock(&(thread_arg->shared->mutex)),
-                      "mutex_unlock in Exercise4Consumer()");
-        printf("Exercise4 consumer[%d] <- %d\n", thread_arg->thread_id, value);
+        is_done = (EX4_MESSAGE_COUNT <= (++(thread_arg->shared->consumed)));
+        pthread_mutex_unlock(&(thread_arg->shared->mutex));
+        UNUSED(value);
         CheckSysCalls(sem_post(&(thread_arg->shared->empty_slots)),
                       "sem_post in Exercise4Consumer()");
         if (is_done)
@@ -739,7 +727,6 @@ static void EX4(void)
 * Producer:
 *   while(more_msg_to_produce) do:
         FSQEnqueue(BuildMsg())
-        print(Msg)
 
 * FSQEnqueue(val):
     WaitSemSignal(fsq.empty_slots)
@@ -751,7 +738,7 @@ static void EX4(void)
 
 * Consumer:
     while(more_msg_to_read) do:
-        print(FSQDequeue())
+        Action(FSQDequeue())
 
 * FSQDequeue()
     WaitSemSignal(fsq.full_slot)
@@ -843,12 +830,10 @@ static void FSQEnqueue(fsq_t* fsq, int value)
     assert(NULL != fsq);
 
     CheckSysCalls(sem_wait(&fsq->empty_slots), "sem_wait in FSQEnqueue()");
-    CheckSysCalls(pthread_mutex_lock(&fsq->write_mutex),
-                  "mutex_lock in FSQEnqueue()");
+    pthread_mutex_lock(&(fsq->write_mutex));
     fsq->buffer[fsq->write_index] = value;
     fsq->write_index = (fsq->write_index + 1) % fsq->capacity;
-    CheckSysCalls(pthread_mutex_unlock(&fsq->write_mutex),
-                  "mutex_unlock in FSQEnqueue()");
+    pthread_mutex_unlock(&(fsq->write_mutex));
     CheckSysCalls(sem_post(&fsq->full_slots), "sem_post in FSQEnqueue()");
 }
 
@@ -858,13 +843,11 @@ static int FSQDequeue(fsq_t* fsq)
 
     assert(NULL != fsq);
 
-    CheckSysCalls(sem_wait(&fsq->full_slots), "sem_wait in FSQDequeue()");
-    CheckSysCalls(pthread_mutex_lock(&fsq->read_mutex),
-                  "mutex_lock in FSQDequeue()");
+    CheckSysCalls(sem_wait(&(fsq->full_slots)), "sem_wait in FSQDequeue()");
+    pthread_mutex_lock(&(fsq->read_mutex));
     value = fsq->buffer[fsq->read_index];
     fsq->read_index = (fsq->read_index + 1) % fsq->capacity;
-    CheckSysCalls(pthread_mutex_unlock(&fsq->read_mutex),
-                  "mutex_unlock in FSQDequeue()");
+    pthread_mutex_unlock(&(fsq->read_mutex));
     CheckSysCalls(sem_post(&fsq->empty_slots), "sem_post in FSQDequeue()");
 
     return value;
@@ -880,18 +863,16 @@ typedef struct exercise5_thread_arg
 
 static void* Exercise5Producer(void* arg)
 {
-    exercise5_thread_arg_t* thread_arg = NULL;
+    exercise5_thread_arg_t* thread_arg = (exercise5_thread_arg_t*)arg;
     int value = 0;
     size_t i = 0;
 
-    assert(NULL != arg);
+    assert(NULL != thread_arg);
 
-    thread_arg = (exercise5_thread_arg_t*)arg;
     for (; i < thread_arg->my_count; ++i)
     {
         value = 777 + (int)(thread_arg->my_start + i);
         FSQEnqueue(thread_arg->fsq, value);
-        printf("Exercise5 producer[%lu] -> %d\n", thread_arg->thread_id, value);
     }
 
     return NULL;
@@ -899,16 +880,14 @@ static void* Exercise5Producer(void* arg)
 
 static void* Exercise5Consumer(void* arg)
 {
-    exercise5_thread_arg_t* thread_arg = NULL;
+    exercise5_thread_arg_t* thread_arg = (exercise5_thread_arg_t*)arg;
     size_t i = 0;
 
-    assert(NULL != arg);
+    assert(NULL != thread_arg);
 
-    thread_arg = (exercise5_thread_arg_t*)arg;
     for (; i < thread_arg->my_count; ++i)
     {
-        printf("Exercise5 consumer[%lu] <- %d\n", thread_arg->thread_id,
-               FSQDequeue(thread_arg->fsq));
+        FSQDequeue(thread_arg->fsq);
     }
 
     return NULL;
@@ -976,15 +955,21 @@ static void EX5(void)
 
 /*===========================Start Ex6=======================*/
 /* psodo:
+
+*  CreateBarrier:
+        loop EX6_NUM_CONSUMERS times and do:
+            sem_wait(consumers_ready)
+
 *  Producer:
    while(more_msg_to_produce) do:
-        CreateBarrier(shared.consumers_ready) (Will wait until all the
-                                                consumers are ready)
+        CreateBarrier(shared.consumers_ready)
+        msg = CreateMsg()
         LockMutex(shared.mutex)
-        CreateMsg()
+        shared.msg = msg
         UpdateVersionChange()
         UnLockMutex(shared.mutex)
-        print
+        Action(msg)
+        more_msg_to_produce -= 1
         BroudcastAllLisnter(shared.cond) (will wake up all consumers)
 
     CreateBarrier(shared.consumers_ready)
@@ -995,18 +980,21 @@ static void EX5(void)
     BroudcastAllLisnter(shared.cond)
 
 *   Consumer:
-    loop forever and do:
-        TakeTicket(shared.consumers_ready)
-        LockMutex(shared.mutex)
-        sleep while VersionDidntUpdate() and UnLockMutex(shared.mutex)
-        LockMutex(shared.mutex)
-        if IsDoneRunning()
+        loop forever and do:
+            sem_post(shared.consumers_ready)
+            LockMutex(shared.mutex)
+            while my_version == shared.version
+                cond_wait(shared.cond, shared.mutex)
+            LockMutex(shared.mutex)
+            if shared->done == 1
+                local_done = 1
+            else
+                msg = shared.message;
+                my_version = shared.last_version;
             UnLockMutex(shared.mutex)
-            return
-        msg = ReadMsg()
-        my_version = UpdateVersion()
-        UnLockMutex(shared.mutex)
-        print
+            if local_done == 1
+                return
+            action(msg)
 */
 
 #define EX6_MESSAGE_COUNT 10
@@ -1031,15 +1019,13 @@ typedef struct exercise6_consumer_arg
 
 static void* Exercise6Producer(void* arg)
 {
-    exercise6_shared_t* shared = NULL;
+    exercise6_shared_t* shared = (exercise6_shared_t*)arg;
     size_t index = 0;
+    size_t val = 0;
     size_t i = 0;
-    int shared_msg_local = 0;
-    int shared_ver_local = 0;
 
-    assert(NULL != arg);
+    assert(NULL != shared);
 
-    shared = (exercise6_shared_t*)arg;
     for (; index < EX6_MESSAGE_COUNT; ++index)
     {
         for (i = 0; i < EX6_NUM_CONSUMERS; ++i)
@@ -1048,15 +1034,11 @@ static void* Exercise6Producer(void* arg)
                           "sem_wait in Exercise6Producer()");
         }
 
-        CheckSysCalls(pthread_mutex_lock(&shared->mutex),
-                      "mutex_lock in Exercise6Producer()");
-        shared->message = 777 + index;
-        shared_msg_local = shared->message;
-        shared_ver_local = shared->version++;
-        CheckSysCalls(pthread_mutex_unlock(&shared->mutex),
-                      "mutex_unlock in Exercise6Producer()");
-        printf("Exercise6 producer -> %d (version %d)\n", shared_msg_local,
-               shared_ver_local);
+        val = 777 + index;
+        pthread_mutex_lock(&(shared->mutex));
+        shared->message = val;
+        ++(shared->version);
+        pthread_mutex_unlock(&(shared->mutex));
         CheckSysCalls(pthread_cond_broadcast(&shared->cond),
                       "cond_broadcast in Exercise6Producer()");
     }
@@ -1067,12 +1049,10 @@ static void* Exercise6Producer(void* arg)
                       "sem_wait in Exercise6Producer()");
     }
 
-    CheckSysCalls(pthread_mutex_lock(&shared->mutex),
-                  "mutex_lock in Exercise6Producer()");
+    pthread_mutex_lock(&(shared->mutex));
     shared->done = 1;
     ++shared->version;
-    CheckSysCalls(pthread_mutex_unlock(&shared->mutex),
-                  "mutex_unlock in Exercise6Producer()");
+    pthread_mutex_unlock((&shared->mutex));
     CheckSysCalls(pthread_cond_broadcast(&shared->cond),
                   "cond_broadcast in Exercise6Producer()");
 
@@ -1083,6 +1063,7 @@ static void* Exercise6Consumer(void* arg)
 {
     exercise6_consumer_arg_t* thread_arg = (exercise6_consumer_arg_t*)arg;
     int msg = 0;
+    int is_done = 0;
 
     assert(NULL != thread_arg);
 
@@ -1090,8 +1071,7 @@ static void* Exercise6Consumer(void* arg)
     {
         CheckSysCalls(sem_post(&thread_arg->shared->consumers_ready),
                       "sem_post in Exercise6Consumer()");
-        CheckSysCalls(pthread_mutex_lock(&thread_arg->shared->mutex),
-                      "mutex_lock in Exercise6Consumer()");
+        pthread_mutex_lock(&(thread_arg->shared->mutex));
         while (thread_arg->last_version == thread_arg->shared->version)
         {
             CheckSysCalls(pthread_cond_wait(&thread_arg->shared->cond,
@@ -1101,17 +1081,20 @@ static void* Exercise6Consumer(void* arg)
 
         if (thread_arg->shared->done)
         {
-            CheckSysCalls(pthread_mutex_unlock(&thread_arg->shared->mutex),
-                          "mutex_unlock in Exercise6Consumer()");
-
-            return NULL;
+            is_done = 1;
+        }
+        else
+        {
+            msg = thread_arg->shared->message;
+            thread_arg->last_version = thread_arg->shared->version;
         }
 
-        msg = thread_arg->shared->message;
-        thread_arg->last_version = thread_arg->shared->version;
-        CheckSysCalls(pthread_mutex_unlock(&thread_arg->shared->mutex),
-                      "mutex_unlock in Exercise6Consumer()");
-        printf("Exercise6 consumer[%lu] <- %d\n", thread_arg->thread_id, msg);
+        pthread_mutex_unlock(&(thread_arg->shared->mutex));
+        UNUSED(msg);
+        if (is_done)
+        {
+            return NULL;
+        }
     }
 
     return NULL;
