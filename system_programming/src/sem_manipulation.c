@@ -1,3 +1,9 @@
+/*
+Writer: Robi
+Chcker: Shahar
+Date:   23.03.2026
+*/
+
 #include <assert.h>    /* assert          */
 #include <stddef.h>    /* NULL            */
 #include <stdio.h>     /* fgets, fopen    */
@@ -36,12 +42,11 @@ int IsILetter(const char* input)
             ' ' == input[1]);
 }
 
-static int DoActionOnSema(const char* input, int sem_id)
+static void DoActionOnSema(const char* name, const char* input, int sem_id)
 {
     struct sembuf sem_op = {0};
     semun_t sem_union = {0};
     char* str_end = NULL;
-    int status = SUCCESS;
     int has_undo = 0;
     long number = 0;
     int val = 0;
@@ -69,12 +74,16 @@ static int DoActionOnSema(const char* input, int sem_id)
         val = semctl(sem_id, 0, GETVAL, sem_union);
         printf("Semaphore val right now is: %d\n", val);
     }
+    else if ('l' == input[0] || 'L' == input[0])
+    {
+        remove(name);
+        semctl(sem_id, 0, IPC_RMID);
+        exit(1);
+    }
     else if ('X' == input[0] || 'x' == input[0])
     {
-        status = EXIT;
+        exit(1);
     }
-
-    return status;
 }
 
 int SemManipulation(const char* name)
@@ -88,7 +97,6 @@ int SemManipulation(const char* name)
     assert(NULL != name);
 
     file = fopen(name, "a");
-
     if (NULL == file)
     {
         return ALLOC_FAIL;
@@ -98,10 +106,8 @@ int SemManipulation(const char* name)
     file = NULL;
     key = ftok(name, 'S');
     sem_id = semget(key, 1, IPC_CREAT | IPC_EXCL | 0666);
-
     if (0 <= sem_id)
     {
-        sem_union.val = 0;
         semctl(sem_id, 0, SETVAL, sem_union);
     }
     else
@@ -111,10 +117,7 @@ int SemManipulation(const char* name)
 
     while (NULL != fgets(buffer, sizeof(buffer), stdin))
     {
-        if (EXIT == DoActionOnSema(buffer, sem_id))
-        {
-            return SUCCESS;
-        }
+        DoActionOnSema(name, buffer, sem_id);
     }
 
     return SUCCESS;
