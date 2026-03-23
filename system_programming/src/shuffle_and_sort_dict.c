@@ -25,7 +25,9 @@ to check it(part of task in brainfuel)*/
 #define NUM_OF_DICTS 3
 
 #define UNUSED(x) (void)(x)
+
 #define SUCCESS 0
+#define ALLOC_FAIL 1
 
 typedef struct thread_data
 {
@@ -190,46 +192,52 @@ static unsigned char** AllocateAndCopy(unsigned char** arr, size_t size)
 
     return copied_arr;
 }
-static int Merge(unsigned char** arr, size_t mid, size_t right)
+
+static int InitMerge(size_t left_len, size_t right_len, size_t mid,
+                     unsigned char** arr, unsigned char*** arr_l,
+                     unsigned char*** arr_r)
 {
-    unsigned char** arr_l = NULL;
-    unsigned char** arr_r = NULL;
-    size_t right_len = 0;
-    size_t left_len = 0;
+    assert(NULL != arr);
+    assert(NULL != *arr);
+    assert(NULL != arr_l);
+    assert(NULL != arr_r);
+
+    *arr_l = AllocateAndCopy(arr, left_len);
+    if (NULL == *arr_l)
+    {
+        return ALLOC_FAIL;
+    }
+
+    *arr_r = AllocateAndCopy(arr + mid + 1, right_len);
+    if (NULL == *arr_r)
+    {
+        free(*arr_l);
+        arr_l = NULL;
+
+        return ALLOC_FAIL;
+    }
+
+    return SUCCESS;
+}
+
+static void SortLeftRight(size_t left_len, size_t right_len,
+                          unsigned char** arr_l, unsigned char** arr_r,
+                          unsigned char** arr)
+{
     size_t i = 0;
     size_t j = 0;
     size_t k = 0;
 
     assert(NULL != arr);
-    assert(NULL != *arr);
-
-    left_len = mid + 1;
-    right_len = right - mid;
-    arr_l = AllocateAndCopy(arr, left_len);
-    if (NULL == arr_l)
-    {
-        return 1;
-    }
-
-    arr_r = AllocateAndCopy(arr + mid + 1, right_len);
-    if (NULL == arr_r)
-    {
-        free(arr_l);
-        arr_l = NULL;
-
-        return 1;
-    }
+    assert(NULL != arr_r);
+    assert(NULL != *arr_r);
+    assert(NULL != arr_l);
+    assert(NULL != *arr_l);
 
     while (i < left_len && j < right_len)
     {
-        if (0 >= strcmp((char*)arr_l[i], (char*)arr_r[j]))
-        {
-            arr[k++] = arr_l[i++];
-        }
-        else
-        {
-            arr[k++] = arr_r[j++];
-        }
+        arr[k++] = 0 >= strcmp((char*)arr_l[i], (char*)arr_r[j]) ? arr_l[i++]
+                                                                 : arr_r[j++];
     }
 
     while (i < left_len)
@@ -240,6 +248,19 @@ static int Merge(unsigned char** arr, size_t mid, size_t right)
     {
         arr[k++] = arr_r[j++];
     }
+}
+static int Merge(unsigned char** arr, size_t mid, size_t right)
+{
+    unsigned char** arr_l = NULL;
+    unsigned char** arr_r = NULL;
+    size_t right_len = right - mid;
+    size_t left_len = mid + 1;
+
+    assert(NULL != arr);
+    assert(NULL != *arr);
+
+    InitMerge(left_len, right_len, mid, arr, &arr_l, &arr_r);
+    SortLeftRight(left_len, right_len, arr_l, arr_r, arr);
 
     free(arr_l);
     arr_l = NULL;
@@ -266,7 +287,17 @@ static int DictSort(unsigned char** words, size_t amount_words)
         threads_data[i].size = chunk_size + (i < left_after_divide);
         threads_data[i].arr = words_start_ptr;
         threads_data[i].sort_func = QuickSortWraper;
-        pthread_create(&threads[i], NULL, ThreadSorting, &threads_data[i]);
+        if (SUCCESS !=
+            pthread_create(&threads[i], NULL, ThreadSorting, &threads_data[i]))
+        {
+            prev_finish = i;
+            for (i = 0; i < prev_finish; ++i)
+            {
+                pthread_join(threads[i], NULL);
+            }
+
+            return ALLOC_FAIL;
+        }
 
         words_start_ptr += threads_data[i].size;
     }
@@ -282,7 +313,7 @@ static int DictSort(unsigned char** words, size_t amount_words)
     {
         if (Merge(words, prev_finish, prev_finish + threads_data[i].size))
         {
-            return 1;
+            return ALLOC_FAIL;
         }
 
         prev_finish += threads_data[i].size;
