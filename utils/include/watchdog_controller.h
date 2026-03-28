@@ -1,5 +1,5 @@
-#ifndef __WATCHDOG_CONTROLLER__
-#define __WATCHDOG_CONTROLLER__
+#ifndef __WATCHDOG_CONTROLLER__H
+#define __WATCHDOG_CONTROLLER__H
 
 #include <sys/types.h> /* pid_t */
 
