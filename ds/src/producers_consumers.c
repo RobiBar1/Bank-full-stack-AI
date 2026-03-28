@@ -2,6 +2,8 @@
 Writer:  Robi
 Checker: Alon
 Date:    13.03.2026
+
+gd -I include/ src/producers_consumers.c src/d_link_list.c
 */
 
 #include <assert.h>    /* assert */
@@ -75,15 +77,13 @@ static void* Exercise1Producer(void* arg)
     for (; index < EX1_MESSAGE_COUNT; ++index)
     {
         value = 777 + index;
-        while (MARK_AS_HAVE_MESSAGE ==
-               __atomic_load_n(&g_ex1_has_message, __ATOMIC_ACQUIRE))
+        while (!(__sync_bool_compare_and_swap(&g_ex1_has_message, 0, 0)))
         {
             sched_yield();
         }
 
         g_ex1_message = value;
-        __atomic_store_n(&g_ex1_has_message, MARK_AS_HAVE_MESSAGE,
-                         __ATOMIC_RELEASE);
+        __sync_fetch_and_add(&g_ex1_has_message, 1);
     }
 
     return NULL;
@@ -97,16 +97,13 @@ static void* Exercise1Consumer(void* arg)
     UNUSED(arg);
     for (; EX1_MESSAGE_COUNT > consumed_count; ++consumed_count)
     {
-        while (MARK_AS_HAVE_NO_MESSAGE ==
-               __atomic_load_n(&g_ex1_has_message, __ATOMIC_ACQUIRE))
+        while (!(__sync_bool_compare_and_swap(&g_ex1_has_message, 1, 0)))
         {
             sched_yield();
         }
 
         value = g_ex1_message;
         UNUSED(value);
-        __atomic_store_n(&g_ex1_has_message, MARK_AS_HAVE_NO_MESSAGE,
-                         __ATOMIC_RELEASE);
     }
 
     return NULL;
@@ -1026,7 +1023,7 @@ static void* Exercise6Producer(void* arg)
 
     assert(NULL != shared);
 
-    for (; index < EX6_MESSAGE_COUNT; ++index)
+    for (; index <= EX6_MESSAGE_COUNT; ++index)
     {
         for (i = 0; i < EX6_NUM_CONSUMERS; ++i)
         {
@@ -1036,25 +1033,20 @@ static void* Exercise6Producer(void* arg)
 
         val = 777 + index;
         pthread_mutex_lock(&(shared->mutex));
-        shared->message = val;
+        if (index == (size_t)EX6_MESSAGE_COUNT)
+        {
+            shared->done = 1;
+        }
+        else
+        {
+            shared->message = val;
+        }
+
         ++(shared->version);
         pthread_mutex_unlock(&(shared->mutex));
         CheckSysCalls(pthread_cond_broadcast(&shared->cond),
                       "cond_broadcast in Exercise6Producer()");
     }
-
-    for (i = 0; i < EX6_NUM_CONSUMERS; ++i)
-    {
-        CheckSysCalls(sem_wait(&shared->consumers_ready),
-                      "sem_wait in Exercise6Producer()");
-    }
-
-    pthread_mutex_lock(&(shared->mutex));
-    shared->done = 1;
-    ++shared->version;
-    pthread_mutex_unlock((&shared->mutex));
-    CheckSysCalls(pthread_cond_broadcast(&shared->cond),
-                  "cond_broadcast in Exercise6Producer()");
 
     return NULL;
 }
