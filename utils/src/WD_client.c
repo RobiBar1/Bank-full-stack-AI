@@ -1,12 +1,41 @@
-#include <limits.h>
-#include <stdio.h>
-#include <unistd.h>
+/*
+Writer: Robi
+Chcker: Ehud
+Date: ?
+*/
+#define _POSIX_C_SOURCE 200809L
 
-#include "watchdog_controller.h"
+#include <assert.h> /* assert */
+#include <limits.h> /* PATH_MAX */
+#include <stdio.h>  /* printf */
+#include <unistd.h> /* sleep */
 
-int main()
+#include "watchdog_controller.h" /* my_api */
+
+#define WD_EXE_PATH "./wd"
+
+#define UNUSED(x) (void)(x)
+
+int main(int argc, char* argv[])
 {
-    printf("in client\n");
+    unsigned int remaining = 50;
+    char path[PATH_MAX] = {'\0'};
+    ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
+    UNUSED(argc);
+
+    assert(NULL != argv);
+
+    -1 != len ? printf("Full path to executable: %s\n", path)
+              : perror("readlink() error");
+
+    printf("in client, %s\n", argv[0]);
+    WatchdogControllerStart(path, WD_EXE_PATH, argc, argv);
+    while (0 < remaining)
+    {
+        remaining = sleep(remaining);
+    }
+
+    WatchdogControllerEnd();
 
     return 0;
 }
