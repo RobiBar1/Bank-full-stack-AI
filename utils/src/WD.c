@@ -1,39 +1,58 @@
+/*
+Writer: Robi
+Chcker: Ehud
+Date: 09.04.2026
+*/
 #define _POSIX_C_SOURCE 200809L
 
 #include <assert.h>    /* assert */
+#include <fcntl.h>     /* O_CREAT */
 #include <limits.h>    /* CHAR_BIT */
+#include <pthread.h>   /* pthread_t */
+#include <semaphore.h> /* sem_t, sem_open, sem_post, sem_close */
 #include <signal.h>    /* sigaction, kill */
-#include <stdio.h>     /* printf, perror */
-#include <stdlib.h>    /* atoi, setenv */
+#include <stdio.h>     /* perror */
+#include <stdlib.h>    /* atoi */
+#include <sys/stat.h>  /* mode constants */
 #include <sys/types.h> /* pid_t */
-#include <sys/wait.h>  /* waitpid, WNOHANG */
-#include <unistd.h>    /* fork, getpid */
+#include <unistd.h>    /* _exit */
 
 #include "scheduler.h" /* scheduler_t, SchedulerRun */
-#include "uid.h"       /* pid_t */
+#include "uid.h"       /* ilrd_uid_t */
 
 #define WD_INTERVAL 3
-#define MAX_MISSED_PINGS 3
+#define WD_SEM_CLIENT "/wd_sem_client"
+#define WD_SEM_WD "/wd_sem_wd"
 
-#define REVIVED_ENV "WD_REVIVED"
-#define WD_PID_ENV "WD_EXISTING_PID"
-
-#define SIZE_IN_BITS ((CHAR_BIT) * 4 - 1)
+/*========================== use them in struct ======================*/
+#define NUM_BITS_USED_IN_STRUCT 2
+#define NUM_OF_BYTS_IN_INT 4
+#define SIZE_IN_BITS ((CHAR_BIT) * NUM_OF_BYTS_IN_INT - NUM_BITS_USED_IN_STRUCT)
 
 #define UNUSED(x) (void)(x)
 #define SUCCESS 0
 #define ALLOC_FAIL 1
-#define FORK_FAIL 2
 
-typedef struct task_params
+typedef struct wd_params
 {
     scheduler_t* scheduler;
-    const char* client_path;
-    char** client_argv;
-    pid_t client_pid;
+    const char* wd_path;
+    const char* prog_path;
+    char** argv;
+    sem_t* sem_client;
+    sem_t* sem_wd;
+    volatile sig_atomic_t* got_signal;
+    volatile sig_atomic_t* is_running;
+    pthread_t wd_thread;
+    pid_t target_pid;
+    int argc;
     unsigned int missed_counter : SIZE_IN_BITS;
-    unsigned int client_is_child : 1;
-} task_params_t;
+    unsigned int is_target_child : 1;
+    unsigned int is_client : 1;
+} wd_params_t;
+
+extern task_status CheckAndPingTask(void* param);
+extern task_status StopCheckTask(void* param);
 
 static volatile sig_atomic_t g_got_ping = 1;
 static volatile sig_atomic_t g_running = 1;
@@ -64,141 +83,42 @@ static void InitHandlers(void)
 
     sigemptyset(&set);
     sigaddset(&set, SIGUSR1);
+    sigaddset(&set, SIGTERM);
     sigprocmask(SIG_UNBLOCK, &set, NULL);
 }
 
 static void DummyCleanup(void* param) { UNUSED(param); }
 
-static int ReviveClient(task_params_t* params)
+static void InitWdProcessParams(wd_params_t* params, int argc, char* argv[])
 {
-    char wd_pid_str[32] = {0};
-    sigset_t block_set = {0};
-    pid_t pid = 0;
-
     assert(NULL != params);
+    assert(NULL != argv);
 
-    if (0 < params->client_pid)
+    params->target_pid = (pid_t)atoi(argv[1]);
+    params->prog_path = argv[2];
+    params->argv = &argv[3];
+    params->argc = argc - 3;
+    params->is_target_child = 0;
+    params->missed_counter = 0;
+    params->is_client = 0;
+    params->got_signal = &g_got_ping;
+    params->is_running = &g_running;
+    params->wd_path = argv[0];
+
+    params->sem_client = sem_open(WD_SEM_CLIENT, O_CREAT, 0666, 0);
+    params->sem_wd = sem_open(WD_SEM_WD, O_CREAT, 0666, 0);
+
+    if (SEM_FAILED == params->sem_client || SEM_FAILED == params->sem_wd)
     {
-        kill(params->client_pid, SIGKILL);
-
-        if (0 != params->client_is_child)
-        {
-            waitpid(params->client_pid, NULL, 0);
-        }
-    }
-
-    sigemptyset(&block_set);
-    sigaddset(&block_set, SIGUSR2);
-    sigprocmask(SIG_BLOCK, &block_set, NULL);
-
-    pid = fork();
-    if (0 > pid)
-    {
-        perror("fork");
-        sigprocmask(SIG_UNBLOCK, &block_set, NULL);
-
-        return FORK_FAIL;
-    }
-
-    if (0 == pid)
-    {
-        sprintf(wd_pid_str, "%d", (int)getppid());
-        setenv(REVIVED_ENV, "1", 1);
-        setenv(WD_PID_ENV, wd_pid_str, 1);
-#ifndef NDEBUG
-        printf("process WD debug: trying to execv: %s\n", params->client_path);
-#endif
-        execv(params->client_path, params->client_argv);
-        perror("process WD debug: execv failed");
+        perror("wd sem_open failed");
 
         _exit(1);
     }
-
-    sigprocmask(SIG_UNBLOCK, &block_set, NULL);
-    params->client_is_child = 1;
-    params->missed_counter = 0;
-    params->client_pid = pid;
-    g_got_ping = 0;
-#ifndef NDEBUG
-    printf("process WD: revived client pid=%d\n", (int)params->client_pid);
-#endif
-
-    return SUCCESS;
-}
-
-static task_status StopRun(scheduler_t* scheduler)
-{
-    g_running = 0;
-    SchedulerStop(scheduler);
-
-    return DO_NOT_REPEAT;
-}
-
-static task_status WdHeartbeatTask(void* param)
-{
-    task_params_t* params = (task_params_t*)param;
-
-    assert(NULL != params);
-
-    if (!g_running)
-    {
-        return StopRun(params->scheduler);
-    }
-
-    if (g_got_ping)
-    {
-#ifndef NDEBUG
-        printf("process WD: client responding\n");
-#endif
-        g_got_ping = 0;
-        params->missed_counter = 0;
-    }
-    else
-    {
-#ifndef NDEBUG
-        printf("process WD: client not ping\n");
-#endif
-        ++params->missed_counter;
-        if (MAX_MISSED_PINGS <= params->missed_counter)
-        {
-            if (SUCCESS != ReviveClient(params))
-            {
-                return StopRun(params->scheduler);
-            }
-        }
-    }
-
-    if (0 > kill(params->client_pid, SIGUSR2))
-    {
-        if (SUCCESS != ReviveClient(params) ||
-            0 > kill(params->client_pid, SIGUSR2))
-        {
-            return StopRun(params->scheduler);
-        }
-    }
-
-    return REPEAT;
-}
-
-static task_status WdStopCheckTask(void* param)
-{
-    scheduler_t* scheduler = (scheduler_t*)param;
-
-    assert(NULL != scheduler);
-
-    if (!g_running)
-    {
-        SchedulerStop(scheduler);
-
-        return DO_NOT_REPEAT;
-    }
-
-    return REPEAT;
 }
 
 int main(int argc, char* argv[])
 {
-    task_params_t task_param = {0};
+    wd_params_t task_param = {0};
     ilrd_uid_t return_val1 = {0};
     ilrd_uid_t return_val2 = {0};
 
@@ -211,40 +131,37 @@ int main(int argc, char* argv[])
         return ALLOC_FAIL;
     }
 
-    task_param.client_pid = (pid_t)atoi(argv[1]);
-    task_param.client_path = argv[2];
-    task_param.client_argv = &argv[3];
-    task_param.client_is_child = 0;
-    task_param.missed_counter = 0;
-
-#ifndef NDEBUG
-    printf("wd pid=%d start, watch client pid=%d\n", (int)getpid(),
-           (int)task_param.client_pid);
-#endif
+    InitWdProcessParams(&task_param, argc, argv);
     InitHandlers();
 
     return_val1 = SchedulerAddTask(task_param.scheduler, WD_INTERVAL,
-                                   WdHeartbeatTask, DummyCleanup, &task_param);
-    return_val2 = SchedulerAddTask(task_param.scheduler, 1, WdStopCheckTask,
-                                   DummyCleanup, task_param.scheduler);
+                                   CheckAndPingTask, DummyCleanup, &task_param);
+    return_val2 = SchedulerAddTask(task_param.scheduler, 1, StopCheckTask,
+                                   DummyCleanup, &task_param);
 
-    if (0 != IsILRDUIDEqual(&bad_uid, &return_val1) ||
-        0 != IsILRDUIDEqual(&bad_uid, &return_val2))
+    if (IsILRDUIDEqual(&bad_uid, &return_val1) ||
+        IsILRDUIDEqual(&bad_uid, &return_val2))
     {
         perror("bad_UID in WD.c");
+        SchedulerDestroy(task_param.scheduler);
 
         _exit(1);
     }
 
-    g_got_ping = 0;
-    kill(task_param.client_pid, SIGUSR2);
+    sem_post(task_param.sem_wd);
+    while (0 != sem_wait(task_param.sem_client))
+    {
+    }
+
     SchedulerRun(task_param.scheduler);
 
     SchedulerDestroy(task_param.scheduler);
     task_param.scheduler = NULL;
-#ifndef NDEBUG
-    printf("wd proc exiting\n");
-#endif
+
+    sem_close(task_param.sem_wd);
+    task_param.sem_wd = NULL;
+    sem_close(task_param.sem_client);
+    task_param.sem_client = NULL;
 
     return SUCCESS;
 }

@@ -1,18 +1,17 @@
 /*
 Writer: Robi
 Chcker: Ehud
-Date: ?
+Date: 09.04.2026
 
 terminal:
-gcc -g -O0 -I include/ -I ../ds/include ../ds/src/scheduler.c ../ds/src/pqueue.c
-\
-../ds/src/heap.c ../ds/src/vector.c ../ds/src/uid.c ../ds/src/task.c \
--shared -fPIC src/WD_lib.c -lpthread -o libwatchdog.so
+gcc -g -O0 -I include/ -I ../ds/include ../ds/src/scheduler.c \
+../ds/src/pqueue.c ../ds/src/heap.c ../ds/src/vector.c ../ds/src/uid.c \
+../ds/src/task.c -shared -fPIC src/WD_lib.c -lpthread -o libwatchdog.so
 
 ------------------------------------------------------->>>
-gcc -g -O0 -std=c89 -I ../ds/include src/WD.c ../ds/src/scheduler.c
-../ds/src/uid.c \
-../ds/src/task.c ../ds/src/pqueue.c ../ds/src/heap.c ../ds/src/vector.c -o wd
+gcc -g -O0 -std=c89 -I ../ds/include src/WD.c ../ds/src/scheduler.c \
+../ds/src/uid.c ../ds/src/task.c ../ds/src/pqueue.c ../ds/src/heap.c \
+../ds/src/vector.c -L. -lwatchdog -lpthread -o wd
 
 
 if change the name of file from "wd"
@@ -25,14 +24,17 @@ LD_LIBRARY_PATH=. ./a.out
 #define _POSIX_C_SOURCE 200809L
 
 #include <assert.h>    /* assert */
+#include <fcntl.h>     /* O_CREAT */
+#include <limits.h>    /* CHAR_BIT */
 #include <pthread.h>   /* pthread_create, pthread_join */
-#include <semaphore.h> /* sem_t */
+#include <semaphore.h> /* sem_t, sem_open, sem_wait, sem_post */
 #include <signal.h>    /* sigaction, kill */
 #include <stdio.h>     /* printf, perror */
-#include <stdlib.h>    /* unsetenv, getenv */
+#include <stdlib.h>    /* unsetenv, getenv, malloc, free */
+#include <sys/stat.h>  /* mode constants */
 #include <sys/types.h> /* pid_t */
 #include <sys/wait.h>  /* waitpid, WNOHANG */
-#include <unistd.h>    /* fork, execl */
+#include <unistd.h>    /* fork, execv */
 
 #include "scheduler.h"           /* scheduler_t, SchedulerRun */
 #include "watchdog_controller.h" /* watchdog_status_t */
@@ -41,24 +43,49 @@ LD_LIBRARY_PATH=. ./a.out
 #define SUCCESS 0
 #define NOT_SUCCESS (-1)
 
+/*========================== use them in struct ======================*/
+#define NUM_BITS_USED_IN_STRUCT 2
+#define NUM_OF_BYTS_IN_INT 4
+#define SIZE_IN_BITS ((CHAR_BIT) * NUM_OF_BYTS_IN_INT - NUM_BITS_USED_IN_STRUCT)
+
 #define WD_INTERVAL 3
 #define MAX_MISSED_PINGS 3
 
-#define STREAM_CH_WRITE_TO 1
-
 #define REVIVED_ENV "WD_REVIVED"
 #define WD_PID_ENV "WD_EXISTING_PID"
+#define NUM_ARGV_I_USED 3
+#define NUM_ARGV_I_USED_AND_NULL (NUM_ARGV_I_USED + 1)
 
+#define WD_SEM_CLIENT "/wd_sem_client"
+#define WD_SEM_WD "/wd_sem_wd"
+
+#ifndef NDEBUG
+#define DEBUG_PRINT(args) (printf args)
+#else
+#define DEBUG_PRINT(args)
+#endif
+
+typedef struct wd_params
+{
+    scheduler_t* scheduler;
+    const char* wd_path;
+    const char* prog_path;
+    char** argv;
+    sem_t* sem_client;
+    sem_t* sem_wd;
+    volatile sig_atomic_t* got_signal;
+    volatile sig_atomic_t* is_running;
+    pthread_t wd_thread;
+    pid_t target_pid;
+    int argc;
+    unsigned int missed_counter : SIZE_IN_BITS;
+    unsigned int is_target_child : 1;
+    unsigned int is_client : 1;
+} wd_params_t;
+
+static wd_params_t* g_client_params = NULL;
 static volatile sig_atomic_t g_got_signal = 1;
 static volatile sig_atomic_t g_running = 1;
-static const char* g_watchdog_path = NULL;
-static const char* g_prog_path = NULL;
-static pthread_t g_wd_thread = 0;
-static int g_missed_counter = 0;
-static int g_wd_is_child = 0;
-static char** g_argv = NULL;
-static pid_t g_wd_pid = 0;
-static int g_argc = 0;
 
 static void Sigusr2Handler(int sig)
 {
@@ -68,10 +95,30 @@ static void Sigusr2Handler(int sig)
 
 static void DummyCleanup(void* param) { UNUSED(param); }
 
-static void InitHandlers(void)
+static void CleanUpGlobals(void)
+{
+    free(g_client_params);
+    g_client_params = NULL;
+}
+
+static void CleanUpSem(void)
+{
+    sem_close(g_client_params->sem_client);
+    g_client_params->sem_client = NULL;
+    sem_unlink(WD_SEM_CLIENT);
+
+    sem_close(g_client_params->sem_wd);
+    g_client_params->sem_wd = NULL;
+    sem_unlink(WD_SEM_WD);
+}
+
+static void InitHandlers(char** revived_env, char** wd_pid_env)
 {
     struct sigaction sa = {0};
     sigset_t set = {0};
+
+    assert(NULL != revived_env);
+    assert(NULL != wd_pid_env);
 
     sigemptyset(&sa.sa_mask);
     sa.sa_handler = Sigusr2Handler;
@@ -79,164 +126,229 @@ static void InitHandlers(void)
 
     sigemptyset(&set);
     sigaddset(&set, SIGUSR2);
+    sigaddset(&set, SIGTERM);
     sigprocmask(SIG_UNBLOCK, &set, NULL);
+
+    *revived_env = getenv(REVIVED_ENV);
+    *wd_pid_env = getenv(WD_PID_ENV);
 }
 
-static pid_t SpawnWatchdog(void)
+static char** CreateWdArgv(const char*** wd_argv, const wd_params_t* params,
+                           char* client_pid_str)
+{
+    size_t i = 0;
+
+    assert(NULL != params);
+    assert(NULL != client_pid_str);
+
+    *wd_argv = (const char**)malloc(sizeof(char*) *
+                                    (params->argc + NUM_ARGV_I_USED_AND_NULL));
+    if (NULL == *wd_argv)
+    {
+        perror("wd_argv malloc failed");
+
+        _exit(1);
+    }
+
+    (*wd_argv)[0] = (char*)params->wd_path;
+    (*wd_argv)[1] = client_pid_str;
+    (*wd_argv)[2] = (char*)params->prog_path;
+    for (; i < params->argc; ++i)
+    {
+        (*wd_argv)[NUM_ARGV_I_USED + i] = params->argv[i];
+    }
+
+    (*wd_argv)[NUM_ARGV_I_USED + params->argc] = NULL;
+}
+
+static void ExecWD(wd_params_t* params)
 {
     char client_pid_str[32] = {0};
-    sigset_t block_set = {0};
-    char** wd_argv = NULL;
-    pid_t pid = 0;
+    const char** wd_argv = NULL;
     int i = 0;
 
-    sprintf(client_pid_str, "%d", (int)getpid());
+    assert(NULL != params);
+
+    sprintf(client_pid_str, "%d", (int)getppid());
+
+    CreateWdArgv(&wd_argv, params, client_pid_str);
+
+    execv(params->wd_path, (char* const*)wd_argv);
+
+    free(wd_argv);
+    wd_argv = NULL;
+    perror("execv failed in ExecWD()");
+    _exit(1);
+}
+
+static void ExecClient(wd_params_t* params)
+{
+    char wd_pid_str[32] = {0};
+
+    assert(NULL != params);
+
+    sprintf(wd_pid_str, "%d", (int)getppid());
+    setenv(REVIVED_ENV, "1", 1);
+    setenv(WD_PID_ENV, wd_pid_str, 1);
+    execv(params->prog_path, params->argv);
+
+    perror("execv failed in ExecClient()");
+    _exit(1);
+}
+
+static pid_t SpawnTarget(wd_params_t* params)
+{
+    pid_t pid = 0;
+    sigset_t block_set = {0};
+
+    assert(NULL != params);
 
     sigemptyset(&block_set);
-    sigaddset(&block_set, SIGUSR1);
+    sigaddset(&block_set, 0 != params->is_client ? SIGUSR1 : SIGUSR2);
     sigprocmask(SIG_BLOCK, &block_set, NULL);
 
-    wd_argv = (char**)malloc(sizeof(char*) * (g_argc + 4));
-    if (NULL == wd_argv)
-    {
-        sigprocmask(SIG_UNBLOCK, &block_set, NULL);
-
-        return NOT_SUCCESS;
-    }
-
-    wd_argv[0] = (char*)g_watchdog_path;
-    wd_argv[1] = client_pid_str;
-    wd_argv[2] = (char*)g_prog_path;
-    for (; i < g_argc; ++i)
-    {
-        wd_argv[3 + i] = g_argv[i];
-    }
-
-    wd_argv[3 + g_argc] = NULL;
     pid = fork();
     if (0 > pid)
     {
         sigprocmask(SIG_UNBLOCK, &block_set, NULL);
-        free(wd_argv);
-        wd_argv = NULL;
 
         return NOT_SUCCESS;
     }
 
-    if (SUCCESS == pid)
+    if (0 == pid)
     {
-        execv(g_watchdog_path, wd_argv);
-        free(wd_argv);
-        wd_argv = NULL;
-
-        _exit(1);
+        params->is_client ? ExecWD(params) : ExecClient(params);
     }
 
     sigprocmask(SIG_UNBLOCK, &block_set, NULL);
-    free(wd_argv);
-    wd_argv = NULL;
 
     return pid;
 }
 
-static int ReviveWatchdog(void)
+static int ReviveTarget(wd_params_t* params)
 {
     pid_t pid = 0;
 
-    if (0 < g_wd_pid)
-    {
-        kill(g_wd_pid, SIGKILL);
+    assert(NULL != params);
+    DEBUG_PRINT(("%s started reviving %s\n",
+                 params->is_client ? "WD thread" : "WD process",
+                 params->is_client ? "WD process" : "Client process"));
 
-        if (0 != g_wd_is_child)
+    *(params->got_signal) = 0;
+    if (0 < params->target_pid)
+    {
+        kill(params->target_pid, SIGKILL);
+
+        if (0 != params->is_target_child)
         {
-            waitpid(g_wd_pid, NULL, 0);
+            waitpid(params->target_pid, NULL, 0);
         }
     }
 
-    pid = SpawnWatchdog();
+    pid = SpawnTarget(params);
     if (0 > pid)
     {
-        perror("fork");
-
-        return WD_FORK_FAIL;
+        return NOT_SUCCESS;
     }
 
-    g_missed_counter = 0;
-    g_wd_is_child = 1;
-    g_got_signal = 0;
-    g_wd_pid = pid;
+    if (0 != params->is_client)
+    {
+        sem_post(params->sem_client);
+        while (0 != sem_wait(params->sem_wd))
+        {
+        }
+    }
+    else
+    {
+        sem_post(params->sem_wd);
 
-#ifndef NDEBUG
-    printf("client pid=%d revived watchdog pid=%d\n", (int)getpid(),
-           (int)g_wd_pid);
-#endif
+        while (0 != sem_wait(params->sem_client))
+        {
+        }
 
-    return WD_SUCCESS;
+        if (MAX_MISSED_PINGS <= params->missed_counter) /*force yield*/
+        {
+            kill(pid, SIGSTOP);
+            kill(pid, SIGCONT);
+        }
+    }
+
+    params->missed_counter = 0;
+    params->is_target_child = 1;
+    params->target_pid = pid;
+    DEBUG_PRINT(("%s finished reviving %s\n",
+                 params->is_client ? "WD thread" : "WD process",
+                 params->is_client ? "WD process" : "Client process"));
+    return SUCCESS;
 }
 
-static task_status StopRun(scheduler_t* scheduler)
+static task_status StopRun(wd_params_t* params)
 {
-    g_running = 0;
-    SchedulerStop(scheduler);
+    assert(NULL != params);
+
+    *(params->is_running) = 0;
+    SchedulerStop(params->scheduler);
 
     return DO_NOT_REPEAT;
 }
 
-static task_status ClientCheckAndPingTask(void* param)
+task_status CheckAndPingTask(void* param)
 {
-    scheduler_t* scheduler = (scheduler_t*)param;
+    wd_params_t* params = (wd_params_t*)param;
+    int ping_sig = 0;
 
-    assert(NULL != scheduler);
+    assert(NULL != params);
 
-    if (!g_running)
+    ping_sig = 0 != params->is_client ? SIGUSR1 : SIGUSR2;
+
+    if (!*(params->is_running))
     {
-        SchedulerStop(scheduler);
+        SchedulerStop(params->scheduler);
 
         return DO_NOT_REPEAT;
     }
 
-    if (g_got_signal)
+    if (*(params->got_signal))
     {
-        write(STREAM_CH_WRITE_TO, "wd_thread heartbeat from wd OK\n", 31);
-        g_got_signal = 0;
-        g_missed_counter = 0;
+        *(params->got_signal) = 0;
+        params->missed_counter = 0;
+        DEBUG_PRINT(("%s received ping\n",
+                     0 != params->is_client ? "WD thread" : "WD process"));
     }
     else
     {
-        write(STREAM_CH_WRITE_TO, "wd_thread watchdog not responding\n", 34);
-        ++g_missed_counter;
+        ++(params->missed_counter);
 
-        if (MAX_MISSED_PINGS <= g_missed_counter)
+        if (MAX_MISSED_PINGS <= params->missed_counter)
         {
-            if (WD_SUCCESS != ReviveWatchdog())
+            if (SUCCESS != ReviveTarget(params))
             {
-                return StopRun(scheduler);
+                return StopRun(params);
             }
         }
     }
 
-    if (0 < g_wd_pid && 0 > kill(g_wd_pid, SIGUSR1))
+    if (0 < params->target_pid && 0 > kill(params->target_pid, ping_sig))
     {
-        if (WD_SUCCESS != ReviveWatchdog())
+        if (SUCCESS != ReviveTarget(params) ||
+            0 > kill(params->target_pid, ping_sig))
         {
-            return StopRun(scheduler);
+            return StopRun(params);
         }
-
-        kill(g_wd_pid, SIGUSR1);
     }
 
     return REPEAT;
 }
 
-static task_status ClientStopCheckTask(void* param)
+task_status StopCheckTask(void* param)
 {
-    scheduler_t* scheduler = (scheduler_t*)param;
+    wd_params_t* params = (wd_params_t*)param;
 
-    assert(NULL != scheduler);
+    assert(NULL != params);
 
-    if (!g_running)
+    if (0 == *(params->is_running))
     {
-        SchedulerStop(scheduler);
+        SchedulerStop(params->scheduler);
 
         return DO_NOT_REPEAT;
     }
@@ -244,43 +356,122 @@ static task_status ClientStopCheckTask(void* param)
     return REPEAT;
 }
 
-static void* WdThreadFunc(void* arg)
+static void InitSchedulerAndTasks(wd_params_t* params)
 {
-    scheduler_t* scheduler = NULL;
     ilrd_uid_t return_val1 = {0};
     ilrd_uid_t return_val2 = {0};
-    UNUSED(arg);
 
-    scheduler = SchedulerCreate();
-    if (NULL == scheduler)
+    assert(NULL != params);
+
+    params->scheduler = SchedulerCreate();
+    if (NULL == params->scheduler)
     {
-        return NULL;
-    }
-
-    return_val1 =
-        SchedulerAddTask(scheduler, WD_INTERVAL, ClientCheckAndPingTask,
-                         DummyCleanup, scheduler);
-    return_val2 = SchedulerAddTask(scheduler, 1, ClientStopCheckTask,
-                                   DummyCleanup, scheduler);
-
-    if (SUCCESS != IsILRDUIDEqual(&bad_uid, &return_val1) ||
-        SUCCESS != IsILRDUIDEqual(&bad_uid, &return_val2))
-    {
-        perror("bad_UID in WD_lib.c");
+        CleanUpGlobals();
+        perror("SchedulerCreate() failed in InitSchedulerAndTasks()");
 
         _exit(1);
     }
 
-    g_got_signal = 0;
-    if (0 < g_wd_pid)
+    return_val1 = SchedulerAddTask(params->scheduler, WD_INTERVAL,
+                                   CheckAndPingTask, DummyCleanup, params);
+    return_val2 = SchedulerAddTask(params->scheduler, 1, StopCheckTask,
+                                   DummyCleanup, params);
+    if (1 == IsILRDUIDEqual(&bad_uid, &return_val1) ||
+        1 == IsILRDUIDEqual(&bad_uid, &return_val2))
     {
-        kill(g_wd_pid, SIGUSR1);
+        perror("bad_UID in InitSchedulerAndTasks()");
+        SchedulerDestroy(params->scheduler);
+        CleanUpGlobals();
+
+        _exit(1);
+    }
+}
+
+static watchdog_status_t InitWdParams(const char* prog_path,
+                                      const char* watchdog_path, int argc,
+                                      char* argv[])
+{
+    assert(NULL != prog_path);
+    assert(NULL != watchdog_path);
+    assert(NULL != argv);
+
+    g_client_params = (wd_params_t*)calloc(1, sizeof(wd_params_t));
+    if (NULL == g_client_params)
+    {
+
+        return WD_THREAD_FAIL;
     }
 
-    SchedulerRun(scheduler);
+    g_client_params->wd_path = watchdog_path;
+    g_client_params->prog_path = prog_path;
+    g_client_params->missed_counter = 0;
+    g_running = 1;
+    g_client_params->is_running = &g_running;
+    g_client_params->argv = argv;
+    g_client_params->argc = argc;
+    g_client_params->is_client = 1;
+    g_got_signal = 1;
+    g_client_params->got_signal = &g_got_signal;
 
-    SchedulerDestroy(scheduler);
-    scheduler = NULL;
+    g_client_params->sem_client = sem_open(WD_SEM_CLIENT, O_CREAT, 0666, 0);
+    g_client_params->sem_wd = sem_open(WD_SEM_WD, O_CREAT, 0666, 0);
+    if (SEM_FAILED == g_client_params->sem_client ||
+        SEM_FAILED == g_client_params->sem_wd)
+    {
+        CleanUpGlobals();
+
+        return WD_THREAD_FAIL;
+    }
+
+    return WD_SUCCESS;
+}
+
+static watchdog_status_t StartNewWatchdog(void)
+{
+    assert(NULL != g_client_params);
+
+    if (SUCCESS != ReviveTarget(g_client_params))
+    {
+        return WD_FORK_FAIL;
+    }
+
+    return WD_SUCCESS;
+}
+
+static void AttachToExistingWatchdog(const char* wd_pid_env)
+{
+    assert(NULL != wd_pid_env);
+    assert(NULL != g_client_params);
+
+    g_client_params->target_pid = (pid_t)atoi(wd_pid_env);
+    g_client_params->is_target_child = 0;
+
+    unsetenv(REVIVED_ENV);
+    unsetenv(WD_PID_ENV);
+
+    sem_post(g_client_params->sem_client);
+
+    while (0 != sem_wait(g_client_params->sem_wd))
+    {
+    }
+}
+
+static void* WdThreadFunc(void* arg)
+{
+    wd_params_t* params = (wd_params_t*)arg;
+
+    assert(NULL != params);
+
+    InitSchedulerAndTasks(params);
+    if (0 < params->target_pid)
+    {
+        kill(params->target_pid, SIGUSR1);
+    }
+
+    SchedulerRun(params->scheduler);
+
+    SchedulerDestroy(params->scheduler);
+    params->scheduler = NULL;
 
     return NULL;
 }
@@ -289,64 +480,39 @@ watchdog_status_t WatchdogControllerStart(const char* prog_path,
                                           const char* watchdog_path, int argc,
                                           char* argv[])
 {
+    watchdog_status_t status = WD_SUCCESS;
     char* revived_env = NULL;
     char* wd_pid_env = NULL;
-    pid_t pid = 0;
 
     assert(NULL != prog_path);
-    assert(NULL != watchdog_path);
-    assert(NULL != argv);
 
-    g_watchdog_path = watchdog_path;
-    g_prog_path = prog_path;
-    g_missed_counter = 0;
-    g_got_signal = 0;
-    g_running = 1;
-    g_argv = argv;
-    g_argc = argc;
+    status = InitWdParams(prog_path, watchdog_path, argc, argv);
+    if (WD_SUCCESS != status)
+    {
+        return status;
+    }
 
-#ifndef NDEBUG
-    printf("client pid=%d starting watchdog system\n", (int)getpid());
-#endif
-
-    InitHandlers();
-
-    revived_env = getenv(REVIVED_ENV);
-    wd_pid_env = getenv(WD_PID_ENV);
+    InitHandlers(&revived_env, &wd_pid_env);
     if (NULL != revived_env && NULL != wd_pid_env)
     {
-        g_wd_pid = (pid_t)atoi(wd_pid_env);
-        g_wd_is_child = 0;
-
-        unsetenv(REVIVED_ENV);
-        unsetenv(WD_PID_ENV);
-
-#ifndef NDEBUG
-        printf("client pid=%d attached to existing watchdog pid=%d\n",
-               (int)getpid(), (int)g_wd_pid);
-#endif
+        AttachToExistingWatchdog(wd_pid_env);
     }
     else
     {
-        pid = SpawnWatchdog();
-        if (0 > pid)
+        status = StartNewWatchdog();
+        if (WD_SUCCESS != status)
         {
-            perror("fork");
+            CleanUpGlobals();
 
-            return WD_FORK_FAIL;
+            return status;
         }
-
-        g_wd_pid = pid;
-        g_wd_is_child = 1;
-
-#ifndef NDEBUG
-        printf("client pid=%d spawned watchdog pid=%d\n", (int)getpid(),
-               (int)g_wd_pid);
-#endif
     }
 
-    if (SUCCESS != pthread_create(&g_wd_thread, NULL, WdThreadFunc, NULL))
+    if (SUCCESS != pthread_create(&g_client_params->wd_thread, NULL,
+                                  WdThreadFunc, g_client_params))
     {
+        CleanUpGlobals();
+
         return WD_THREAD_FAIL;
     }
 
@@ -355,23 +521,20 @@ watchdog_status_t WatchdogControllerStart(const char* prog_path,
 
 void WatchdogControllerEnd(void)
 {
-    g_running = 0;
+    assert(NULL != g_client_params);
 
-    pthread_join(g_wd_thread, NULL);
+    *(g_client_params->is_running) = 0;
+    pthread_join(g_client_params->wd_thread, NULL);
 
-    if (0 < g_wd_pid)
+    if (0 < g_client_params->target_pid)
     {
-        kill(g_wd_pid, SIGTERM);
-        if (!g_wd_is_child)
-        {
-            waitpid(g_wd_pid, NULL, 0);
-        }
-
-        g_wd_pid = 0;
-        g_wd_is_child = 0;
+        kill(g_client_params->target_pid, SIGTERM);
+        waitpid(g_client_params->target_pid, NULL, 0);
+        g_client_params->target_pid = 0;
+        g_client_params->is_target_child = 0;
     }
 
-#ifndef NDEBUG
-    printf("client watchdog stopped\n");
-#endif
+    CleanUpSem();
+    CleanUpGlobals();
+    DEBUG_PRINT(("exit with WatchdogControllerEnd()"));
 }

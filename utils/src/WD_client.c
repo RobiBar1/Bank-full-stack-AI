@@ -1,7 +1,7 @@
 /*
 Writer: Robi
 Chcker: Ehud
-Date: ?
+Date: 09.04.2026
 */
 #define _POSIX_C_SOURCE 200809L
 
@@ -21,14 +21,12 @@ int main(int argc, char* argv[])
     unsigned int remaining = 50;
     char path[PATH_MAX] = {'\0'};
     ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
-    UNUSED(argc);
 
     assert(NULL != argv);
 
     -1 != len ? printf("Full path to executable: %s\n", path)
-              : perror("readlink() error");
+              : printf("readlink() error");
 
-    printf("in client, %s\n", argv[0]);
     WatchdogControllerStart(path, WD_EXE_PATH, argc, argv);
     while (0 < remaining)
     {
