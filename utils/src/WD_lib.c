@@ -18,9 +18,6 @@
 #include "scheduler.h"           /* scheduler_t, SchedulerRun */
 #include "watchdog_controller.h" /* watchdog_status_t */
 
-/* ============================== ReBorn ===============================*/
-/*top*/
-
 #ifndef NDEBUG
 #define DEBUG_PRINT(args) (printf args)
 #else
@@ -37,7 +34,6 @@
 #define NOT_SUCCESS 1
 #define SUCCESS 0
 
-#define WATCHDOG_ARGS 3
 #define ARGV_I_ENTERED 2
 
 #define SEM_PROCCESS "/process_ready"
@@ -48,17 +44,17 @@ typedef struct thread_info
 {
     const char* prog_to_watch;
     char** argv;
-    pid_t pid_to_update;
+    pid_t pid_to_watch;
 } thread_info_t;
 
 typedef struct wd_runtime
 {
-    scheduler_t* scheduler;
     const char* prog_to_revive;
+    scheduler_t* scheduler;
     char* const* argv;
     sem_t* sem_to_signal;
     sem_t* sem_to_wait;
-    pid_t pid_to_update;
+    pid_t pid_to_watch;
 } wd_runtime_t;
 
 static volatile sig_atomic_t g_is_stopped = 0;
@@ -133,10 +129,10 @@ static void Revive(wd_runtime_t* runtime_args)
 
     DEBUG_PRINT(("PID %d is starting revive process...\n", getpid()));
 
-    kill(runtime_args->pid_to_update, SIGTERM);
-    runtime_args->pid_to_update =
+    kill(runtime_args->pid_to_watch, SIGTERM);
+    runtime_args->pid_to_watch =
         SpawnProcess(runtime_args->prog_to_revive, runtime_args->argv);
-    if (FORK_OR_EXECV_FAILED == runtime_args->pid_to_update)
+    if (FORK_OR_EXECV_FAILED == runtime_args->pid_to_watch)
     {
         SchedulerDestroy(runtime_args->scheduler);
         LogAndExit("SpawnProcess() failed", NOT_SUCCESS);
@@ -156,9 +152,9 @@ static task_status SendSigUsr1(void* param)
 
     if (!g_is_stopped)
     {
-        DEBUG_PRINT(("%d: send SIGUSR1 to %d\n", getpid(),
-                     runtime_args->pid_to_update));
-        kill(runtime_args->pid_to_update,
+        DEBUG_PRINT(
+            ("%d: send SIGUSR1 to %d\n", getpid(), runtime_args->pid_to_watch));
+        kill(runtime_args->pid_to_watch,
              SIGUSR1); /*this before sync or after?*/
         __sync_fetch_and_add(&g_heartbeats, 1);
     }
@@ -189,7 +185,7 @@ static task_status CheckIsStop(void* param)
     if (g_is_stopped)
     {
         SchedulerStop(runtime_args->scheduler);
-        kill(runtime_args->pid_to_update, SIGUSR2);
+        kill(runtime_args->pid_to_watch, SIGUSR2);
 
         return DO_NOT_REPEAT;
     }
@@ -318,7 +314,7 @@ static void InitTimeAndSyhnronicSystem(wd_runtime_t* runtime_args,
     }
 }
 
-void StartWatching(const char* prog_to_watch, pid_t pid_to_update,
+void StartWatching(const char* prog_to_watch, pid_t pid_to_watch,
                    char* const* argv, const char* path_to_sem_signal,
                    const char* path_to_sem_wait)
 {
@@ -334,7 +330,7 @@ void StartWatching(const char* prog_to_watch, pid_t pid_to_update,
     InitTimeAndSyhnronicSystem(&runtime_args, path_to_sem_signal,
                                path_to_sem_wait);
 
-    runtime_args.pid_to_update = pid_to_update;
+    runtime_args.pid_to_watch = pid_to_watch;
     runtime_args.prog_to_revive = prog_to_watch;
     runtime_args.argv = argv;
 
@@ -343,7 +339,7 @@ void StartWatching(const char* prog_to_watch, pid_t pid_to_update,
         ;
 
     DEBUG_PRINT(("PID %d just start watching PID %d\n", getpid(),
-                 runtime_args.pid_to_update));
+                 runtime_args.pid_to_watch));
 
     SchedulerRun(runtime_args.scheduler);
     SchedulerDestroy(runtime_args.scheduler);
@@ -374,7 +370,7 @@ static char** CreateArgv(const char* watchdog_path, char* argv[])
     assert(NULL != watchdog_path);
     assert(NULL != argv);
 
-    complete_argc = CountArgv(argv) + WATCHDOG_ARGS;
+    complete_argc = CountArgv(argv) + ARGV_I_ENTERED;
     complete_argv = (char**)malloc(complete_argc * sizeof(char*));
     if (NULL == complete_argv)
     {
@@ -427,7 +423,7 @@ static void* ThreadFunc(void* arg)
     assert(NULL != thread_info);
 
     UnblockSignals();
-    StartWatching(thread_info->prog_to_watch, thread_info->pid_to_update,
+    StartWatching(thread_info->prog_to_watch, thread_info->pid_to_watch,
                   thread_info->argv, SEM_PROCCESS, SEM_THREAD);
 
     free(thread_info->argv[1]);
@@ -445,7 +441,7 @@ static int CreateThread(thread_info_t* thread_info)
     if (SUCCESS !=
         pthread_create(&g_panthom_thread, NULL, ThreadFunc, thread_info))
     {
-        kill(thread_info->pid_to_update, SIGTERM);
+        kill(thread_info->pid_to_watch, SIGTERM);
 
         return NOT_SUCCESS;
     }
@@ -493,9 +489,9 @@ watchdog_status_t WatchdogControllerStart(const char* watchdog_path,
     }
 
     thread_info->prog_to_watch = watchdog_path;
-    thread_info->pid_to_update =
+    thread_info->pid_to_watch =
         CheckAndSpawnWatchdog(watchdog_path, thread_info->argv);
-    if (FORK_OR_EXECV_FAILED == thread_info->pid_to_update)
+    if (FORK_OR_EXECV_FAILED == thread_info->pid_to_watch)
     {
         CleanUpThread(thread_info);
 
