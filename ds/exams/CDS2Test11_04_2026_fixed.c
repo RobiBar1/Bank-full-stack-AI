@@ -66,169 +66,72 @@ Node* FlipRecursive(Node* node)
 
 /*
 [-2, 1, -3, 4, -1, 2, 1, -5, 4, -1, -1, -1, 4, 1, 1]
-2.
+2. 
 psodo:
-	max = 0;
-	cur_sum = 0
-	i = 0
-	sta_window = 0;
-	end_window = 0;
-	first_positive_index = 0
-	minus_sum = 0
-	saw_first_minus = 0
-	saw_first_positive = 0
-	saw_second_minus = 0
-	saw_second_positive = 0
-	sum_from_positive = 0
+	loop from i = 0 to end of arr and do:
 	
-	loop until arr[i] > 0.
-	max = arr[i]
-	cur_sum = arr[i]
-	sta_window = i
-	end_window = i
+		tmp_max += arr[i]
+		
+		if tmp_max > max do:
+			max = tmp_max
+			end_index = i
+			start_index = tmp_start_index
+		
+		if tmp_max < 0 do:
+			tmp_start_index = i + 1
+			tmp_max = 0
 	
-	loop unil the end of arr and do:
-		if arr[i] >= 0:
-			if saw_first_minus:
-				if saw_first_positive
-					if saw_second_minus
-						if (sum_from_positive >= cur_sum):
-							sta_window = saw_first_positive
-							sum_from_positive = arr[i]
-							first_positive_index = i
-							saw_second_minus = 0	
-						else
-							sta_window = i
-							sum_from_positive = 0
-							first_positive_index = 0
-							saw_first_minus = 0
-							saw_first_positive = 0
-							saw_second_minus = 0
-							cur_sum = arr[i]
-					else
-						sum_from_positive += arr[i]
-						cur_sum += arr[i]	
-				else
-					++saw_first_positive
-					sum_from_positive += arr[i]
-					cur_sum += arr[i]
-					first_positive_index = 0 ? i : first_positive_index;	
-			else
-				cur_sum += arr[i]
-				
-			max + cur_sum > max ? max + cur_sum : max
-		else
-			++saw_first_minus;
-			if saw_first_positive && !saw_second_minus:
-				sum_from_positive += arr[i]
-				++saw_second_minus
-			cur_sum += arr[i]
-			
-		++end_window
+	return {max, end_index, start_index}
 */
 
-
-static void InitVariables(int* arr, size_t i, double* max, double* cur_sum,
-						  size_t* sta_window, size_t* end_window)
+typedef struct return_args
 {
+	size_t start;
+	size_t end;
+	int max_to_return;
+}return_args_t;
 
-	*max = arr[i];
-	*cur_sum = arr[i];
-	*sta_window = i;
-	*end_window = i;
+static void* UpdateNewMax(return_args_t* args, int new_max, size_t start, size_t end)
+{
+	assert (NULL != args);
+	
+	args->start = start;
+	args->end = end;
+	args->max_to_return = new_max;	
+	
+	return NULL;
 }
 
-size_t FindMaxContiguousSubArr(int* arr, size_t size)
+static void OpenNewSlideWindow(size_t* tmp_start, int* tmp_max, size_t new_start)
 {
-	size_t first_positive_index = 0;
-	size_t saw_second_positive = 0;
-	size_t saw_first_positive = 0;
-	double sum_from_positive = 0;
-	size_t saw_second_minus = 0;
-	size_t saw_first_minus = 0;
-	size_t sta_window = 0;
-	size_t end_window = 0;
-	double minus_sum = 0;
-	double cur_sum = 0;
-	double max = 0;
+	assert (NULL != tmp_start);
+	assert (NULL != tmp_max);
+	
+	*tmp_start = new_start;
+	*tmp_max = 0;
+}
+
+void FindMaxContiguousSubArr(int* arr, size_t size, return_args_t* args)
+{
+	size_t tmp_start = 0;
+	int tmp_max = 0;
 	size_t i = 0;
 	
 	assert (NULL != arr);
+	assert (NULL != args);
 	assert (0 < size);
 	
-	while (arr[i] <= 0)
+	args->max_to_return = 0;
+	for(; i < size; ++i)
 	{
-		++i;
-	}
-	
-	InitVariables(arr, i, &max, &cur_sum, &sta_window, &end_window);
-	
-	for (++i; i < size; ++i)
-	{
-		if (arr[i] >= 0)
+		tmp_max += arr[i];
+		args->max_to_return < tmp_max ? 
+							  UpdateNewMax(args, tmp_max, tmp_start, i) : NULL ;
+		if (0 > tmp_max)
 		{
-			if(saw_first_minus)
-			{
-				if(saw_first_positive)
-				{
-					if(saw_second_minus)
-					{
-						if (sum_from_positive >= cur_sum)
-						{
-							sta_window = saw_first_positive;
-							cur_sum = sum_from_positive;
-							sum_from_positive = arr[i];
-							first_positive_index = i;
-							saw_second_minus = 0;
-						}
-						else
-						{
-							sta_window = i;
-							sum_from_positive = 0;
-							first_positive_index = 0;
-							saw_first_minus = 0;
-							saw_first_positive = 0;
-							saw_second_minus = 0;
-							cur_sum = arr[i];
-						}
-					}
-					else
-					{
-						sum_from_positive += arr[i];
-						cur_sum += arr[i];
-					}
-				}
-				else
-				{
-					++saw_first_positive;
-					sum_from_positive += arr[i];
-					cur_sum += arr[i];
-					first_positive_index = 0 ? i : first_positive_index;	
-				}
-			}
-			else
-			{
-				cur_sum += arr[i];
-			}
-			
-			max + cur_sum > max ? max + cur_sum : max;
-		}	
-		else
-		{
-			++saw_first_minus;
-			if (saw_first_positive && !saw_second_minus)
-			{
-				sum_from_positive += arr[i];
-				++saw_second_minus;
-			}
-			
-			cur_sum += arr[i];
-		}
-			
-		++end_window;
+			OpenNewSlideWindow(&tmp_start, &tmp_max, i + 1);
+		} 
 	}
-	
-	return max;
 }
 
 
@@ -524,73 +427,72 @@ void ReverseStringRecursive(char* str, size_t size_not_inculde_null,
 /*
 8.
 psodo:
-PrintAllThisStrPermutations(str)
-PrintAllThisStrPermutations()
-
-"helo" helo, ehlo, elho, eloh, leoh, loeh, lohe, olhe, ohle, ohel, hoel, heol.
-"hey" hey, ehy, eyh, yeh, yhe, hye 
-PrintAllThisStrPermutations(str):
-	print(str)
-	
-	loop size - 1 times
-		MoveFirstLetter(size - 1);
-	
-	MoveFirstLetter(size - 2);
 
 */
 
-static void Swap(char* ch, char* ch1)
+void generate_permutations_helper(const char *original, char *current_string, int *visited, int current_len, int original_len) 
 {
-	char tmp = '\0';
-	
-	assert(NULL != ch);
-	assert(NULL != ch1);
-	
-	tmp = *ch;
-	*ch = *ch1;
-	*ch1 = tmp;
-}
+    int i = 0;
 
-static void MoveFirstLetter(char* str, size_t str_size)
-{
-	size_t i = 0;
-	
-	assert(NULL != str);
-	
-	for (; i < str_size; ++i)
-	{
-		Swap(&(str[i]), &(str[i + 1]));
-		printf("%s\n", str);	
-	}
-}
-/*
-"helwo"
-"helo" helo, ehlo, elho, eloh, leoh, loeh, lohe, olhe, ohle, ohel, hoel, heol.
-"hey" hey, ehy, eyh, yeh, yhe, hye 
-*/
-static void PrintAllThisStrPermutations(char* str, size_t str_size)
-{
-	size_t i = 0;
-	
-	assert(NULL != str);
-	
-	printf("%s\n", str);
-	for (; i < str_size; ++i)
-	{
-		MoveFirstLetter(str, str_size);
-	}
-	
-	MoveFirstLetter(str, str_size - 1);
-}
-
-void PrintArrAndSubArrAllPermutations(char* str)
-{
-	size_t str_size = 0;
-	
-	assert (NULL != str);
+	assert (NULL != current_string);
+	assert (NULL != original);
+	assert (NULL != visited);
 		
-	str_size = strlen(str);
-	PrintAllThisStrPermutations(str, str_size - 1);
+    if (0 < current_len) 
+    {
+        current_string[current_len] = '\0';
+        printf("%s\n", current_string);
+    }
+
+    if (current_len == original_len) 
+    {
+        return;
+    }
+
+    for (; i < original_len; i++) 
+    {
+        
+        if (!visited[i]) 
+        {
+            visited[i] = 1;
+            current_string[current_len] = original[i];
+
+            generate_permutations_helper(original, current_string, visited, current_len + 1, original_len);
+
+            visited[i] = 0;
+        }
+    }
+}
+
+void print_all_substring_permutations(const char *str) 
+{
+    char *current_string = NULL;
+    int *visited = NULL;
+    int len = 0;
+	
+	assert(NULL != str);
+	
+    len = strlen(str);
+    visited = (int*)calloc(len, sizeof(int));
+    current_string = (char*)malloc((len + 1) * sizeof(char));
+    if (NULL == visited || NULL == current_string) 
+    {
+        perror("allocation failed\n");
+        
+        free(visited);
+        visited = NULL;
+        free(current_string);
+        current_string = NULL;
+        
+        return;
+    }
+
+    generate_permutations_helper(str, current_string, visited, 0, len);
+
+    free(visited);
+    visited = NULL;
+    free(current_string);
+    current_string = NULL;
 }
 
 /*
