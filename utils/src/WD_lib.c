@@ -195,26 +195,31 @@ static task_status CheckIsStop(void* param)
 
 static int InitScheduler(scheduler_t* scheduler, wd_runtime_t* runtime_args)
 {
-    ilrd_uid_t uid1 = {0};
-    ilrd_uid_t uid2 = {0};
-    ilrd_uid_t uid3 = {0};
+    ilrd_uid_t uid = {0};
 
     assert(NULL != scheduler);
     assert(NULL != runtime_args);
 
-    uid1 = SchedulerAddTask(scheduler, TIME_INTERVAL_FOR_PINGS, SendSigUsr1,
-                            DummyCleanup, runtime_args);
-    uid2 = SchedulerAddTask(scheduler, TIME_INTERVAL_FOR_PINGS, CheckAndRevive,
-                            DummyCleanup, runtime_args);
-    uid3 =
-        SchedulerAddTask(scheduler, 1, CheckIsStop, DummyCleanup, runtime_args);
-
-    if (IsILRDUIDEqual(&bad_uid, &uid1) || IsILRDUIDEqual(&bad_uid, &uid2) ||
-        IsILRDUIDEqual(&bad_uid, &uid3))
+    uid = SchedulerAddTask(scheduler, TIME_INTERVAL_FOR_PINGS, SendSigUsr1,
+                           DummyCleanup, runtime_args);
+    if (IsILRDUIDEqual(&bad_uid, &uid)
     {
         return NOT_SUCCESS;
     }
 
+    uid = SchedulerAddTask(scheduler, TIME_INTERVAL_FOR_PINGS, CheckAndRevive,
+                            DummyCleanup, runtime_args);
+    if (IsILRDUIDEqual(&bad_uid, &uid)
+    {
+        return NOT_SUCCESS;
+    }
+
+    uid = SchedulerAddTask(scheduler, 1, CheckIsStop, DummyCleanup, runtime_args);
+    if (IsILRDUIDEqual(&bad_uid, &uid)
+    {
+        return NOT_SUCCESS;
+    }
+    
     return SUCCESS;
 }
 
