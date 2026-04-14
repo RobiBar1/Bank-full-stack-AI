@@ -116,8 +116,7 @@ static pid_t SpawnProcess(const char* prog_name, char* const* argv)
     else if (0 == pid)
     {
         execv(prog_name, argv);
-        perror("execv");
-        pid = FORK_OR_EXECV_FAILED;
+        LogAndExit("execv() in SpawnProcess() failed", NOT_SUCCESS);
     }
 
     return pid;
