@@ -28,14 +28,14 @@ static size_t StrLen(const char* str)
         ++count;
     }
 
-    return count + 1;
+    return count;
 }
 
 char* String::Strdup(const char* str)
 {
     assert(NULL != str);
 
-    char* tmp = new char[StrLen(str)];
+    char* tmp = new char[StrLen(str) + 1];
     char* tmp_start = tmp;
     while ('\0' != *str)
     {
@@ -51,17 +51,7 @@ String::String(const char* str) : m_cstr(Strdup(str)) {}
 String::String(const String& other) : m_cstr(Strdup((other.Cstr()))) {}
 String::~String() { delete[] Cstr(); }
 
-std::size_t String::Length() const
-{
-    const char* tmp = Cstr();
-    size_t count = 0;
-    while ('\0' != *tmp++)
-    {
-        ++count;
-    }
-
-    return count;
-}
+std::size_t String::Length() const { return (StrLen(Cstr())); }
 
 const char* String::Cstr() const { return m_cstr; }
 
@@ -74,7 +64,7 @@ String& String::operator=(const String& other)
     return *this;
 }
 
-static Operat CmpFun(const char* str1, const char* str2)
+static Operat CmpFunEnum(const char* str1, const char* str2)
 {
     assert(NULL != str1);
     assert(NULL != str2);
@@ -103,6 +93,21 @@ static Operat CmpFun(const char* str1, const char* str2)
     return LITTLE;
 }
 
+static int CmpFun(const char* str1, const char* str2)
+{
+    assert(NULL != str1);
+    assert(NULL != str2);
+
+    while ('\0' != *str1 && *str1 == *str2)
+    {
+        ++str1;
+        ++str2;
+    }
+
+    return (*reinterpret_cast<unsigned char*>(const_cast<char*>(str1)) -
+            *reinterpret_cast<unsigned char*>(const_cast<char*>(str2)));
+}
+
 namespace ilrd
 {
 std::ostream& operator<<(std::ostream& os, const String& str)
@@ -112,16 +117,16 @@ std::ostream& operator<<(std::ostream& os, const String& str)
 
 bool operator==(const String& left, const String& right)
 {
-    return (EQUAL == CmpFun(left.Cstr(), right.Cstr()));
+    return (0 == CmpFun(left.Cstr(), right.Cstr()));
 }
 
 bool operator>(const String& left, const String& right)
 {
-    return (BIG == CmpFun(left.Cstr(), right.Cstr()));
+    return (0 < CmpFun(left.Cstr(), right.Cstr()));
 }
 
 bool operator<(const String& left, const String& right)
 {
-    return (LITTLE == CmpFun(left.Cstr(), right.Cstr()));
+    return (0 > CmpFun(left.Cstr(), right.Cstr()));
 }
 } // namespace ilrd
