@@ -1,7 +1,12 @@
-#include <cassert>
-#include <ostream>
+/*
+ * Writer: Robi
+ * Checker: Ehud
+ * Date: 20.04.2026
+ */
+#include <cassert> // assert
+#include <ostream> // ostream
 
-#include "string.hpp"
+#include "string.hpp" // my_api
 
 using namespace ilrd;
 
