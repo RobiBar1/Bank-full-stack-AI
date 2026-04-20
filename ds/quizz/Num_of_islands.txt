@@ -1,0 +1,65 @@
+#define SEA 0
+#define LAND 1
+
+#define UP(x) ((x) - 1)
+#define LEFT(x) ((x) - 1)
+#define DOWN(x) ((x) + 1)
+#define RIGHT(x) ((x) + 1)
+
+int IsOutOfBounds(int cur, int max)
+{
+	return (cur < 0 || cur >= max);
+}
+
+int IsOutOfMatrixBound(int** map, int row_size, int col_size, int i, int j)
+{
+	return (IsOutOfBounds(i, row_size) || 
+			IsOutOfBounds(j, col_size) || 
+			SEA == map[i][j]);
+}
+
+void dfs(int** map, int row_size, int col_size, int i, int j)
+{
+    if (IsOutOfMatrixBound(map, row_size, col_size, i, j))
+    {
+        return;
+    }
+    
+    map[i][j] = SEA; 
+    
+    dfs(map, row_size, col_size, UP(i), j);
+    dfs(map, row_size, col_size, DOWN(i), j);
+    dfs(map, row_size, col_size, i, LEFT(j)); 
+    dfs(map, row_size, col_size, i, RIGHT(j)); 
+}
+
+
+size_t IsOnBoardOfMatrix(int i, int j, int row_size, int col_size)
+{
+	return (0 == i || row_size - 1 == i || 0 == j || col_size - 1 == j);
+}
+
+size_t NumOfIslands(int** map, int row_size, int col_size)
+{
+    size_t count = 0;
+    int i = 0;
+    int j = 0;
+    
+    assert (NULL != map);
+    assert (0 <= row_size);
+    assert (0 <= col_size);
+    
+    for (; i < row_size; ++i)
+    {
+        for (j = 0; j < col_size; ++j)
+        {
+            if (LAND == map[i][j])
+            {
+            	count += IsOnBoardOfMatrix(i, j, row_size, col_size) ? 0 : 1;
+                dfs(map, row_size, col_size, i, j); 
+            }
+        }
+    }
+    
+    return count;
+}

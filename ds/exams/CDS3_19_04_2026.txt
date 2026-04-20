@@ -1,0 +1,745 @@
+/*
+Writer:  Robi
+Checker: Ofek
+date:    19.04.2026
+*/
+
+/*
+Question1:
+psodo:
+*/
+
+void SetVal(int_array_t* array, int index, int val)
+{
+	assert (NULL != array);	
+}
+
+int SetVal(int_array_t* array, int index)
+{
+	assert (NULL != array);	
+}
+
+void SetAll(int_array_t* array, int val)
+{
+	assert (NULL != array);	
+}
+
+===================================================================
+/*
+Question2:
+[3,2,4,1,2,7,2,5,8,0,0,0,0,6]
+[0,0,0,0,1,2,2,3,4,5,6,7,8,9]
+
+psodo:
+	1. sort the arr.
+	2. open slide windows from start to end.
+	3. loop until end_window = start_window and do:
+	4.		if(arr[end_window] + arr[start_window] == sum_of_two)
+			{
+				i1 = start
+				i2 = end
+				return;
+			}
+			if(arr[end_window] + arr[start_window] > sum_of_two)
+			{
+				--end_window;
+			}
+			else
+			{
+				++start_window;
+			}
+*/
+
+void FindSomeOfTwo(unsigned int* arr, size_t size, unsigned int sum_of_two, 
+size_t* num1_index,  size_t* num2_index)
+{
+	size_t start_window = 0;
+	size_t end_window = 0;
+	
+	assert(NULL != arr);
+	assert(NULL != num1_index);
+	assert(NULL != num2_index);
+	assert(2 <= size);
+	
+	Qsort(arr);
+	end_window = size - 1;
+	
+	while (arr[end_window] > sum_of_two)
+	{
+		--end_window
+		if (0 == end_window)
+		{
+			*num1_index = NULL;
+			*num2_index = NULL;
+			
+			return;
+		}
+	}
+	
+	while (start_window != end_window)
+	{
+		if(sum_of_two == arr[start_window] + arr[end_window])
+		{
+			*num1_index = start_window;
+			*num2_index = end_window;
+			
+			return;
+		}
+		if(arr[start_window] + arr[end_window] > sum_of_two)
+		{
+			--end_window;
+		}
+		else
+		{
+			++start_window;
+		}
+	}
+	
+	*num1_index = NULL;
+	*num2_index = NULL;
+}
+
+===================================================================
+/*
+Question3:
+psodo:
+
+*/
+
+int IsCharOnArrNoCheckAllowed (char* arr, size_t size, char ch)
+{
+	size_t i = 0;
+	int lut[256] = {0};
+	
+	assert(NULL != arr);
+	
+	for (; i < size; ++i)
+	{
+		++(lut[ch]);	
+	}
+	
+	return lut[ch];
+}
+
+===================================================================
+/*
+Question4:
+[1,2,3], 3.
+ShiftRight:
+[1,2,3], 2.
+   s
+[1,2,3], 2.
+	   s
+[1,2,3], 2.
+ s
+
+
+[2,3,1], 2
+
+psodo:
+	1. put end_p on size - n bytes.
+	2. put start_p on 0.
+	3. if n not allinged(bigger or smaller) to sizeof(size_t) so do:
+		ShiftsRight(n % sizeof(size_t)).
+		n = n - (n % sizeof(size_t)).
+	4. while n > 0 do:
+		ShiftsRight(sizeof(size_t)).
+		n = n - sizeof(size_t);
+		
+ShiftRight:
+	1. size_t to_overide_with.
+	2. size_t to_overide.
+	* --n_byte_to_shift.
+	3. to_overide_with = arr[start_i] until arr[start_i + n_byte_to_shift].
+	4. start_i = 0.
+	* while (start_i + n_byte_to_shift >= size)
+		{
+			--n_byte_to_shift.
+		}
+	5. to_overide = arr[start_i] until arr[n_byte_to_shift].
+	6. overdie(arr[0] until arr[n_byte_to_shift - 1], to_overide_with, n_byte_to_shift)	
+	7. to_overide_with = to_overide.
+	8. start_i + n_byte_to_shift
+	9. while (start_i + n_byte_to_shift >= size)
+		{
+			--n_byte_to_shift.
+		}
+		
+		overdie(arr[start_i] until arr[n_byte_to_shift - 1], to_overide_with, n_byte_to_shift)	
+			
+			runner = start_i - n_byte_to_shift.
+			to_overide = arr[start_i] until arr[start_i + n_byte_to_shift].
+			to_overide_with = arr[runner] until arr[start_i].
+			overdie(to_overide, to_overide_with, runner)	
+			start_i = runner.
+		}
+	
+*/
+
+
+void ShiftRight(char* arr, size_t size, size_t n_byte_to_shift)
+{
+	size_t to_overide_with = 0;
+	size_t to_overide = 0;
+	--n_byte_to_shift;
+	
+	assert(NULL != arr);
+	to_overide_with = memcpy(&(arr[start_i]), start_i + n_byte_to_shift);
+	start_i = 0;
+	while (start_i + n_byte_to_shift >= size)
+	{
+		--n_byte_to_shift;
+	}
+	
+	to_overide = memcpy(&(arr[start_i]), n_byte_to_shift);
+	memset(&(arr[start_i]), to_overide_with, n_byte_to_shift);
+	
+	while (start_i != size)
+	{
+		to_overide_with = to_overide;
+		while (start_i + n_byte_to_shift >= size)
+		{
+			--n_byte_to_shift;
+		}
+		
+		start_i += n_byte_to_shift;
+		to_overide = memcpy(&(arr[start_i]), n_byte_to_shift);
+		memset(&(arr[start_i]), to_overide_with, n_byte_to_shift);
+	}
+}
+
+void DoEfficntShift(char* arr, size_t size, size_t n_byte_to_shift)
+{
+	size_t end_i = 0;
+	size_t start_i = 0;
+	size_t remind = 0;
+	
+	assert(NULL != arr);
+	assert(0 < n_byte_to_shift);
+	assert(0 < size);
+	
+	end_i = size - n_byte_to_shift;
+	remind = n_byte_to_shift & sizeof(size_t);
+	if (remind)
+	{
+		ShiftRight(arr, size, remind);
+		n_byte_to_shift -= remind;
+	}
+	
+	while (n_byte_to_shift > 0)
+	{
+		ShiftRight(arr, size, sizeof(size_t));
+		n_byte_to_shift -= sizeof(size_t);
+	}
+}
+
+
+/*
+===================================================================
+Question5:
+psodo:
+
+*/
+
+
+
+/*
+===================================================================
+Question6:
+psodo:
+
+*/
+
+
+
+/*
+===================================================================
+Question7:
+psodo:
+
+*/
+
+int IsParenthesesCorrectly(char* str)
+{
+	size_t is_valid = 0;
+	Stack* s = NULL;
+	size_t size = 0;
+	
+	assert(NULL != str);
+	
+	size = strlen(str);
+	s = StackCreate((size / 2) + 1);
+	if (NULL == s)
+	{
+		return -1;
+	}
+	
+	is_valid = 1;
+	while ('\0' != *str && is_valid)
+	{
+		switch(*str)
+		{
+			case '[' '(' '{' '<':
+				StackPush(s, *str++);
+				break;
+				
+			case ']':
+				if (StackIsEmpty() || StackPop(s) != '[')
+				{
+					is_valid = 0;
+				}
+				break;
+				
+			case ')':
+				if (StackIsEmpty() || StackPop(s) != '(')
+				{
+					is_valid = 0;
+				}
+				break;
+				
+			case '}':
+				if (StackIsEmpty() || StackPop(s) != '{')
+				{
+					is_valid = 0;
+				}
+				break;
+				
+			case '>':
+				if (StackIsEmpty() || StackPop(s) != '<')
+				{
+					is_valid = 0;
+				}
+				break;
+				
+			defult:
+				++str;
+				break;
+		}
+	}
+	
+	is_valid = is_valid && StackIsEmpty() ? 1 : 0;
+	StackDestroy(s);
+	
+	return is_valid;
+}
+
+/*
+Question8:
+a. 
+void ExampleRecursivePrintNum(int n)
+{
+	printf("%d\n", n--);
+	
+	ExampleRecursivePrintNum(n);
+}
+
+what will hapnned: it will be infinte loop until the recuresion stack will get
+overflow.
+
+
+b.
+3*4 = 3 + 3 + 3 + 3 = 12.
+psodo:
+	1. if multi = 0 return 0.
+	2. return num + recursive_call with mulit - 1
+*/
+
+
+unsigned int MultiRecursive(unsigned int num, unsigned int multi)
+{
+	if (0 == multi)
+	{
+		return 0;
+	}
+	
+	return num + MultiRecursive(num, --multi);
+}
+
+
+
+
+
+/*
+c. 
+
+deleted implement.
+
+3 cases:
+0 & 0 & carry 0 = 0, carry 0. -> 0 ones = 0.
+0 & 1 & carry 0 = 1, carry 0. -> 1 ones = 1.
+1 & 1 & carry 0 = 0, carry 1. -> 2 ones = 0 & carry = 1.
+1 & 1 & carry 1 = 1, carry 1. -> 3 ones = 1 & carry = 1.
+
+
+12345678
+
+00000001
+00000000 
+------------ |
+00000001
+
+00000001
+00000001
+------------
+00000010
+
+00000001
+00000010
+------------
+00000011
+
+00000001
+00000011
+------------
+00000100
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+Question9:
+a.
+**********buble sort :
+1. time complex:
+best case: O(N)
+avarge: O(N^2)
+worest: O(N^2)
+2. space complex:
+best case: O(1)
+avarge: O(1)
+worest:O(1)
+
+********** quick-sort :
+1. time complex:
+best case: O(NlogN)
+avarge: O(NlogN)
+worest: O(N^2)
+2. space complex:
+best case: O(logN)
+avarge: O(logN)
+worest:O(N)
+
+**********merge-sort :
+1. time complex:
+best case: O(NlogN)
+avarge: O(NlogN)
+worest: O(NlogN)
+2. space complex:
+best case: O(N)
+avarge: O(N)
+worest:O(N)
+
+--non compareable sorts:
+**********counting sort :
+1. time complex:
+best case: O(N)
+avarge: O(N)
+worest: O(N)
+2. space complex:
+best case: O(N)
+avarge: O(N)
+worest:O(N)
+
+b.
+* what is stable sort:
+its sort that save the items that have duplicate stable from 1 to other, for example:
+[1,3,2(a),5,2(b)] -> will sort it to -> [1,2(a),2(b),3,5] -> the 2(a) 
+that come before the 2(b) in the original array will stay before him even after the sort.
+
+* wich sorts are stable:
+we can implement each sort as stable, but in defualt we have counting sort, merge sort.
+
+c. implement out of comment under..
+
+d.
+* i will choose merge sort, becuase he do this job on his nature of how he is working..
+* the merge of the each array with the base array that most be paralell.
+*/
+
+/*9.c.*/
+Node* PartionSort(Node* head, Node* pivot)
+{
+	Node* small = NULL;
+	Node* small_runner = NULL;
+	Node* big = NULL;
+	Node* big_runner = NULL;
+	
+	assert(NULL != head);
+	assert(NULL != head->next);
+	assert(NULL != pivot);
+	
+	while (NULL != head->next)
+	{
+		if (head->data > pivot->data)
+		{
+			if (NULL == big)
+			{
+				big = head;
+				big_runner = big;
+			}
+			else
+			{
+				big_runner->next = head;
+				big_runner = big_runner->next;
+			}
+		}
+		else
+		{
+			if (NULL == small)
+			{
+				small = head;
+				small_runner = small;
+			}
+			else
+			{
+				small_runner->next = head;
+				small_runner = small_runner->next;
+			}
+		}
+	}
+	
+	if (head->data > pivot->data)
+	{
+		if (NULL == big)
+		{
+			small_runner->next = head;
+			small_runner = small_runner->next;
+		}
+		else
+		{
+			big_runner->next = head;
+			big_runner = big_runner->next;
+		}
+	}
+	else
+	{
+		if (NULL == small)
+		{
+			small = head;
+			small_runner = small;
+		}
+		else
+		{
+			small_runner->next = head;
+			small_runner = small_runner->next;
+		}
+	}
+	
+	small_runner->next = big;
+	
+	return small;
+}
+
+
+
+
+
+
+/*
+Question10:
+psodo:
+*/
+
+
+
+
+/*
+Question11:
+a. interface for hash table(API only):
+
+/*time complex: O(1) */
+hash_t* CreateHashTable(size_t table_size, size_t element_bytes_size);
+
+/*time complex: O(N) - case that all go the same key and we use link list on that key*/
+void DestroyHashTable(hash_t* hash);
+
+/*time complex: O(1) - case we use d_link_list*/
+key* InsertHashTable(hash_t* hash, void* data);
+
+/*time complex: O(N) - case as DestroyHashTable.*/
+void* FindHashTable(hash_t* hash, key* key);
+
+/*time complex: O(N) - case as DestroyHashTable.*/
+int RemoveHashTable(hash_t* hash, key* key);
+
+c. example when to use hashmap:
+* if i want to search + insert + remove in ammortize O(1) and i have place to make my arr big as i need.
+*/
+
+
+
+/*
+Question12:
+a. 
+* purpose of the heap ds: to work allways with the max/min element and get it as fast a possible.
+
+* example where to use it: if i have problem with graph and edge will wights and ill want to take the 
+maximum wight edge availabe each time.
+
+
+b. API for heap:
+
+/*time complex: O(1) */
+heap_t* CreateHeap(size_t arr_size, size_t element_bytes_size);
+
+/*time complex: O(1)*/
+void DestroyHeap(heap_t* heap);
+
+/*time complex: O(logN) - case that he will go up all the way to root*/
+int InsertHeap(heap_t* heap, void* data);
+
+/*time complex: O(1)*/ 
+void* PeekHeap(heap_t* heap);
+
+/*time complex: O(logN)*/
+void RemoveHeap(heap_t* heap, void* data);
+*/
+
+
+/*
+Question13:
+a. did under the comment.
+
+b. O(N) -> in case worest case its orgenize like link list.
+
+c. IPv4 is 32 bits but as can be seen in example the field of ip that tell me wich city i am is the 2\4 byte(bit 9 - 16) so i can create a LUT that each cell represent city(0 - 255 as that byte that mark citys can hold) and enum to make it more clear what each num represent.
+
+the psodo for how it will work in is like that:
+	1. check first byte, if != 10 -> return NOT_FROM_ISRAEL.
+	2. else, loop while i = 0 to 255 and do:
+		lut[i] = NAME_OF_CITY.
+	3. for each number that dont have city we will enter NOT_VALID_CITY_IN_ISRAEL.
+*/
+
+void IteraviteInsertBT(Bt_node_t* head, Bt_node_t* to_insert)
+{
+	Bt_node_t* prev = NULL;
+	
+	assert(NULL != head);
+	assert(NULL != to_insert);
+	
+	while(NULL != head)
+	{
+		prev = head;
+		if (head->data >= to_insert->data)
+		{
+			head = head->children[LEFT];
+		}
+		else
+		{
+			head = head->children[RIGHT];
+		}
+	}
+	
+	if (prev->data >= to_insert->data)
+	{
+		prev->children[LEFT] = to_insert;
+	}
+	else
+	{
+		prev->children[RIGHT] = to_insert;
+	}
+}
+
+Bt_node_t* RecursionInsertBT(Bt_node_t* head, Bt_node_t* to_insert)
+{	
+	assert(NULL != to_insert);
+	
+	if (NULL == head)
+	{
+		return NULL;
+	}
+	
+	if (head->data >= to_insert->data)
+	{
+		head->children[LEFT] = NULL == RecursionInsertBT(head->children[LEFT], to_insert) ? 
+							   to_insert : head->children[LEFT];
+	}
+	else
+	{
+		head->children[RIGHT] = NULL == RecursionInsertBT(head->children[RIGHT], to_insert) ? 
+							   to_insert : head->children[RIGHT];
+	}
+
+
+/*======================================================================================================*/
+
+/*
+Question14:
+A->B - 3
+B->A - 3
+B->E - 8
+B->C - 5
+C->B - 5
+C->D - 6
+.
+.
+.
+
+
+a. lut(array) each index will represent a city from my city, and the value will say if i have road to there and if i have so what is his wight.
+
+e.g city B lut will be(for the exaplse above):
+
+3	-1	  5	  -1	 8
+0(A) 1(B) 2(C) 3(D)  4(E)
+
+* this will the best DS for use to search fast as pobbile, the disadvanteged will be in place complaxity and in loading the progrem(when create this luts - can be in compile time or run time before the progrem will be ready to first run).
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

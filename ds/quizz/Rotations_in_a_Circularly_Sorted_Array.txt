@@ -1,0 +1,81 @@
+/*
+Writer: Robi
+Date:   14.03.2026
+Time gave to solve: 45 min.
+Time took to solve: 45 min. (include the add of helper functions)
+Comments: was 0 alrets.
+
+"pro answer" - check after the test and this is the best answer.
+*/
+
+
+/*
+psodo:
+classic BinarySearch?
+
+	left = arr[0]
+	right = arr[size - 1]
+	mid = arr[size/2]
+	min = MAX_INT
+	
+	min = FindMin(left, mid, right)
+	
+
+*/
+
+void MoveLeft(size_t* mid, size_t* right, size_t left)
+{
+	*right = *mid - 1;
+	*mid = (*right + 1 - left) / 2;
+}
+
+void CheckAndUpdateMinIfNeed(int* arr, size_t index, size_t* min)
+{
+	assert (NULL != arr);
+	assert (NULL != min);
+	
+	if (arr[index] < arr[(*min)])
+	{
+		*min = left;
+	}
+}
+
+size_t NumOfRotations(int* arr, size_t size)
+{
+	size_t left = 0;
+	size_t right = size - 1;
+	size_t mid = 0;
+	size_t min_index = 0;
+	
+	assert (NULL != arr);
+	
+	if (2 > size)
+	{
+		return size;
+	}
+	
+	mid = size / 2;
+	while (left <= right)
+	{
+		if (arr[left] <arr[mid] && arr[left] < arr[right])
+		{
+			CheckAndUpdateMinIfNeed(arr, left, &min);
+			MoveLeft(&mid, &right, left); 
+		}
+		else if (arr[right] < arr[mid] && arr[right] < arr[left])
+		{
+			CheckAndUpdateMinIfNeed(arr, right, &min);
+			
+			left = mid + 1;
+			mid = (right + 1 + left) / 2;
+		}
+		else/*Mid is min*/
+		{
+			CheckAndUpdateMinIfNeed(arr, mid, &min);	
+			MoveLeft(&mid, &right, left);
+		}
+	}
+	
+	return min;
+}
+

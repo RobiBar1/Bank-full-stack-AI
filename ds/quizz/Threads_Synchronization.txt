@@ -1,0 +1,77 @@
+/*
+Writer: Robi
+Date:   03.04.2026
+Time gave to solve: 45 min.
+Time took to solve: 39 min.  
+Comments: was 0 alrets when solve it.
+*/
+
+1:
+the main idea of this funcion is to alloc 1 time to ptr only when the first thread is call him, so all threads will work with same memory adress(its alloc on the heap that is shared to all threads), its like a singletone pattern build.
+
+a. but may be race condetion on the if statement check, for example:
+thread A, B create and active the function then:
+A: check if null get 1 as answer and enter the if, the malloc dont exucte yet and the cpu go to thread B.
+B: do the same.
+A: do the malloc get memory with ptr point to 0x1000 and return it.
+B: do the malloc get memory with ptr point to 0x3500 and return it.
+
+we got 2 allocs, 2 diffrent addresses number while only thread A will work with 0x1000 and B and above will work the 0x3500.
+in addition will be memory leak for adress 0x1000 becuase she will be lost for ever and we wont be able to free her.
+
+b. we can mutex that can handle race condetion on shared source(variable in this case). ill place the lock before the if and unlock it after him.
+
+c. the problem here as i see it:
+stage 1: A: will take the lock and still dont alloc to ptr.
+stage 2: B: that thread somehow see that someone else is handle the alloc B go ahed and return ptr(ptr is NULL..)
+stage 3: A: alloc the memory 0x1000 and return it.
+stage 4: B: keep working with NULL...
+
+so i can solve it by passing **void and then when the *void of ptr will get the allocate it will update in B either.
+but B still will need to wait out of this function until he get the allocate for work with that..
+
+so i dont see why i will want to give B to keep running without his allocate it can make unexepted behivar in his code.
+/*until here c. originl answer*/
+-------------------------------------------------------------------
+c(after fix). double lock pattern. in the first some threads they will still maybe be in queue for mutex but after that(lets say it will work for 1 month) no other thread will take the mutex and wait..
+will look like this:
+if (NULL == ptr) 
+{ 
+    lock(&mutex);
+    if (NULL == ptr) 
+    {
+        ptr = malloc...
+    }
+    
+    unlock(&mutex);
+}
+
+return ptr;
+-------------------------------------------------------------------
+2:
+a. if they only read so have no problem. if 1 or more of them try to write we have some problems:
+this is the famous example, lets say we have 2 thread A, B. A go to add 1 to x and B go to minus 1 from x, so the finel result exept be 5(as was in start).
+---state in memory: variable x = 5;  
+A: read from main memory to his cashe that x=5.
+then he add 1 to it so the calc give 6 but didnt write it yet.
+B: read from main memory to his cashe that x=5.
+then he minus 1 to it so the calc give 4 but didnt write it yet.
+A: write 6 to memory.
+B: write 4 to memory.
+
+now we get unexpeted result.
+
+b. 2 solutions:
+* we can prevent from them to touch the same variable/place/element in same time(lets say with writer/reader pointers that will never meet).
+* we can lock element that we write to him so on this critical section no one can use him until we end the operetion of write it to memory.
+
+c. as i mention in a? /*original answer*/
+
+-------------------------------------------------------------------
+c(after fix). can be deadlock, if the signal handler will try to go to the same mutex i just locked so the signal handler will never end and the thread will never get cpu for unlock the mutex.
+-------------------------------------------------------------------
+
+d. as i mention in b? /*original answer*/
+-------------------------------------------------------------------
+d(after fix).  need to block/mask the signals before enter the critical section in the code. after the critical section will end so unblock/unmask the signals and they will run now and do what they need while we are sure that the DS is balance and ready to work.
+-------------------------------------------------------------------

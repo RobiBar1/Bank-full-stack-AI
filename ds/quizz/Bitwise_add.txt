@@ -1,0 +1,78 @@
+/*
+Writer: Robi
+Date:   03.04.2026
+Time gave to solve: 45 min.
+Time took to solve: 35 min. (inculde the struct and swap to switch case instead of if-else). 
+Comments: was 0 alrets when solve it.
+*/
+
+/*
+------------------------- case 1(odd + odd)
+5 -> 10100000
++
+3 -> 11000000
+=
+8 -> 00010000
+
+------------------------- case 2(odd + even)
+5 -> 10100000
++
+2 -> 01000000
+=
+7 -> 11100000
+
+------------------------- case 3(odd + odd that result is not pow of 2)
+5 -> 10100000
++
+1 -> 10000000
+=
+6 -> 01100000
+
+------------------------- case 4(2 num that give me sum of 3 ones and then again 3 ones)
+7 -> 11100000
++
+3 -> 11000000
+=
+10-> 01010000
+
+3 cases:
+0 with 0 give 0.
+0 with 1 give 1.
+1 with 1 give 0 and pass the 1 to next place.
+*/
+
+typedef struct sum_args
+{
+  unsigned char sum_ones : 2;
+  unsigned char i : 6;
+}args_t;
+
+char Sum2NumbersWithBitwise(char arg1, char arg2)
+{
+  args_t helper = {0};
+  char result = 0x0;
+  char mask = 0x1;
+  
+  for (; helper.i < CHAR_BIT; ++(helper.i), mask = 0x1 << helper.i)
+  {
+    helper.sum_ones = mask & arg1 ? helper.sum_ones + 1 : helper.sum_ones;
+    helper.sum_ones = mask & arg2 ? helper.sum_ones + 1 : helper.sum_ones;
+    
+    switch(helper.sum_ones)
+    {
+      case 1:
+        result = result | mask; 
+        helper.sum_ones = 0;
+        break;
+      case 2:
+        helper.sum_ones = 1;
+        break;
+      case 3:
+        result = result | mask; 
+        helper.sum_ones = 1;
+        break;
+    }
+  }
+  
+  return result;
+}

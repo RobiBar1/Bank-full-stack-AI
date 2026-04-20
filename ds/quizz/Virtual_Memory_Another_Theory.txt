@@ -1,0 +1,162 @@
+/*
+Writer: Robi
+Date:   14.03.2026
+Time gave to solve: 45 min.
+Time took to solve: 53.42 min.
+Comments: was 1 alrets that make me stop and back, when i stop the timer i tought about something else(didnt allowed myself keep thinking on the problem while stoper is not counting) then when I backed I gave myself 5 min to back to mind but in that 5 min i didnt allowed myself to make progress in mind or code, only after i resume timer from where i stop him.
+
+"pro answer" - check after the test and this is the best answer.
+*/
+
+1. define virtual memory:
+virtual memory is theniq to mange memory using logic adresses that there each procces *see* ~inifinite continuous and isolate memory range adress and its using "swap" memory techniq to be able to this.
+
+******************Pro Answer:
+(Virtual memory is a memory management technique where the operating system abstracts the physical storage (RAM and disk) to provide each process with the illusion of a massive, contiguous, and private memory space. 
+It allows programs to be larger than the available physical RAM by storing inactive parts of the program on secondary storage (like an SSD or hard drive) and bringing them into RAM only when needed.)
+
+Sammeerize:
+Grade to my answer: 85/100
+what to Imporve: "and its using "swap" memory techniq to be able to this." -> "Swapping" is just a tool used to support it when physical RAM runs out its not part of virtual memory defeniotion.
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+2. List the pros and cons of virtual memory:
+* pros:
+its give solutions to 3 main problems:
+a. safe adress - each process get his own block of memory lets say 1000 - 2000 and then if the os see that he try to go to adress that is not belong to him (2004..) the os wont give him that and most of time will kill the process. 
+b. infinite memory range - each proccess see almost infinite memory availble to him something that sure not close the be the realty(any pc dont have as much memory to give) but we can do it with using logic adress and use swaping memory from ram to HDD/SSD if the.
+c. outline fregmention - any procces all the memory as continuous memory(almost never happned in real world.. so how can we achive it?) we using block of memory (typcly size of 4kb for each) and then i can give him memory that not realy continuous in pysic adress (like 1000 and then 3000) but he will see it as continuous, and wont be any outline fregmention becuase all my memory is diveded to block of memory that sum all of them is getting my 100% pyhics memory adress range.
+
+* cons:
+a. make inner fregmention - using that blocking for swaping memory can create inner fregmention isnide each block.
+b. in extreme senyaryos when ram is full and we using swap, we may use the swap alot of times and that procces called "trashing" it will cause the performance rate to drop dramatically and the user will hard feel it.
+
+******************Pro Answer:
+Grade to my answer: 90/100
+what to Imporve: importent cons missing - page faults are expensive, address translation overhead, page table memory overhead. and “infinite memory range” should be phrased as:
+
+larger apparent memory/ illusion of much larger memory. 
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+3. Address space: logical vs Physical:
+a. physical address space - the real range of adress my pc have, can be look as huge 1d array of block of memory, each block have his adress and can store data, the range of adress will be 0 to n-1 where n is our num of real amount of memroy to use. the pc can go to anywhere in memory with random access - O(1) time.
+
+b. logical address space - the cpu create for each range of real memory (physical memory) lets say 1000 - 2000 in pc, a imagnry adress lets say 7000 - 9000.
+the proccess will see his memory adress he can use as 7000 - 9000 and he think its real adress of pc. when ever he will want to go to spesipic adress lets say 7000 so that msg will go to MMU(Memory Mangement Unit) and there will be a table that will check if that adress is ligal for that procces(in that case yes) and then the MMU will convert it from the logical adress (7000 in that case) to the real physical adress(1000 in that case) and will send that real adress to where its need to.
+
+******************Pro Answer:
+Grade to my answer: 95/100, good answer!
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+4. What is MMU(Memory Mangement Unit):
+he do 2 main things:
+a. make sure that the adress process want touch(read/write/edit) its adress that procces allowed to touch.
+if the procces not allowed to touch that adress so the MMU will raise Seg Fualt and will kill the proccess.
+else it will do what write next in b.
+
+b. after MMU aprove that the memory proccess want to touch is legall, he convert the logical adress that the proccess see and ask to touch to physical adress that really exist in the pc and then he move that touch request next with the real physical adress. 
+
+******************Pro Answer:
+Grade to my answer: 90/100
+what to Imporve: 
+a. say it's a hardware component inside/near the CPU — this is critical
+b. the MMU also raises page faults(not only seg fualt), A page fault means "page not in RAM, go load it." A seg fault means "illegal access, kill the process." 
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+5. What is TLB(Tranlesetion  ):
+this hardware part that sit on MMU and use as his Cach memory, this is Assotitavie memory(very expencive and fast working) and this use as table that for each procces have there the phyicals adress range he get(lets say 1000 - 3000) and the logcial adress the proccess "see"(lets say 4000 - 6000) and each time proccess want to touch memory the MMU send that logical adress (5000) to that TLB and if its in the range that allowed that proccess to touch(4000 - 6000 in that case) so the TLB convert it to the phyical adress (2000 in that case).
+
+******************Pro Answer:
+Grade to my answer: 80/100 
+things i write incorrect: "described it as storing address ranges per process (like 1000–3000 → 4000–6000). This is base-and-bound, NOT a TLB."
+what to Imporve:
+a. Individual page-to-frame mappings (e.g., Page 5 → Frame 12, Page 8 → Frame 3).
+b. It caches recent page table entries so the MMU doesn't have to go to the page table in RAM every time.
+c. Without TLB, every memory access requires two RAM accesses (one for page table, one for data). TLB reduces this to one.
+d. So it is a cache of page table entries, not a “range check table”.
+
+flow of work:
+When a process accesses memory:
+
+1. MMU checks the TLB.
+2. If the mapping is found (TLB hit), translation is fast.
+3. Otherwise (TLB miss), it checks the page table.
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+6. What is paging:
+this is memory mange technic that allow to pc to do what i menteion in question 2 part b.
+its work where in the logical adress we have Page(typcly in size of 4kb as i mention) and in the physical adress we will have Frames(will be in same size as pages).
+
+******************Pro Answer:
+Grade to my answer: 85/100
+what is missing:
+1. It allows non-contiguous physical allocation
+2. Paging divides memory into fixed-size blocks
+3. Any page can be placed into any free frame
+4. It helps eliminate external fragmentation
+5. It is the basis for virtual memory
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+7. How does a page table work:
+for each proccess he hold the pages he use(1,2,3,4..) the logical adress they save on, and for each it will write if that page is right now in main memory(on ram) or not(on HDD/SSD).
+
+******************Pro Answer:
+Grade to my answer: 70/100
+what is missing:
+missed its primary job. The Page Table is the actual "dictionary" that tells the MMU which specific Physical Frame holds that Virtual Page.
+A page table should be explained more like this:
+
+	1. each process has a page table
+	2. index by virtual page number
+	3. entry gives:
+	*	frame number
+	*	present/valid bit
+	*	permissions
+	*	maybe dirty/reference bits
+	And then:
+	4. virtual address = page number + offset
+	5. page table maps page number → frame number
+
+Performance impact: page faults are extremely expensive (milliseconds vs nanoseconds)
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+8 What is a page fault:
+its happned when proccess need page(lets say page 2), and he dont find it on the main memory(RAM), then can happned 2 cenarius:
+a. that page mark as not in RAM right now so the os will make swapping and load him from hard drive.
+b. that page is not exist process will create a new page or will kill the proccess if that adress not leggal for that procces.
+
+------------------------------------------------------------------- until here i did on 45 min :-( ---------------------------------------------------------------------------
+
+9. What is swapping:
+is memory mange thehnic that using Blocks of memory(typcaly called Pages on logical adress and Frames on phyicals adress), for be able to let the process huge amount of memory to use even if the ram dont have all the memory to use (for exmaplse i load game 60 gb on pc with 16GB RAM), so the pc will see each time each part of memory i use and will use the HDD/SSD as extention to the RAM.
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+10. What is fragmention:
+its when we have "holes" in memory that we cant use. have 2 types as i mention before (external fragmentation and internal fragmentation), that problem becuase procces may want to use 1GB from RAM and on RAM we have 1.5GB availbe but the not continuous(have 0.5 continuous then some memory in use then onther 0.5 continuous etc..) so the procces wont be realy able to use them even that we have the amount of memory he need.
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+11. Describe the mapping process from virtual addresses to physical addresses:
+as i write on MMU question.
+
+******************Pro Answer:
+Grade to my answer: 50/100
+what is missing:
+1. CPU generates virtual address → split into [VPN | Offset]
+2. Check TLB
+   → HIT: get frame number directly (fast)
+   → MISS: go to page table in RAM (slow)
+3. Check page table
+   → Valid=1: get frame number
+   → Valid=0: PAGE FAULT → load from disk
+4. Construct physical address: [Frame Number | Offset]
+5. Access physical RAM
+
+
+I need to mention the steps: 1. Split the logical address into a Page Number and an Offset. 2. Check the TLB. 3. If it's a miss, walk the Page Table in RAM. 4. Combine the resulting Frame Number with the original Offset to get the final physical address.
+
+A good answer would mention:
+1. CPU generates a virtual address
+2. Split into page number + offset
+3. MMU checks the TLB
+4. If TLB miss, consult page table
+5. If page not present, raise page fault
+6. OS loads page into RAM if needed
+7. Get frame number
+8. Combine frame number + offset
+9. Access physical memory
+

@@ -1,7 +1,12 @@
 *
 !**/
+!*/quizzes/*
+!*/quizz/*
+!*/exams/*
 !*.c
+!*.cpp
 !*.h
+!*.hpp
 !*.md
 !.gitignore
 !.myfuncs
