@@ -1,0 +1,113 @@
+1.given "int x = 10;" what are the types, values and side-effects of the following expressions:
+
+****general info for answer that question:
+Main Effect = 
+the value that the expression is return when he is been calculate.
+e.g if ill do "int y = 5; int x = y++;", so it will be 5.
+
+Side-Effect: 
+evrey change that happned in the state of progrem not include the calc of the val it self.
+so it include change of varibles in memory, write to files, or print to screen.
+
+how recognize them:
+the main effect its the return value that the expression is return into the place where he was write.
+the side effect will be what happned to memory behind the scene while that happend.
+
+**** end general info, start of expressions:
+
+* "x":
+type: int
+value: 10
+side-effect: non
+
+* "'x'":
+type: char
+value: 120(ascii val of 'x').
+side-effect: non
+
+* "x + 1":
+type: int
+value: 11
+side-effect: non
+
+* "x++":
+type: int
+value: 10
+side-effect: the val of x is increase by 1 to 11.
+
+* "++x":
+type: refernce to int -> &int.
+value: 11
+side-effect: the val of x is increase by 1 to 11.
+==========================================================
+2. given "int *foo(void)" what are the types of the following expressions? wich are them of lvalue?
+
+****general info for answer that question:
+
+lvalue(local value): is something that have adress in my memory.
+rvalue(read value): tmp_val that create and dont have adress in my memory(e.g can be save on register for calc)
+
+**** end general info
+
+* "*foo()":
+type: int
+is lvalue? yes.
+
+* "&foo()":
+type: invalid, compile error.
+is lvalue? the function return rval so cant do refernese by adress to this..
+
+* "foo()":
+type: *int -> pointer to int.
+is lvalue? no, the type that return from function is rvalue(more accurecy prvalue).
+
+* "foo":
+type: the function it self, it will probley automate will be int*(*function_name)(void) -> pointer to our function, foo.
+is lvalue? yes.
+
+* "&foo":
+type: int*(*function_name)(void) -> pointer to our function, foo.
+is lvalue? no, the adress that return from '&'operartor is ALLWAYS rvalue.
+
+===============================================================
+3. in linker stage if he see that symbol he allow him to be override by strong symbol if have.
+===============================================================
+4.
+this is the rules that determine what info caller function need to pass to the calle function, the rules detemine
+where the args will pass(in registers or in the stack), wich order it will be, where will 
+be save the return value, and who is responsible to clean the stack in the end.
+
+defult order of __cdecl in:
+
+stage1: caller make the field ready - 
+* save registers(EDX, EAX, ECX): that stage happned only if she need to save there values after the call.
+* push arguments: she push the arguments to the stack from last to first for the first argunemnt will be in the head of stack.
+* make call command: this automate push the "return adress"(value of EIP register that point to next line of code) to the stack,
+and give the controll to the calle function.
+
+stage2: start of calle function(Prolog) - 
+* save old EBP: save the EBP of caller function.
+* make new EBP: make EBP value the val of this function.
+* allocate memory: for local variables and for tmp storge, will do it by offsets of bytes need from ESP(sub esp, 20).
+* save addition registers: if function gona use EDI, EBX, ESI she need to push them to stack for be able use them later.
+
+stage3: after calle end run, the things she need to do before return(Epilog) -
+* make return value: if its <= 4 bytes it will store in EAX register, else  will story in hidden pointer that the function get.
+* restore registers: pop and resotre EDI, EBX, ESI if saved them in start of running.
+* frame destroy: realese local varibles memory and return EBP to the caller function.
+* return: pop the return adress from stack to EIP and return the controll to the place where call the function.
+
+stage4: caller actions after return to him to clean the calle -
+* clean argument of calle: will return the ESP to where was(if we offest him 20 bytes before, so now will return that 20 bytes).
+* save the resault: save the return adress from EXA to appropriate variable.
+* restore registers: if caller pushed the registers EDX, EAX, ECX in stage 1 so now he will pop them, and after that the
+head of the stack will be where it was before call to calle function.
+
+
+
+
+
+
+
+
+

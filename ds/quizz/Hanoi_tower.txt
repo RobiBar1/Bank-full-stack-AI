@@ -1,0 +1,39 @@
+/*
+Writer: Robi
+Date:   10.04.2026
+Time gave to solve part a: 45 min.
+Time took to solve part a: 45 min(draw alot on paper, wasnt sure about my sulotion until end time i run it :-)).
+Comments: 
+*/
+
+/*
+psodo
+
+as have in brainfuel:
+1. shift n-1 disks from A to B.
+2. shift my target disk from A to c.
+3. shift all the n-1 block from b to c above me.
+*/
+
+void towerOfHanoi(int n, char from_rod, char to_rod, char aux_rod)
+{
+    if (1 == n)
+    {
+        printf("Disk 1 moved from %c to %c\n", from_rod, to_rod);
+        return;
+    }
+    
+    towerOfHanoi(n - 1, from_rod, aux_rod, to_rod);
+    printf("Disk %d moved from %c to %c\n", n, from_rod, to_rod);
+    towerOfHanoi(n - 1, aux_rod, to_rod, from_rod);
+}
+
+int main()
+{
+  int n = 2;
+  towerOfHanoi(n, 'A', 'C', 'B');
+  
+  return 0;
+}
+
+

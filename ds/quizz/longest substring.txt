@@ -1,0 +1,140 @@
+/*
+Writer: Robi
+Date:   10.04.2026
+Time gave to solve part a: 45 min.
+Time took to solve part a: 42 min ->inculde all helper functions, struct, define, psodo.  
+Comments: 
+1. from now on have a ceasefire with Iran(for 2 weaks) so can be consider as 0 alrets until ill update...
+2. treat to Z and z as same char.
+3. I search max-sub-seq in a row(without spaces).
+4. assume str is valid charters(each char is small or big letter in english).
+
+
+pro tip: the answer below isn't(can say help) correct, need to slide_window-> count_arr that save the LAST_SEEN_INDEX for each char, then check it the last seen is it the correct slide window, if yes we pass to the new char and update the last seen, if its not in the cur window so we take it and update the last seen.
+*/
+
+
+/*
+"ab"
+"aba"
+"ababc"
+"abcd"
+
+psodo:
+1. create counter_arr(a-z index) start from 0.
+2. make pointer start to 0 and pointer end to 0.
+3. for each letter in str:
+  a. if its 0 in the counter_arr do:
+    * ++val in counter_arr to 1.
+    * counter varaible ++.
+    * update end index to this index.
+    * if counter variable higher then max_counter varible do:
+      - max_counter = counter.
+  b. else do:
+    * reset the counter_arr to 0.
+    * reset first index to this index.
+    * and do 3.a.(do 3.a as function for reuse).
+*/
+
+
+#define COUNT_ARR_SIZE (('z') - ('a') + 1)
+
+typedef struct max_parameters
+{
+  size_t max_count;
+  size_t max_start_index;
+  size_t max_end_index;
+}max_parameters_t;
+
+void UpdateCount(size_t* count_arr, const char cur_char, size_t* cur_count,
+                 const size_t start_index, size_t* end_index, max_parameters_t* max)
+{ 
+  ++(count_arr[cur_char]);
+  ++(*cur_count);
+  ++(*end_index);
+  if (max->max_count < *cur_count)
+  { 
+    max->max_count = *cur_count;
+    max->max_start_index = start_index;
+    max->max_end_index = *end_index;
+  }
+}
+
+char CalcIndex(char ch)
+{
+  char return_val = '\0';
+  
+  if (ch >= 'a' && ch <= 'z')
+  {
+    return_val = ch - 'a';
+  }
+  else
+  {
+    return_val = ch - 'A';
+  }
+  
+  return return_val;
+}
+
+void ResetCounterArr(size_t* count_arr)
+{
+  size_t i = 0;
+  
+  assert(NULL != count_arr);
+  
+  for (; i < COUNT_ARR_SIZE; ++i)
+  {
+    count_arr[i] = 0;
+  }
+}
+
+ssize_t UpdateStatsToReturn(size_t* o_max_index_start, size_t* o_max_index_end, max_parameters_t* max)
+{
+  *o_max_index_start = max->max_start_index;
+  *o_max_index_end = max->max_end_index;
+  
+  return max->max_count;
+}
+
+ssize_t LongestUniqCharsSubString(char* str, size_t* o_max_index_start, size_t* o_max_index_end)
+{
+  char cur_char_index_val = '\0';
+  max_parameters_t max = {0};
+  size_t* count_arr = NULL;
+  size_t start_index = 0;
+  size_t cur_count = 0;
+  size_t end_index = 0;
+  size_t i = 0;
+  
+  assert(NULL != str);
+  
+  count_arr = (size_t*)calloc(1, sizeof(size_t) * COUNT_ARR_SIZE);
+  if (NULL == count_arr)
+  {
+    perror("calloc failed");
+    
+    return -1;
+  }
+  
+  for (;str[i] != '\0'; ++i)
+  {
+    cur_char_index_val = CalcIndex(str[i]);
+    if (0 == count_arr[cur_char_index_val])
+    {
+      UpdateCount(count_arr, cur_char_index_val, &cur_count, start_index, &end_index, &max);
+    }
+    else
+    {
+      ResetCounterArr(count_arr);
+      start_index = i;
+      end_index = i;
+      UpdateCount(count_arr, cur_char_index_val, &cur_count, start_index, &end_index, &max);
+    }
+  }
+  
+  free(count_arr);
+  count_arr = NULL;
+  
+  return UpdateStatsToReturn(o_max_index_start, o_max_index_end, &max);
+}
+    

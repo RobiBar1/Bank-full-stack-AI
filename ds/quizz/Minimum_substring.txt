@@ -1,0 +1,130 @@
+#include <stdio.h>
+#include <string.h>
+#include <limits.h>
+#include <stdlib.h>
+#include <assert.h>
+
+char* MinWindowSubstring(char* big, char* small) 
+{
+    unsigned char current_char = '\0';
+    int hash_window[256] = {0};
+    int hash_small[256] = {0};
+	int min_len = INT_MAX;
+	int start_index = -1;
+    char* result = NULL;
+    int window_len = 0;
+    int len_small = 0;
+    int len_big = 0;
+	int start = 0;
+    int count = 0;
+    int end = 0;
+    int i = 0;
+
+	assert (NULL != big);
+	assert (NULL != small);
+    
+    len_big = strlen(big);
+    len_small = strlen(small);
+    
+    assert (len_big >= len_small);
+
+    for (; i < len_small; ++i) 
+    {
+        ++(hash_small[(unsigned char)small[i]]);
+    }
+
+    for (; end < len_big; ++end) 
+    {
+        current_char = big[end];
+        ++(hash_window[current_char]);
+
+        if (0 != hash_small[current_char] && hash_window[current_char] <= hash_small[current_char]) 
+        {
+            ++count;
+        }
+
+        if (count == len_small) 
+        {
+            while (hash_window[(unsigned char)big[start]] > hash_small[(unsigned char)big[start]] || 
+                   0 == hash_small[(unsigned char)big[start]]) 
+            {
+                if (hash_window[(unsigned char)big[start]] > hash_small[(unsigned char)big[start]]) 
+                {
+                    --(hash_window[(unsigned char)big[start]]);
+                }
+                
+                ++start;
+            }
+			
+			window_len = end - start + 1;
+            if (min_len > window_len) 
+            {
+                min_len = window_len;
+                start_index = start;
+            }
+        }
+    }
+
+    if (-1 == start_index) 
+    {
+        return "";
+    }
+
+    result = (char*)malloc(min_len + 1);
+    if (NULL == result)
+    {
+    	return NULL;
+    }
+    
+    strncpy(result, big + start_index, min_len);
+    result[min_len] = '\0';
+    
+    return result;
+}
+
+void Test1(char* big_str, char* small_str)
+{
+    char big[] = "hello";
+    char small[] = "lo";
+    char expected_answer[] = "lo";
+    int is_equal = 0;
+    
+    strcpy(big_str, big);
+    strcpy(small_str, small);
+    
+    is_equal = strcmp(MinWindowSubstring(big_str, small_str), expected_answer);
+    printf("test1 answer is: %s\n", !is_equal ? "PASS" : "FAIL");
+}
+
+void Test2(char* big_str, char* small_str)
+{
+    char big[] = "ombabadugunda";
+    char small[] = "nau";
+    char expected_answer[] = "unda";
+    int is_equal = 0;
+    
+    strcpy(big_str, big);
+    strcpy(small_str, small);
+    
+    is_equal = strcmp(MinWindowSubstring(big_str, small_str), expected_answer);
+    printf("test1 answer is: %s\n", !is_equal ? "PASS" : "FAIL");
+}
+
+#define MAX_LEN 36
+
+int main() 
+{
+    
+    char *big_str = (char*)calloc(MAX_LEN, sizeof(char));
+    char *small_str = (char*)calloc(MAX_LEN, sizeof(char));
+    
+    Test1(big_str, small_str);
+    Test2(big_str, small_str);
+	
+	free(big_str);
+	big_str = NULL;
+	free(small_str);
+	small_str = NULL;
+	
+    return 0;
+} 
