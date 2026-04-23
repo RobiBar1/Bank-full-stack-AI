@@ -7,21 +7,97 @@ date:    19.04.2026
 /*
 Question1:
 psodo:
+---SetVal()
+	0X1000 -> 0X1004 -> 0X1008
 */
+
+typedef struct int_array_element
+{
+	size_t my_version;
+	int val;
+}int_array_element_t;
+
+typedef struct int_array
+{
+	size_t all_version;
+	int_array_element_t* element;
+	int all_val;
+}int_array_t;
+
+
+int_array_t* Create(size_t size, int init_all_to_zeros)
+{
+	int_array_t* arr = NULL;
+	size_t i = 0;
+	
+	assert(0 < size);
+	
+	if (init_all_to_zeros)
+	{
+		arr = (int_array_t*)calloc(1, sizeof(int_array_t));
+		if (NULL == arr)
+		{
+			return NULL;
+		}
+		
+		arr->element = (int_array_element_t*)calloc(size, sizeof(int_array_element_t));
+		if (NULL == arr->element)
+		{
+			free(arr);
+			arr = NULL;
+			
+			return NULL;
+		}
+	}
+	else
+	{
+		arr = (int_array_t*)malloc(sizeof(int_array_t));
+		if (NULL == arr)
+		{
+			return NULL;
+		}
+		
+		arr->all_version = 0;
+		arr->element = (int_array_element_t*)malloc(size * sizeof(int_array_element_t));
+		if (NULL == arr->element)
+		{
+			free(arr);
+			arr = NULL;
+			
+			return NULL;
+		}
+		
+		for(; i < size; ++i)
+		{
+			((arr->element) + i)->my_version = 0;
+		}
+	}
+	
+	return arr;
+}
 
 void SetVal(int_array_t* array, int index, int val)
 {
-	assert (NULL != array);	
+	assert (NULL != array);
+	
+	(array->element + index)->my_version = array->all_version;
+	(array->element + index)->val = val;
 }
 
-int SetVal(int_array_t* array, int index)
+int GetVal(int_array_t* array, int index)
 {
 	assert (NULL != array);	
+	
+	return (array->element + index)->my_version < array->all_version ?
+				        (array->all_val) : ((array->element + index)->val);
 }
 
 void SetAll(int_array_t* array, int val)
 {
-	assert (NULL != array);	
+	assert (NULL != array);
+	
+	array->all_val = val;
+	++(array->all_version);
 }
 
 ===================================================================
@@ -64,24 +140,12 @@ size_t* num1_index,  size_t* num2_index)
 	Qsort(arr);
 	end_window = size - 1;
 	
-	while (arr[end_window] > sum_of_two)
-	{
-		--end_window
-		if (0 == end_window)
-		{
-			*num1_index = NULL;
-			*num2_index = NULL;
-			
-			return;
-		}
-	}
-	
 	while (start_window != end_window)
 	{
 		if(sum_of_two == arr[start_window] + arr[end_window])
 		{
-			*num1_index = start_window;
-			*num2_index = end_window;
+			*num1_index = arr[start_window];
+			*num2_index = arr[end_window];
 			
 			return;
 		}
@@ -95,8 +159,8 @@ size_t* num1_index,  size_t* num2_index)
 		}
 	}
 	
-	*num1_index = NULL;
-	*num2_index = NULL;
+	*num1_index = 0;
+	*num2_index = 0;
 }
 
 ===================================================================
@@ -108,10 +172,10 @@ psodo:
 
 int IsCharOnArrNoCheckAllowed (char* arr, size_t size, char ch)
 {
-	size_t i = 0;
 	int lut[256] = {0};
+	size_t i = 0;
 	
-	assert(NULL != arr);
+	assert(NULL != arr);	
 	
 	for (; i < size; ++i)
 	{
@@ -137,14 +201,9 @@ ShiftRight:
 [2,3,1], 2
 
 psodo:
-	1. put end_p on size - n bytes.
-	2. put start_p on 0.
-	3. if n not allinged(bigger or smaller) to sizeof(size_t) so do:
-		ShiftsRight(n % sizeof(size_t)).
-		n = n - (n % sizeof(size_t)).
-	4. while n > 0 do:
-		ShiftsRight(sizeof(size_t)).
-		n = n - sizeof(size_t);
+	1. reverse all arr.
+	2. reverse from 0 to k-1
+	3. reverse from k to n-1.
 		
 ShiftRight:
 	1. size_t to_overide_with.

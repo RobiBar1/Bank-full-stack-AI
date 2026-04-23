@@ -1,0 +1,35 @@
+psodo:
+naive soluion, Dyanmic_progreming:
+	1.  for each bar ill:
+		* take him
+		* not take him
+	2. return max.
+
+static size_t CalcMaxHightHelper(unsing int* arr, size_t size, long start_index, long end_index)
+{
+	size_t index_dist = 0;
+	size_t min_hight = 0;
+	
+	assert(NULL != arr);
+	assert(2 <= size);
+	
+	if (0 == end_index - start_index || 0 > start_index || end_index == size)
+	{
+		return 0;
+	}
+	
+	index_dist = arr[end_index] - arr[start_index];
+	min_hight = arr[end_index] <= arr[start_index] ? 
+		    arr[end_index] : arr[start_index];
+	
+	return Max(CalcMaxHightHelper(arr, size, start_index - 1, end_index), 
+		   CalcMaxHightHelper(arr, size, start_index, end_index - 1),
+		   (index_dist * min_hight)); 
+}
+
+size_t CalcMaxHight(unsing int* arr, size_t size)
+{
+	assert(NULL != arr);
+	
+	return CalcMaxHightHelper(arr, size, (long)size - 2, (long)size - 1);
+}
