@@ -345,6 +345,8 @@ dlsym.
 
 better solve it will be with factory desing pattern but even there we will use
 the exetrn c for the entery point function
+
+i. can warp the exetrn c with #ifndef _c++98_ #endif
 */
 
 /*====================== End Question 12 ======================*/
@@ -1221,17 +1223,27 @@ get imeplemtns).
 for use them(e.g other const class or other const function) to be able use that
 function.
 
-6. ?
+6. we dont want to use the c func "strdup" becuase we will need to free the
+memory alloc there and we will most do it with free and not delete, she cant get
+null as parameter.
 
 7.why do we need to implement dtor, cctor, assingme operator and not use the
 compiler generated version?
-* becuase the "rule-of-tree", we have here pointer to char.
+* becuase the "rule-of-tree", we have here pointer to char and we want to do
+deep copy for not create dengeling pointer.
 
 8. explain the diffrence between using strcpy vs strlen + memcpy?
 * strcpy pass on the string and copy it while it pass on him.
 * strlen + memcpy, will run 1 time on the string for count then run again to cpy
 the bits.
 
+9. the dif between use "new" that throw execption vs non throw:
+* 1 of them throw exepetion when fail and the other throw null when fail, so if
+i want to pop up that have problem i will use exeptions.
+
+10. we will use only execoption throw in Ctor becuase we want to notify that we
+have problem with create of class so the user most know that and think how he
+will continou in that case.
 
 API:
 namespace ilrd
@@ -1350,10 +1362,11 @@ n. beaucse its more easy to read and use it as we usual do.
 class X29
 {
   public:
-    explicit X29();
-    explicit X29(int a_);
-    explicit X29(int a_, int b_);
+    X29();
+    X29(int a_);
+    X29(int a_, int b_);
 
+    X29& operator=(int other);
     operator int() const;
     void Print() const;
 
@@ -1367,22 +1380,29 @@ X29::X29(int a_, int b_) : m_a(a_ + b_) {}
 
 X29::operator int() const { return m_a; }
 
+X29& X29::operator=(int other)
+{
+    this->m_a = other;
+    return *this;
+}
+
 void X29::Print() const { std::cout << "X29::Print() " << m_a << std::endl; }
 
-void Fifi(X29 x_)
+void Fifi(const X29& x_)
 {
-    std::cout << "Fifi() " << x_ << std::endl;
+    std::cout << "New() " << x_ << std::endl;
     x_.Print();
 }
 
-int Question29()
+int Question29(void)
 {
     X29 x1(7);
 
-    Fifi(x1);     // (1)
-    Fifi(X29(7)); // (2)
-    // Fifi(9);      // (3)
-    Fifi(3, 4); // (4)
+    Fifi(x1); // (1)
+    // Fifi(&7);  // (2)
+
+    Fifi(X29(9)); // (3)
+    Fifi(X29(4)); // (4)
 
     return x1 * 3; // (5)
 }
@@ -1395,11 +1415,15 @@ type/value/side-effect.
 type: the "X29(7)" is rvalue/temporary.
 value: tmp val from type X29 where m_a init to val 7.
 side-effect:
-1. create temporary val with the X(int) Ctor.
+1. create temporary val with the X29(int) Ctor.
 2. becuase Fifi get the parameter(_x) by value so Copy-Ctor is calling to do
 it(in modern compilers this copy will cencel {Copy Elision/RVO}).
-3. in the function will print output to screen.
-4. and at the end of actions Dtor is called.
+3. in fifi "std::cout << "Fifi() " << x_ << std::endl;" this will try call to
+X29 operator<< func he wont find that, so he will try to convert the X29 into
+primite type that he know how to print, and we implement opertator int so he
+will cast it into int and will print int.
+4. in the function will print output to screen.
+5. and at the end of actions Dtor is called.
 
 c.a. uncomment line 3 what happned, what did the writer of line3 expect would
 happen?
@@ -1428,8 +1452,325 @@ search X29 type and get int, int..
 e.b. can you make it work?
 * yes, explicit call to Ctor "Fifi(X29(3, 4));"
 
-f.
+f. on Ctor with no parameters is make no diffrent if will be with or without
+explicit.
 
+g. will make diffrent with:
+* readable - will be more clear what happned behind the scene.
+* saftey - if i have overload function with some parameter that he can get(e.g
+we had "Fifi(int a)" so in that case the line 3 we wont know wich function will
+call, or we will know but proggremer get confused).
+
+h. from here and above(2+ parameters) not so relevant becuase its seperate with
+',' so it will call something else(e.g Fifi(int, int)).
+
+i. as we wrote in h for the and where question, and as wrote in g for the
+why question.
+
+j. its Ctor that convert from some type to my class type and its give the option
+to init with it, e.g: "MyClass x = 5;"(i declare and init in same line so he
+will call the convert Ctor, its equal to write "MyClass x(5);"), and its define
+as non-explicit call.
+
+k.
+1. Fifi((X29)7).
+2. Fifi(X29(7)).
+3. Fifi(X29{7}).
+4. Fifi(static_cast<X29>(7)).
+
+l.
+1. static cast - when we will want to make sure that convert is liggle in
+compile time.
+2. Fifi(X29(7)) - more read abily, we will use on simple premitve types that he
+he can check.
+
+m. explain the syntax of this line: "return x1 * 3; // (5)"
+* type: int
+* value: 7 * 3 = 21.
+* side - effects: non(didnt change the class values or write thing to memory or
+did I/O). is it true there non side - effect?
+
+n. why opertator int() dont have return value?
+* becuase it 100% return the type that he convernt into(e.g int() return int..)
+
+o.
+* its the opposite from converteion Ctor, its conver from our class to the type
+that we define.
+* and we will use it  for give me the generic option to do operator + for
+example with infinte other classes without create infite overloading functions.
+
+p. becuase its make it easyer to read.
+
+q. the const work becuase there have no change to private members of X29 so its
+allowd. in addition the const + & combine tell the c++ to create a "const
+refernce" -> that will make tmp_var behind the scene(the mening of this is that
+tmp_val that was rval now HAVE memory adress that i can pass and this why i cant
+make reference(&) to him, and c++ compiler will make this rvalue(now tmp value)
+life time longer(until Fifi will end)).
+
+r. no if we use X29& without const it wont work.
+* its becuase when we use the combo of "const" classname and "&" this only make
+it 100% that the rvalue will get tmp_val on the memory and that will live until
+the funcion(Fifi in that case) will end.
+
+s.
+1. (X _x) - will use Copy Ctor and pass by value.
+2. (X& _x) - will get refernce to the real one out of my function so each change
+in function will happned in out function either. its most get adress(no r val
+alone {can get const & as we saw before}).
+3. (cosnt X& x_) - can get r value(becuase its force in c++ to create a tmp_val
+for him on the memory behince the scene and keep him a live until function will
+end ), and the const here enforced by bitwise, so if we have pointer in the
+class we will be able to change the value in the pointer but the to do
+derefernce(change where pointer point to).
+4. (const X x_) - wont be able to change the copy val private members.
+
+5. (X* x_) - similar to refernce pass but can pass ptrPointer and able to change
+where the pointer point to.
+
+6. (const X* x_) - act like 3 but can pass nullptr and cant pass r value.
+
+7. (X* const x_) - act like 2 execpt can get null_ptr.
+
+t. we will use most of 2 and 3 and only if we want be able to get nul_ptr so we
+will use 6.
 ====================== End Question 29 =====================
 */
-int main() { Question29(); }
+
+/*
+====================== Start Question 30: =====================
+*/
+class X30
+{
+  public:
+    X30() : m_id(++s_cntr) {}
+    int GetId()
+    {
+        std::cout << m_id << std::endl;
+        return m_id;
+    }
+
+    static void foo30() { printf("hey\n"); }
+
+  private:
+    int m_id;
+    static int s_cntr;
+};
+
+int X30::s_cntr;
+
+void Question30(void)
+{
+    X30 x1;
+    X30 x2;
+
+    X30::foo30();
+
+    x1.foo30();
+
+    x1.GetId();
+    x2.GetId();
+}
+
+/*
+a. live as the progrem live.
+
+b.
+* we need it becuase the line in the class private its like declretion of
+function and its search his implemetion.
+
+* we cant do "static int s_cntr = 0" becuase if we decalre on the class in hpp
+file and use it from 2+ compile units then ill get 2+ defnetion with Strong
+symbol in the table that will collaps by linker. so we solve it by do the
+implement only ones in the cpp that implemnt the hpp file.
+
+* if it impelement like this:""static int s_cntr = 0" so it on bss(cos 0..) but
+if we implement it like this:""static int s_cntr = 1" or any non zero it will
+sit on data segment as usual...
+
+c. put 's_' in start and then camelCase.
+
+d. they all sit in data, if they init to 0 so bss, and all live all progrem
+life_cycle long.
+
+e. we can do all but we dont get "this" parameter and we can call her from the
+calss it self("X30::foo30()") and from the instance("x1.foo30()")
+
+f. what can i do with static member function that is impossible with a regular
+method?
+* i can call in MIL(memeber initizletion list) to static function member becuase
+the function live before the class create so its leggal.
+
+g. call "this" member.
+
+h. that 1 can be called form the Class itself and the second can be called from
+the instance.
+
+i. yes, need to pass to thim the object as parameter, he dont get it by auto(as
+function get as "this").
+
+====================== End Question 30 =====================
+*/
+
+/*
+====================== Start Question 31 =====================
+*/
+
+/*
+====================== End Question 31 =====================
+*/
+
+/*
+====================== Start Question 32 =====================
+*/
+class B32
+{
+  public:
+    B32(int a = 8) : m_a(a) { std::cout << "B32::Ctor" << std::endl; }
+    ~B32() { std::cout << "B32::Dtor" << std::endl; }
+
+    // Java style is not allowed in our coding convention
+    virtual void Print1() const;
+    void Print2() const;
+    virtual void Print3() const;
+
+  private:
+    int m_a;
+};
+
+void B32::Print1() const
+{
+    std::cout << "B32::Print1 B32::m_a - " << m_a << std::endl;
+}
+
+void B32::Print2() const { std::cout << "B32::Print2" << std::endl; }
+
+void B32::Print3() const { std::cout << "B32::Print3" << std::endl; }
+
+class X32 : public B32
+{
+  public:
+    X32() : m_b(0) { std::cout << "X32::Ctor" << std::endl; }
+    ~X32() { std::cout << "X32::Dtor" << std::endl; }
+
+    virtual void Print1() const
+    {
+        std::cout << "X32::Print1 X32::m_b - " << m_b << std::endl;
+        B32::Print1();
+        std::cout << "X32::Print1 end" << std::endl;
+    }
+
+    void Print2() const { std::cout << "X32::Print2" << std::endl; }
+
+  private:
+    int m_b;
+};
+
+void Question32()
+{
+    B32* b1 = new B32;
+    B32* b2 = new X32;
+
+    std::cout << std::endl << "main b1:" << std::endl;
+    b1->Print1();
+    b1->Print2();
+    b1->Print3();
+
+    std::cout << std::endl << "main b2:" << std::endl;
+    b2->Print1();
+    b2->Print2();
+    b2->Print3();
+
+    X32* xx = static_cast<X32*>(b2);
+    std::cout << std::endl << "main xx:" << std::endl;
+    xx->Print2();
+    b2->Print2();
+
+    delete b1;
+    delete b2;
+}
+
+/*
+a. ok so virtual mean: that the father is nice to his children.
+in that example "B32* b2 = new X32;" if the child(X32 in that case) will
+override the function then the execute will be from the child. if it wasnt
+virtual so the father(B32 in that case) function was execute.
+BUT if we do that line:"X32* b2 = new X32;"(left type now is total X32 no
+downcast from B32 to X32) so even without overide, the function of X32 will run.
+
+b. becuase X32 is kind of B32, ill be able to access the child and the father
+methods and use pohilmorphizem.
+
+c. the print3 of B32 becuase its inihirt this.
+
+d. its add a convresion operator from child to father and make "Object-slicing".
+
+e. can do cast from father to son(DownCast) and oposite.
+the static casting is only checking that the X32 can be B32 but not enforce that
+the X32 is realy that type(e.g if before i make c cast that look on something
+like X32 but its not realy this type so he will beilve me and wont check it).
+so that can make undefind behaver.
+*Note if i want to make check on the type itself that he really can enforce the
+type check so i can use dynamic_cast.
+
+f.
+* pure virtual its when the father is decleare on virtual function but dont
+implement it at all so the children will most implement it or decalre about it
+as override for the child of him will implement it.
+
+* so this is not pure virtual becuase the father is implement it and the child
+implement it either.
+
+*THE DANGER: if we was call there to the print1 with out the B32:print1 and
+think it will call the B32 print1 so it will active infinite recuresion by
+calling the X32::print1..
+
+g. compile error "no matching function for call to ‘B32::B32()’", becuase it
+search defult Ctor and dont find. so how we solve it:
+create  this explicit call in MIL: "X32() : B32(0),  m_b(0)".. there for he will
+know wich Ctor to call.
+
+h. if we remove that so we will active the function of the instance we declare
+on the decalre line type of left side, e.g: "B32* b2 = new X32;" will be B32
+print because he the left side, but in this:"X32* b2 = new X32;" it will use X32
+print.
+
+i. its hard to follow wich function will be active(lets say i have x1 inihirt x2
+inhirt x3, etc until x10) and its break the polymorphism.
+
+j. Generally, no. This is known as Name Hiding (or shadowing) and is considered
+a bad practice in Object-Oriented Programming.
+
+k. its called the father Dtor and not the X32 Dtor so if we was using
+new(allocate memory) on Ctor of X32 we wouldnt have active the delete(free the
+memory) on the Dtor on X32 and it would make memory leak and undefind behavor.
+
+l. Functionally, it changes nothing. In C++, once a method is declared virtual
+in the base class, it automatically remains virtual in all derived classes,
+regardless of whether you write the virtual keyword in the derived class or not.
+*  but in c++11+ it will work as if in 1 child i wont write virtual so from now
+on he wont be virtual.
+
+m. most compiler implement by storing a hidden pointer to Virtual table(VT)
+inside the VT are pointers to the virtual functions.
+* so each class instance will have its own vptr.
+* and the compiler will insert to Ctor code that init the vptr to point to VT.
+* so will be overhead of space taken by the ptr and overhead to cpu for Ctor and
+run time search in VT.
+====================== End Question 32 =====================
+*/
+
+/*
+====================== Start Question 30 =====================
+*/
+
+/*
+====================== End Question 30 =====================
+*/
+
+int main()
+{
+    Question32();
+
+    return 0;
+}
