@@ -1,0 +1,63 @@
+/*
+Writer: Robi
+Date:   25.04.2026
+Time gave: 45min.
+Time took: 15 min(naive), 42 min(include V2 and the explain in comments).
+
+
+[2,5,2,2,1,8,9]
+
+naive solution:
+this sulotion may get stackoverflow by enter into loop, e.g:[2,1,2,1,1,1,1,1,1,1,.....] where the amount of num to end is hugee so the overflow will happned before the end is reach.
+
+V2 (if i may change the input while backtracking it to normal when end) wont suffer from the loop problems.
+* if i wont be able to change input so ill most take O(N) place for "mark" where i was already visit for the loop wont be able to happned.
+*/
+
+#define CANT_JUMP 0
+#define ABLE_TO_JUMP 1
+
+/*naive:*/
+ssize_t IsAbleToJumpToEnd(int* arr, size_t size, ssize_t cur_index)
+{
+	assert(NULL != arr);
+	
+	if (0 > cur_index || cur_index >= size)
+	{
+		return CANT_JUMP;
+	}
+	
+	if (cur_index == size - 1)
+	{
+		return ABLE_TO_JUMP;
+	}
+	
+	return (IsAbleToJumpToEnd(arr, size, cur_index + arr[cur_index]) || IsAbleToJumpToEnd(arr, size, cur_index - arr[cur_index])); 
+}
+
+int IsAbleToJumpToEndV2(int* arr, size_t size, ssize_t cur_index)
+{
+	ssize_t tmp = 0;	
+	int result = 0;
+	
+	assert(NULL != arr);
+	
+	if (0 > cur_index || cur_index >= (ssize_t)size || 0 == arr[cur_index])
+	{
+		return CANT_JUMP;
+	}
+	
+	if (cur_index == (ssize_t)size - 1)
+	{
+		return ABLE_TO_JUMP;
+	}
+	
+	tmp = arr[cur_index];
+	arr[cur_index] = 0;
+	
+	 result = (IsAbleToJumpToEndV2(arr, size, cur_index + tmp) || IsAbleToJumpToEndV2(arr, size, cur_index - tmp));
+	 
+	 arr[cur_index] = tmp;
+	 
+	 return result;
+}

@@ -179,7 +179,7 @@ int IsCharOnArrNoCheckAllowed (char* arr, size_t size, char ch)
 	
 	for (; i < size; ++i)
 	{
-		++(lut[ch]);	
+		++(lut[(unsigned char)arr[i]]);	
 	}
 	
 	return lut[ch];
@@ -205,91 +205,60 @@ psodo:
 	2. reverse from 0 to k-1
 	3. reverse from k to n-1.
 		
-ShiftRight:
-	1. size_t to_overide_with.
-	2. size_t to_overide.
-	* --n_byte_to_shift.
-	3. to_overide_with = arr[start_i] until arr[start_i + n_byte_to_shift].
-	4. start_i = 0.
-	* while (start_i + n_byte_to_shift >= size)
-		{
-			--n_byte_to_shift.
-		}
-	5. to_overide = arr[start_i] until arr[n_byte_to_shift].
-	6. overdie(arr[0] until arr[n_byte_to_shift - 1], to_overide_with, n_byte_to_shift)	
-	7. to_overide_with = to_overide.
-	8. start_i + n_byte_to_shift
-	9. while (start_i + n_byte_to_shift >= size)
-		{
-			--n_byte_to_shift.
-		}
+Reverse:
+	1. alloc n_byte_to_shift size array and bytes_i_copy = 0.
+	2. if n_byte_to_shift % sizeof(sizeof) != 0 so do:
+		* copy remind bytes from arr[size - 1] into new_arr[start].
+		* n_byte_to_shift = n_byte_to_shift - remind_bytes.
+		* bytes_i_copy = remind_bytes.
+	3. while n_byte_to_shift > 0, do:
+		* copy sizeof(bus_size) bytes from arr[size - bytes_i_copy - 1] into new_arr[start + bytes_i_copy].
+		* n_byte_to_shift = n_byte_to_shift - sizeof(bus_size).
+		* bytes_i_copy = bytes_i_copy +  sizeof(bus_size).
 		
-		overdie(arr[start_i] until arr[n_byte_to_shift - 1], to_overide_with, n_byte_to_shift)	
-			
-			runner = start_i - n_byte_to_shift.
-			to_overide = arr[start_i] until arr[start_i + n_byte_to_shift].
-			to_overide_with = arr[runner] until arr[start_i].
-			overdie(to_overide, to_overide_with, runner)	
-			start_i = runner.
-		}
-	
+[1,2,3,4,5,6,7,8,9,10]
+
+[10,9,8,7,6,5,4,3,2,1], shift 4.
+ 0  1 2 3 4 5 6 7 8 9
+ 
+[7,8,9,10,6,5,4,3,2,1]
+ 0  1 2 3 4 5 6 7 8 9
+ 
+[7,8,9,10,1,2,3,4,5,6]
+ 0  1 2 3 4 5 6 7 8 9
+ 
 */
 
 
-void ShiftRight(char* arr, size_t size, size_t n_byte_to_shift)
+
+static void Reverse(char* arr, size_t start, size_t end)
 {
-	size_t to_overide_with = 0;
-	size_t to_overide = 0;
-	--n_byte_to_shift;
+	char tmp = 0;
 	
 	assert(NULL != arr);
-	to_overide_with = memcpy(&(arr[start_i]), start_i + n_byte_to_shift);
-	start_i = 0;
-	while (start_i + n_byte_to_shift >= size)
-	{
-		--n_byte_to_shift;
-	}
 	
-	to_overide = memcpy(&(arr[start_i]), n_byte_to_shift);
-	memset(&(arr[start_i]), to_overide_with, n_byte_to_shift);
-	
-	while (start_i != size)
+	while (start < end)
 	{
-		to_overide_with = to_overide;
-		while (start_i + n_byte_to_shift >= size)
-		{
-			--n_byte_to_shift;
-		}
-		
-		start_i += n_byte_to_shift;
-		to_overide = memcpy(&(arr[start_i]), n_byte_to_shift);
-		memset(&(arr[start_i]), to_overide_with, n_byte_to_shift);
+		tmp = arr[start];
+		arr[start++] = arr[end];
+		arr[end--] = tmp;
 	}
 }
 
 void DoEfficntShift(char* arr, size_t size, size_t n_byte_to_shift)
 {
-	size_t end_i = 0;
-	size_t start_i = 0;
-	size_t remind = 0;
-	
 	assert(NULL != arr);
-	assert(0 < n_byte_to_shift);
-	assert(0 < size);
+	assert(size > 0);
 	
-	end_i = size - n_byte_to_shift;
-	remind = n_byte_to_shift & sizeof(size_t);
-	if (remind)
+	n_byte_to_shift = n_byte_to_shift % size;
+	if (!n_byte_to_shift)
 	{
-		ShiftRight(arr, size, remind);
-		n_byte_to_shift -= remind;
+		return;
 	}
 	
-	while (n_byte_to_shift > 0)
-	{
-		ShiftRight(arr, size, sizeof(size_t));
-		n_byte_to_shift -= sizeof(size_t);
-	}
+	Reverse(arr, 0, size - 1);
+	Reverse(arr, 0, n_byte_to_shift - 1);
+	Reverse(arr, n_byte_to_shift, size - 1);
 }
 
 
@@ -298,18 +267,138 @@ void DoEfficntShift(char* arr, size_t size, size_t n_byte_to_shift)
 Question5:
 psodo:
 
+gerenalFunc()
+	1. pass all matrix.
+	2. for each 1 
+		count += CheckIfValidIsland().
+		
+size_t CheckIfValidIsland(arr** int, ssize_t row, ssize_t col, ssize_t my_row, ssize_t my_col ):
+	1. change me to 0.
+	2. if my 8 nightbords is CheckIfValidIsland:
+		* return valid.
+	3. else 
+		* return non valid.
+		
+
+[1,0,0,0,0]
+[0,0,1,0,0]
+[0,0,0,0,0]
+[0,0,0,1,0]
+[0,0,1,1,0]
+[0,0,0,0,0]
 */
 
+#define VALID_ISLAND 1
+#define NON_VALID_ISLAND 0
 
+#define SHORE 0
+#define ISLAND 1
+
+size_t OutOfBounds(ssize_t row, ssize_t col, ssize_t my_row, ssize_t my_col)
+{
+	return (0 > my_row || my_row >= row || 0 > my_col || my_col >= col);  
+}
+
+size_t CheckIfValidIsland(int** arr, ssize_t row, ssize_t col, ssize_t my_row, ssize_t my_col )
+{
+	assert(NULL != arr);
+	assert(NULL != *arr);
+	
+	if (OutOfBounds(row, col, my_row, my_col) || SHORE == arr[my_row][my_col])
+	{
+		return VALID_ISLAND;
+	}
+	
+	arr[my_row][my_col] = SHORE;
+	if (CheckIfValidIsland(arr, row, col, my_row + 1, my_col) && 	 /* Down */
+	    CheckIfValidIsland(arr, row, col, my_row - 1, my_col) && 	 /* UP */
+	    CheckIfValidIsland(arr, row, col, my_row, my_col + 1) && 	 /* Right */
+	    CheckIfValidIsland(arr, row, col, my_row, my_col - 1) && 	 /* Left */
+	    CheckIfValidIsland(arr, row, col, my_row + 1, my_col + 1) && /* Down-Right */
+	    CheckIfValidIsland(arr, row, col, my_row + 1, my_col - 1) && /* Down-Left */
+	    CheckIfValidIsland(arr, row, col, my_row - 1, my_col - 1) && /* UP-LEFT */
+	    CheckIfValidIsland(arr, row, col, my_row - 1, my_col + 1))   /* UP-Right */
+	{
+		return VALID_ISLAND;
+	}
+	
+	return NON_VALID_ISLAND;
+}
+
+size_t CountIslands(int** arr, ssize_t row, ssize_t col)
+{
+	size_t count = 0;
+	ssize_t i = 0;
+	ssize_t j = 0;
+	
+	assert(NULL != arr);
+	assert(NULL != *arr);
+	
+	for (; i < row; ++i)
+	{
+		for (j = 0; j < col; ++j)
+		{
+			if (ISLAND == arr[i][j])
+			{
+				count += CheckIfValidIsland(arr, row, col, i, j);
+			}
+		}
+	}
+	
+	return count;
+}
 
 /*
 ===================================================================
 Question6:
 psodo:
-
 */
 
+typedef struct min_stack
+{
+	data_stack* data;
+	data_stack* min_save;
+}min_stack_t;
 
+int MinStackPeek(min_stack_t* stack)
+{
+	assert(NULL != stack);
+	
+	return StackPeek(stack->data);
+}
+
+int MinStackGetMin(min_stack_t* stack)
+{
+	assert(NULL != stack);
+	assert(!MinStackIsEmpty(stack));
+	
+	return StackPeek(stack->min_save);
+}
+
+void MinStackPush(min_stack_t* stack, int val)
+{
+	assert(NULL != stack);
+	
+	if (MinStackIsEmpty(stack))
+	{
+		StackPush(stack->data, val);
+		StackPush(stack->min_save, val);
+	}
+	else
+	{
+		StackPush(stack->data, val);
+		StackPush(stack->min_save, val < StackPeek(stack->min_save) ? val : StackPeek(stack->min_save));
+	}
+}
+
+int MinStackPop(min_stack_t* stack)
+{
+	assert(NULL != stack);
+	
+	StackPop(stack->min_save);
+	
+	return (StackPop(stack->data));
+}
 
 /*
 ===================================================================
@@ -322,12 +411,10 @@ int IsParenthesesCorrectly(char* str)
 {
 	size_t is_valid = 0;
 	Stack* s = NULL;
-	size_t size = 0;
 	
 	assert(NULL != str);
 	
-	size = strlen(str);
-	s = StackCreate((size / 2) + 1);
+	s = StackCreate(strlen(str));
 	if (NULL == s)
 	{
 		return -1;
@@ -338,45 +425,45 @@ int IsParenthesesCorrectly(char* str)
 	{
 		switch(*str)
 		{
-			case '[' '(' '{' '<':
-				StackPush(s, *str++);
+			case '[':
+			case '(':
+			case '{':
+			case '<':
+				StackPush(s, *str);
 				break;
-				
 			case ']':
-				if (StackIsEmpty() || StackPop(s) != '[')
+				if (StackIsEmpty(s) || StackPop(s) != '[')
 				{
 					is_valid = 0;
 				}
 				break;
 				
 			case ')':
-				if (StackIsEmpty() || StackPop(s) != '(')
+				if (StackIsEmpty(s) || StackPop(s) != '(')
 				{
 					is_valid = 0;
 				}
 				break;
 				
 			case '}':
-				if (StackIsEmpty() || StackPop(s) != '{')
+				if (StackIsEmpty(s) || StackPop(s) != '{')
 				{
 					is_valid = 0;
 				}
 				break;
 				
 			case '>':
-				if (StackIsEmpty() || StackPop(s) != '<')
+				if (StackIsEmpty(s) || StackPop(s) != '<')
 				{
 					is_valid = 0;
 				}
 				break;
-				
-			defult:
-				++str;
-				break;
 		}
+		
+		++str;
 	}
 	
-	is_valid = is_valid && StackIsEmpty() ? 1 : 0;
+	is_valid = is_valid && StackIsEmpty(s) ? 1 : 0;
 	StackDestroy(s);
 	
 	return is_valid;
@@ -411,75 +498,21 @@ unsigned int MultiRecursive(unsigned int num, unsigned int multi)
 		return 0;
 	}
 	
-	return num + MultiRecursive(num, --multi);
+	return num + MultiRecursive(num, multi - 1);
 }
 
 
 
-
-
-/*
-c. 
-
-deleted implement.
-
-3 cases:
-0 & 0 & carry 0 = 0, carry 0. -> 0 ones = 0.
-0 & 1 & carry 0 = 1, carry 0. -> 1 ones = 1.
-1 & 1 & carry 0 = 0, carry 1. -> 2 ones = 0 & carry = 1.
-1 & 1 & carry 1 = 1, carry 1. -> 3 ones = 1 & carry = 1.
-
-
-12345678
-
-00000001
-00000000 
------------- |
-00000001
-
-00000001
-00000001
-------------
-00000010
-
-00000001
-00000010
-------------
-00000011
-
-00000001
-00000011
-------------
-00000100
-*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+//c.
+unsigned int AddOneRecursiveNoMathOperatros(unsigned int num)
+{
+	if (0 == (num & 1))
+	{
+		return num ^ 1;
+	}
+	
+	return (AddOneRecursiveNoMathOperatros(num >> 1) << 1);
+}
 
 /*
 Question9:
@@ -517,13 +550,13 @@ worest:O(N)
 --non compareable sorts:
 **********counting sort :
 1. time complex:
-best case: O(N)
-avarge: O(N)
-worest: O(N)
+best case: O(N + K) where K is the range of the input.
+avarge: O(N + K)
+worest: O(N + K)
 2. space complex:
-best case: O(N)
-avarge: O(N)
-worest:O(N)
+best case: O(N + K)
+avarge: O(N + K)
+worest:O(N + K)
 
 b.
 * what is stable sort:
@@ -537,25 +570,44 @@ we can implement each sort as stable, but in defualt we have counting sort, merg
 c. implement out of comment under..
 
 d.
-* i will choose merge sort, becuase he do this job on his nature of how he is working..
-* the merge of the each array with the base array that most be paralell.
+* wich algroti i would choose and why?
+the k way marge using min-heap, becuase merge sort desine netural for work on 2 element to combine, and the place he will take will be big vs k-way marge using min-heap that will only story the first value for each file and work for k element in his nature.
+the stages will be:
+1. Init:
+use min heap ds, each node will hold his data(int val), his place in file(first will be 0..) and the file he came from(full path to file as this is uniqe).
+2. Extract:
+* take out the min elemnt from root go to his file and put the num into my combine_arr.
+* push the next val from this file to the min heap.
+3. loop on stage 2 until files and heap are empty.
+
+
+* what is the bottleneck in this progrem?
+the I/O disk.
+
+how i would solve it:
+ill use buffer -> ill load all files to ram((100k (files) x ~2kb(metadata per file)) + 100k x 4bytes(per val) x 10(vals each file) ~4mb.) then the work will be on ram instaed for each num go to the disk.
+
 */
 
 /*9.c.*/
 Node* PartionSort(Node* head, Node* pivot)
 {
-	Node* small = NULL;
 	Node* small_runner = NULL;
-	Node* big = NULL;
 	Node* big_runner = NULL;
+	Node* small = NULL;
+	Node* next = NULL;
+	Node* big = NULL;
 	
 	assert(NULL != head);
-	assert(NULL != head->next);
 	assert(NULL != pivot);
 	
-	while (NULL != head->next)
+	while (NULL != head)
 	{
-		if (head->data > pivot->data)
+		next = head->next;
+		head->next = NULL;
+		head->prev = NULL;
+		
+		if (head->data >= pivot->data)
 		{
 			if (NULL == big)
 			{
@@ -565,7 +617,8 @@ Node* PartionSort(Node* head, Node* pivot)
 			else
 			{
 				big_runner->next = head;
-				big_runner = big_runner->next;
+				head->prev = big_runner; 
+				big_runner = head;
 			}
 		}
 		else
@@ -578,51 +631,48 @@ Node* PartionSort(Node* head, Node* pivot)
 			else
 			{
 				small_runner->next = head;
-				small_runner = small_runner->next;
-			}
+				head->prev = small_runner;
+				small_runner = head;
+			}			
 		}
+		
+		head = next;
 	}
 	
-	if (head->data > pivot->data)
+	if (NULL == small)
 	{
-		if (NULL == big)
-		{
-			small_runner->next = head;
-			small_runner = small_runner->next;
-		}
-		else
-		{
-			big_runner->next = head;
-			big_runner = big_runner->next;
-		}
-	}
-	else
-	{
-		if (NULL == small)
-		{
-			small = head;
-			small_runner = small;
-		}
-		else
-		{
-			small_runner->next = head;
-			small_runner = small_runner->next;
-		}
+		return big;
 	}
 	
 	small_runner->next = big;
+	if (NULL != big)
+	{
+		big->prev = small_runner; 
+	}
 	
 	return small;
 }
 
 
-
-
-
-
 /*
 Question10:
 psodo:
+	MainFunction(str):
+		1. hash = CreateEmptyHash(). /*static, create it ones and not for each active of function*/
+		2. InitHash(hash, dict).
+		3. DoActionOnValidStrIfHave(hash, str).
+	
+	InitHash(hash, dict):
+		1. for each word in dict do:
+			* sort it by alpabet.
+			* enter the sorted word as a key to hash.
+			* append the word(not sorted) as a value to the sorted word in hash.
+	
+	DoActionOnValidStrIfHave(hash, str):
+		1. sort_str = sort_by_alpabet(str).
+		2. if hash[sort_str] is empty so return.
+		3. else, for each val in hash[sort_str] do:
+			* do action /*print it/ use it for something/ add to arr to return it end/ etc..*/
 */
 
 
@@ -633,22 +683,24 @@ Question11:
 a. interface for hash table(API only):
 
 /*time complex: O(1) */
-hash_t* CreateHashTable(size_t table_size, size_t element_bytes_size);
+hash_t* CreateHashTable(size_t table_size, size_t element_bytes_size, int (*cmp_func)(void* left, void* right), 
+			size_t (*hash_func)(void* key_before_hash));
 
 /*time complex: O(N) - case that all go the same key and we use link list on that key*/
 void DestroyHashTable(hash_t* hash);
 
 /*time complex: O(1) - case we use d_link_list*/
-key* InsertHashTable(hash_t* hash, void* data);
+int InsertHashTable(hash_t* hash, void* data, void* key_before_hash);
 
 /*time complex: O(N) - case as DestroyHashTable.*/
-void* FindHashTable(hash_t* hash, key* key);
+void* FindHashTable(hash_t* hash, void* key_before_hash);
 
 /*time complex: O(N) - case as DestroyHashTable.*/
-int RemoveHashTable(hash_t* hash, key* key);
+int RemoveHashTable(hash_t* hash, void* key_before_hash);
 
 c. example when to use hashmap:
 * if i want to search + insert + remove in ammortize O(1) and i have place to make my arr big as i need.
+* for count words frequencies.
 */
 
 
@@ -665,7 +717,7 @@ maximum wight edge availabe each time.
 b. API for heap:
 
 /*time complex: O(1) */
-heap_t* CreateHeap(size_t arr_size, size_t element_bytes_size);
+heap_t* CreateHeap(size_t arr_size, size_t element_bytes_size, int (*cmp_func)(void* left, void* right));
 
 /*time complex: O(1)*/
 void DestroyHeap(heap_t* heap);
@@ -676,8 +728,8 @@ int InsertHeap(heap_t* heap, void* data);
 /*time complex: O(1)*/ 
 void* PeekHeap(heap_t* heap);
 
-/*time complex: O(logN)*/
-void RemoveHeap(heap_t* heap, void* data);
+/*time complex: O(log(N))*/
+void PopHeap(heap_t* heap, void* data);
 */
 
 
@@ -687,21 +739,27 @@ a. did under the comment.
 
 b. O(N) -> in case worest case its orgenize like link list.
 
-c. IPv4 is 32 bits but as can be seen in example the field of ip that tell me wich city i am is the 2\4 byte(bit 9 - 16) so i can create a LUT that each cell represent city(0 - 255 as that byte that mark citys can hold) and enum to make it more clear what each num represent.
+c. IPv4 is 32 bits so i can make Trie DS where each node is a LUT from 0 - 255 represent Byte(8 bits), there for will be 4 hight and for each one will be his 256 size LUT.
+so for each byte we will hold 256 luts that in each element will be lut size 256.
+256 x 256 x 256 x 1
 
 the psodo for how it will work in is like that:
-	1. check first byte, if != 10 -> return NOT_FROM_ISRAEL.
-	2. else, loop while i = 0 to 255 and do:
-		lut[i] = NAME_OF_CITY.
-	3. for each number that dont have city we will enter NOT_VALID_CITY_IN_ISRAEL.
+	1. Init each city exist into luts.(static init, happned ones when first loading, not for each search of ip).
+	2. for each ip i get and i brake him into 4 bytes and pass by the 4 hight luts from byte 1 to byte 4.
+	3. at the end lut will be the name of the city it is or null if not a city adress.
 */
 
-void IteraviteInsertBT(Bt_node_t* head, Bt_node_t* to_insert)
+Bt_node_t* IteraviteInsertBT(Bt_node_t* head, Bt_node_t* to_insert)
 {
 	Bt_node_t* prev = NULL;
+	Bt_node_t* start_head = head;
 	
-	assert(NULL != head);
 	assert(NULL != to_insert);
+	
+	if (NULL == head)
+	{
+		return to_insert;
+	}
 	
 	while(NULL != head)
 	{
@@ -724,6 +782,8 @@ void IteraviteInsertBT(Bt_node_t* head, Bt_node_t* to_insert)
 	{
 		prev->children[RIGHT] = to_insert;
 	}
+	
+	return start_head;
 }
 
 Bt_node_t* RecursionInsertBT(Bt_node_t* head, Bt_node_t* to_insert)
@@ -732,20 +792,20 @@ Bt_node_t* RecursionInsertBT(Bt_node_t* head, Bt_node_t* to_insert)
 	
 	if (NULL == head)
 	{
-		return NULL;
+		return to_insert;
 	}
 	
 	if (head->data >= to_insert->data)
 	{
-		head->children[LEFT] = NULL == RecursionInsertBT(head->children[LEFT], to_insert) ? 
-							   to_insert : head->children[LEFT];
+		head->children[LEFT] = RecursionInsertBT(head->children[LEFT], to_insert);
 	}
 	else
 	{
-		head->children[RIGHT] = NULL == RecursionInsertBT(head->children[RIGHT], to_insert) ? 
-							   to_insert : head->children[RIGHT];
+		head->children[RIGHT] = RecursionInsertBT(head->children[RIGHT], to_insert);
 	}
-
+	
+	return head;
+}
 
 /*======================================================================================================*/
 
@@ -761,12 +821,11 @@ C->D - 6
 .
 .
 
-
-a. lut(array) each index will represent a city from my city, and the value will say if i have road to there and if i have so what is his wight.
+a. for dense graph (almost every city is connected to every other city): lut(array) each index will represent a city from my city, and the value will say if i have road to there and if i have so what is his wight -> its Adjacency Matrix wich is symmetric matrix (Matrix[A][B] == Matrix[B][A]).
 
 e.g city B lut will be(for the exaplse above):
 
-3	-1	  5	  -1	 8
+  3   -1    5   -1     8
 0(A) 1(B) 2(C) 3(D)  4(E)
 
 * this will the best DS for use to search fast as pobbile, the disadvanteged will be in place complaxity and in loading the progrem(when create this luts - can be in compile time or run time before the progrem will be ready to first run).
