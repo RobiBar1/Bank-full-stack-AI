@@ -1,3 +1,9 @@
+/*
+Wrtier:  Robi
+Checker: Yiden ;)
+Date:    26.04.2026
+*/
+
 #include <iostream> // iostream
 
 #include "complex.hpp" // my_api
