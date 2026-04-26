@@ -1,7 +1,9 @@
 #include <cstdio>
 #include <cstdlib>
 #include <dlfcn.h>
+#include <exception>
 #include <iostream>
+#include <string>
 #include <typeinfo>
 
 using namespace std;
@@ -1761,16 +1763,156 @@ run time search in VT.
 */
 
 /*
-====================== Start Question 30 =====================
+====================== Start Question 33 =====================
+*/
+class X33
+{
+  public:
+    X33() { printf("in ctor\n"); }
+    ~X33() { printf("in dtor\n"); }
+};
+
+struct BadDog : public runtime_error
+{
+    BadDog(const string& s_ = "This is a bad dog\n") : runtime_error(s_) {}
+    // ~BadDog() throw() { printf("hey"); }
+};
+
+void Fifi33()
+{
+    // int a;
+    throw BadDog("bad pup\n");
+    cerr << "Fifi33() after throw" << endl;
+}
+
+void Foo33()
+{
+    X33 x1;
+    Fifi33();
+    cerr << "Foo33() after Fifi33()" << endl;
+}
+
+void Bar33()
+{
+    Foo33();
+    cerr << "Bar33() after Foo33()" << endl;
+}
+
+void Question33()
+{
+    try
+    {
+        Bar33();
+    }
+    catch (logic_error)
+    {
+    }
+    catch (bad_alloc&)
+    {
+        cerr << "Out of memory! exiting.";
+        exit(2);
+    }
+    catch (BadDog& b)
+    {
+        cerr << "Bad dog exception: " << b.what();
+        exit(3);
+    }
+    catch (exception& r)
+    {
+        cerr << "unknown exception: " << r.what();
+        exit(4);
+    }
+
+    cout << "hello" << endl;
+}
+
+/*
+a. explain about throw, try and catch keywords:
+1. throw: its like return an exeption to the first function that have the
+try&catch mehanicem.
+
+2. try: for each code that write in the try block, if this code will throw en
+exeption this exepction will pass to the catch block.
+
+3. catch: the expection that come to this block will serch if have a handler for
+her (e.g "catch (BadDog& b)") if yes we will do the code that write in this
+block, else its will keep throw the execpetion above.
+
+
+b. the ctors and dtors called in that order:
+Ctors: Exeption -> runtime_error -> BadDog.
+Dtors: Exeption -> runtime_error. and BadDog dtor is never called because the
+exit(3) happned before the catch block is end. ??
+
+c. its jump strait to the relevant catch, so we think in compile time the
+compiler put there some "goto" that will active if the expetion is throw, that
+why we didnt see all the chain of function in cgdb and there prints in run time.
+and in the catch its run all the code there(include the print). ???
+
+d. base class for all the classes that implement errors.
+
+e. the second subclass that inhirit from exeption class, in theroy this
+resposbale on expection that is preventable or detachable.
+
+f. this is what return from new opertator when he dont secced to alloc memory.
+
+g. now the exepction will be catch in "catch (exception& r)" block that act like
+"defualt" in switch case.
+
+h. yes.. for now 100% of exeption will be catch with exit 4..
+
+i. its will call to his Ctor then Fifi() will hapnned and when the throw will
+happned in it will clean all the functions memory until the Qeustion34 function
+(that will active all the Dtor of the variables in the functions in mid-way)
+then its come to the relevant catch block, and becuase we do there exit so the
+Dtor of BadDog want happned.
+
+j.
+1. prevents Object Slicing: If we catch by value (catch(exception e)), the
+derived BadDog object would be copied into a base exception object, "slicing"
+off its specific derived data and overriding its polymorphic behavior. e.what()
+would no longer print "bad pup".
+
+2. performance: It avoids the overhead of copying the exception object.
+
+====================== End Question 33 =====================
 */
 
 /*
-====================== End Question 30 =====================
+====================== Start Question 34: =====================
+*/
+
+/*
+* Dynamic exception specification (also know as 'throw list'):
+3 wyas to use:
+1. int dosomething throw(); //dont throw exeption
+2. int dosomething throw(std::out_of_range, int*); // may throw either
+std::out_of_range or a pointer to int.
+3. int dosomething throw(...); //may throw anything.
+
+* set_terminate and terminate:
+====================== End Question 34 =====================
+*/
+
+/*
+====================== Start Question 35: =====================
+*/
+
+/*
+====================== End Question 35 =====================
+*/
+
+/*
+====================== Start Question 36: =====================
+*/
+
+/*
+====================== End Question 36 =====================
 */
 
 int main()
 {
-    Question32();
+    Question33();
 
     return 0;
 }
