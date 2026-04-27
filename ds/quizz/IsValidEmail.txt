@@ -1,0 +1,64 @@
+/*
+Writer: Robi
+Date:   27.04.2026
+Time Gave: 45 min.
+Time Took: 39:40 min (inculde paint and rules write here the psodo of state mechince here)
+
+comment: do it on rail.
+*/
+
+/*
+
+rules:
+* valid char is: 
+1. 'a-z', 'A-Z', '0-9', '_', '-', '.' . 
+* the "@":
+1. most be "valid char" before the "@" and after.
+2. most be only one "@".
+3. cant be first or last in string
+4. 
+* the ".":
+1. cannot be first after the "@".
+2. cant be last char in string
+3. cant be in a row ".."
+4. most contain atleast 1 "."
+
+
+psodo:
+State mechince(?) logic sound perfect to that, ill try design one in the given time.
+States:
+****A(Starting):
+1. '@','.', Non_valid_char -> to state X.
+2. valid_char -> to state B.
+
+****B:
+1. valid but not '.' or '@' -> to state B.
+2. '.' -> to state C.
+3. '@' -> to state D.
+
+****C:
+1. '.', '@' -> to state X.
+2. Non 1 and valid_char -> to state B.
+
+****D:
+1. '@', '.' -> to state X.
+2. valid_char(not . or @) -> to state E.
+
+****E:
+1. '@' -> to state X.
+2. '.' -> to state F.
+3. valid_char(non . or @) -> to state E.
+
+****F:
+1. '.' or '@' -> to state X.
+2. valid_char -> to state G.
+
+****G(accapt state):
+1. '.' -> to state F.
+2. '@' -> to state X.
+3. valid_char(non @ or .) -> to state G.
+
+X(Trap)->cant out, non accapet.
+*/
+
+
