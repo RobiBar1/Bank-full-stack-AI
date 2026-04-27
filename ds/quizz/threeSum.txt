@@ -1,0 +1,45 @@
+/*
+psodo:
+1. sort
+2. open windows from start to end.
+3. init start&end with this rules:
+	* if arr[start] + arr[end] 
+
+
+[5,8,2,-1,7,1,11,-7,4,2,3] target = 10.
+
+[-7,-1,1,2,2,3,4,5,7,8,11]
+
+*/
+
+int ThreeSum(int* arr, size_t size, int target)
+{
+	int start = 0;
+	int end = 0;
+	int mid = 0;
+	
+	Qsort(arr);
+	
+	assert(NULL != arr);
+	assert(3 <= size);
+	
+	end = size - 1;
+	mid = 1;
+	while (end - start >= 2 && mid >= 0 && mid <= end)
+	{
+		if (target == arr[start] + arr[end] + arr[mid])
+		{
+			return 1;
+		}
+		if (target < arr[start] + arr[end] + arr[mid])
+		{
+			end > mid ? --end : --mid;
+		}
+		else
+		{
+			mid == start + 1 ? ++mid : ++start;
+		}
+	}
+	
+	return 0;
+}

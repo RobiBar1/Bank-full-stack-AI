@@ -4,54 +4,35 @@
  * Date: 20.04.2026
  */
 #include <cassert> // assert
+#include <cstring>
 #include <ostream> // ostream
 
 #include "string.hpp" // my_api
 
-using namespace ilrd;
-
-enum Operat
+namespace ilrd
 {
-    LITTLE,
-    BIG,
-    EQUAL
-};
-
-static size_t StrLen(const char* str)
+String::String(const char* str) : m_cstr(Strdup(str))
 {
-    size_t count = 0;
+/*empty on purpose*/ }
 
-    assert(NULL != str);
+String::String(const String& other)
+    : m_cstr(Strdup((other.Cstr()))) { /*empty on purpose*/ }
 
-    while ('\0' != *str++)
-    {
-        ++count;
-    }
-
-    return count;
-}
+String::~String() { delete[] Cstr(); }
 
 char* String::Strdup(const char* str)
 {
-    assert(NULL != str);
+    assert(str);
 
-    char* tmp = new char[StrLen(str) + 1];
-    char* tmp_start = tmp;
-    while ('\0' != *str)
-    {
-        *tmp++ = *str++;
-    }
+    size_t size = strlen(str) + 1;
+    char* tmp = new char[size];
 
-    *tmp = '\0';
+    memccpy(tmp, str, sizeof(char), size);
 
-    return tmp_start;
+    return tmp;
 }
 
-String::String(const char* str) : m_cstr(Strdup(str)) {}
-String::String(const String& other) : m_cstr(Strdup((other.Cstr()))) {}
-String::~String() { delete[] Cstr(); }
-
-std::size_t String::Length() const { return (StrLen(Cstr())); }
+std::size_t String::Length() const { return (strlen(Cstr())); }
 
 const char* String::Cstr() const { return m_cstr; }
 
@@ -64,52 +45,6 @@ String& String::operator=(const String& other)
     return *this;
 }
 
-static Operat CmpFunEnum(const char* str1, const char* str2)
-{
-    assert(NULL != str1);
-    assert(NULL != str2);
-
-    while ('\0' != *str1 && '\0' != *str2)
-    {
-        if (*str1 > *str2)
-        {
-            return BIG;
-        }
-        else if (*str1++ < *str2++)
-        {
-            return LITTLE;
-        }
-    }
-
-    if ('\0' == *str1 && '\0' == *str2)
-    {
-        return EQUAL;
-    }
-    if ('\0' != *str1)
-    {
-        return BIG;
-    }
-
-    return LITTLE;
-}
-
-static int CmpFun(const char* str1, const char* str2)
-{
-    assert(NULL != str1);
-    assert(NULL != str2);
-
-    while ('\0' != *str1 && *str1 == *str2)
-    {
-        ++str1;
-        ++str2;
-    }
-
-    return (*reinterpret_cast<unsigned char*>(const_cast<char*>(str1)) -
-            *reinterpret_cast<unsigned char*>(const_cast<char*>(str2)));
-}
-
-namespace ilrd
-{
 std::ostream& operator<<(std::ostream& os, const String& str)
 {
     return os << "The String is: " << str.Cstr() << "\n";
@@ -117,16 +52,16 @@ std::ostream& operator<<(std::ostream& os, const String& str)
 
 bool operator==(const String& left, const String& right)
 {
-    return (0 == CmpFun(left.Cstr(), right.Cstr()));
+    return (0 == strcmp(left.Cstr(), right.Cstr()));
 }
 
 bool operator>(const String& left, const String& right)
 {
-    return (0 < CmpFun(left.Cstr(), right.Cstr()));
+    return (0 < strcmp(left.Cstr(), right.Cstr()));
 }
 
 bool operator<(const String& left, const String& right)
 {
-    return (0 > CmpFun(left.Cstr(), right.Cstr()));
+    return (0 > strcmp(left.Cstr(), right.Cstr()));
 }
 } // namespace ilrd
