@@ -4,6 +4,8 @@
 #include <cmath>  // std::abs
 #include <iosfwd> // ostream forward declaration only
 
+const double epsilon = 1e-9;
+
 namespace ilrd
 {
 class Complex
@@ -52,8 +54,8 @@ inline bool ilrd::operator!=(const Complex& left, const Complex& right)
 
 inline bool ilrd::operator==(const Complex& left, const Complex& right)
 {
-    return (std::abs(left.GetImg() - right.GetImg()) < 1e-9 &&
-            std::abs(left.GetReal() - right.GetReal()) < 1e-9);
+    return (std::abs(left.GetImg() - right.GetImg()) < epsilon &&
+            std::abs(left.GetReal() - right.GetReal()) < epsilon);
 }
 
 inline const ilrd::Complex ilrd::operator+(const Complex& left,
@@ -101,16 +103,14 @@ inline const ilrd::Complex ilrd::operator/(const Complex& left,
 
 inline ilrd::Complex& ilrd::Complex::operator+=(const ilrd::Complex& other)
 {
-    this->SetReal(this->GetReal() + other.GetReal());
-    this->SetImg(this->GetImg() + other.GetImg());
+    *this = *this + other;
 
     return *this;
 }
 
 inline ilrd::Complex& ilrd::Complex::operator-=(const ilrd::Complex& other)
 {
-    this->SetReal(this->GetReal() - other.GetReal());
-    this->SetImg(this->GetImg() - other.GetImg());
+    *this = *this - other;
 
     return *this;
 }
