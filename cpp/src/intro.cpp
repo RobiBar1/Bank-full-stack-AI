@@ -1891,28 +1891,186 @@ std::out_of_range or a pointer to int.
 3. int dosomething throw(...); //may throw anything.
 
 * set_terminate and terminate:
+1. set_terminate - defention function that will active when will throw expetion
+without catch it. we will put here cleanup for globals things(empahors,
+g_varbles that need clenups, etc..)
+
+2. terminate - this function is called when throw expection, by defult called to
+abort but if we did set_terminate to function the terminate will active the
+function we pass in set_terminate.
+
+* set_unexpected and unexpected:
+same mechanices as "set_terminate and terminate" but here its happned when the
+function is throw expection that we didnt mention in her throw list. by deuflt
+its call to terminate.
 ====================== End Question 34 =====================
 */
 
 /*
-====================== Start Question 35: =====================
+====================== Start Question 35 & 36: =====================
+*/
+
+struct BadDog35
+{
+  public:
+    BadDog35(const string& s_ = "This is a bad dog\n") {}
+    // ~BadDog35() throw();
+    void hey() throw(int) { throw "asd"; }
+    // ~BadDog() throw() { printf("hey"); }
+};
+
+class IntWrapper
+{
+    int* ptr;
+
+  public:
+    IntWrapper()
+    {
+        ptr = new int;
+        printf("in Ctor\n");
+    }
+    ~IntWrapper()
+    {
+        delete ptr;
+        printf("in D\n");
+    }
+    int* get() { return ptr; }
+};
+
+static int* p;
+static void Clean() { delete p; }
+void Question35()
+{
+    IntWrapper ip_wrapper; // נוצר על המחסנית
+    BadDog35 x;
+    x.hey();
+    int* h = new int;
+    p = h;
+    // set_terminate(Clean);
+    set_unexpected(Clean);
+
+    cout << "hello" << endl;
+    /*  try
+     {
+         BadDog35 x;
+         x.hey();
+     }
+     catch (exception& e) // PROBLEM! dont catch something like throw int.
+     {
+         cerr << "lala" << e.what();
+     }
+     catch (logic_error)
+     {
+     }
+     catch (bad_alloc&)
+     {
+         cerr << "Out of memory! exiting.";
+         exit(2);
+     }
+     catch (BadDog35& b)
+     {
+         // cerr << "Bad dog exception: " << b.what();
+         exit(3);
+     } */
+}
+
+/*
+35:
+so in unhandled its do:
+call throw -> std::terminate() -> "??" its handler probbly -> "??" -> "GI_abort"
+-> "GI_raise" that send the abort signal to my proc.
+
+in unecepted:
+__cxa_call_unexpected() -> "??" probbly his handler -> std::terminate() -> "??"
+its handler probbly -> "??" -> "GI_abort" -> "GI_raise" that send the abort
+signal to my proc.
+
+36:
+so if we throw something without handle it:
+a. it will crash the progrem and the lines of code after that wont happned.
+
+b.two ways to solve this:
+1. try&catch.
+2. set_terminate(Clean); or set_unexpected(Clean); or both. this will end in
+abort anyway but will run the cleanup function before.
+
+c.
+1. try&catch better if i want to keep running my progrem without get abort and
+if i sure that is throw something that inihirt from execption.
+
+2. set_unexpected or set_terminate is better if i anyway want to crash my
+proggrem anyway so its will be less overhead to use it and if im not sure what
+can be throw from function(for exemple he can throw something that dont inhirt
+from eception).
+
+3. resource_mangment_class - class that mange the resurce with his ctor and
+dtors.
+
+d. the best way to solve it resource_mangment_class i in function but if i in
+main so do try and catch.
+
+
+====================== End Question 35 & 36 =====================
 */
 
 /*
-====================== End Question 35 =====================
+====================== Start Question 37: =====================
 */
 
-/*
-====================== Start Question 36: =====================
-*/
+int Foo37(int) throw(bad_alloc) { throw bad_alloc(); }
+
+void Bar37(void) throw(bad_cast) { throw bad_cast(); }
+
+struct BadDog37
+{
+  public:
+    BadDog37(const string& s_ = "This is a bad dog\n") {}
+    ~BadDog37() throw() { cerr << "in new Dtor\n" << Foo37(5); }
+    void hey() throw(int) { throw "asd"; }
+    // ~BadDog() throw() { printf("hey"); }
+};
+
+void Fishi(void)
+{
+    BadDog37 x;
+
+    Bar37();
+
+    cerr << "in general execp37: "; // << e.what();
+
+    cerr << "after Bar37\n";
+}
+
+void Question37(void) { Fishi(); }
 
 /*
-====================== End Question 36 =====================
+====================== End Question 37 =====================
 */
 
 int main()
 {
-    Question33();
+    try
+    {
+        Question37();
+    }
+    catch (bad_alloc& e)
+    {
+        cerr << "catch bad alloc: " << e.what();
+    }
+    catch (bad_cast& e)
+    {
+        cerr << "catch bad cast: " << e.what();
+    }
+    catch (exception& e)
+    {
+        cerr << "in general main37: " << e.what();
+    }
+    catch (...)
+    {
+        cerr << "in most general";
+    }
+
+    cerr << "in general main37: ";
 
     return 0;
 }
