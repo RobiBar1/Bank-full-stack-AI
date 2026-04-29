@@ -3,6 +3,7 @@
 #include <dlfcn.h>
 #include <exception>
 #include <iostream>
+#include <stdexcept>
 #include <string>
 #include <typeinfo>
 
@@ -2044,33 +2045,298 @@ void Fishi(void)
 void Question37(void) { Fishi(); }
 
 /*
+a.
+* if i have no catch it will abort my progrem.
+
+* if i have catch and my dtor will throw aswell, we wont be able to catch
+this anywhere and the progrem will abort.
+
+* if i have catch for only 1 throw was happned it will act as we use to.
+
+b. when the function throw we try to clean the stack go through the Dtor that
+will throw again and no catch will be able to catch it and it will active
+unexepted that will go terminate that defult will active abort.
+
+c. as i mention above with the throw and the handlers ("??") etc..
+
+d. that we wont throw expetions from the Dtor.
+
+e. MUST try& catch in him.
 ====================== End Question 37 =====================
 */
 
-int main()
+/*
+====================== Start Question 38 =====================
+*/
+
+struct X38
+{
+    X38()
+    {
+        cout << "X38 Ctor" << endl;
+        throw bad_cast();
+    }
+    X38(int) { cout << "X38 Ctor (int)" << endl; }
+    ~X38() { cout << "~X38 Dtor" << endl; }
+};
+
+struct Y38
+{
+    Y38() { cout << "Y38 Ctor" << endl; }
+    ~Y38() { cout << "~Y38 Dtor" << endl; }
+};
+
+class L38
+{
+  public:
+    L38() : m_x(2) { cout << "L38 Ctor" << endl; }
+    ~L38() { cout << "~L38 Dtor" << endl; }
+
+  private:
+    Y38 m_y;
+    X38 m_x;
+};
+
+class M38
+{
+  public:
+    M38() { cout << "M38 Ctor" << endl; }
+    ~M38() { cout << "~M38 Dtor" << endl; }
+
+  private:
+    X38 m_x;
+    Y38 m_y;
+};
+
+class N38
+{
+  public:
+    N38() { cout << "N38 Ctor" << endl; }
+    ~N38() { cout << "~N38 Dtor" << endl; }
+
+  private:
+    Y38 m_y;
+    X38 m_x;
+};
+
+class J38
+{
+  public:
+    J38() : m_y(new Y38), m_x(new X38) { cout << "J38 Ctor" << endl; }
+    ~J38()
+    {
+        cout << "~J38 Dtor" << endl;
+        delete m_x;
+        delete m_y;
+    }
+
+  private:
+    Y38* m_y;
+    X38* m_x;
+};
+
+class K38
+{
+  public:
+    K38()
+    {
+        cout << "K38 Ctor" << endl;
+        m_y = new Y38;
+        m_x = new X38;
+    }
+    ~K38()
+    {
+        cout << "~K38 Dtor" << endl;
+        delete m_x;
+        delete m_y;
+    }
+
+  private:
+    Y38* m_y;
+    X38* m_x;
+};
+
+void Question38(void)
 {
     try
     {
-        Question37();
-    }
-    catch (bad_alloc& e)
-    {
-        cerr << "catch bad alloc: " << e.what();
-    }
-    catch (bad_cast& e)
-    {
-        cerr << "catch bad cast: " << e.what();
+        J38 var1;
     }
     catch (exception& e)
     {
-        cerr << "in general main37: " << e.what();
-    }
-    catch (...)
-    {
-        cerr << "in most general";
+        cout << "exception caught. what: " << e.what() << endl;
     }
 
-    cerr << "in general main37: ";
+    cout << "exception caught. what: " << endl;
+}
+/*
+a.
+1. the Classes in private argument will evalute by the order from up to buttom.
+
+2. if the Ctor isnt complete the function and then throw, the Dtor of this class
+wont call, so----> if i use something that can throw in Ctor i MUST handle the
+exception(try&cath/Wrap class/etc..).
+
+3.
+* if we use MIL so each init is diffrent stack_frame, so if the MIL of second
+parameter is throw its still will call the first parameter Dtor(becuase its on
+his bt).
+* else (as happned in K38) its init in same stack_frame of function, therefore
+while X38 will throw the Dtor of Y38 wont call.
+
+b. we notice.
+
+c. wich classes do we encounter a problem with:
+* all except L38 and Y38.
+
+d. what is the problem:
+* that we dont call the Dtor -> if i need to mange resources so maybe will be
+memory leak.
+
+e. because the Ctor is not complete the compiler wont inject the code that call
+to Dtor.
+
+f. DONT(byden dont) throw from Ctor, if use function that can throw so i MUST
+handle the exception(try&cath/Wrap class/etc..).
+====================== End Question 38 =====================
+*/
+
+/*
+====================== Start Question 39 =====================
+*/
+
+/*
+====================== End Question 39 =====================
+*/
+
+/*
+====================== Start Question 40 =====================
+*/
+
+class X40
+{
+  public:
+    ~X40() { cerr << "in X40 dtor\n"; }
+
+  private:
+    double m_a;
+};
+
+class Y40 : public X40
+{
+  public:
+    ~Y40() { cerr << "in Y40 dddtor\n"; }
+
+  private:
+    int m_b;
+};
+
+int Question40()
+{
+    X40* xp = new Y40[5];
+
+    delete[] xp;
 
     return 0;
 }
+
+/*
+a.
+
+b.
+1. what was the programmer mistake:
+ * that he used delete on arr that from kind ptr to X40 to X40 while in there
+have Y40.
+
+ 2. what is the lesson learned:
+ * that if we use delete on arr of pointers, the pointers most be in the correct
+type of what REAL have in the arr(in that case Y40).
+
+c.ok so after change to int its worked, why:
+* when was int the sizeof was:
+X40 -> 16: 8(double) + 8(VPTR) = 16.
+Y40 -> 24: X40 + 4(int) + (4padding) = 24.
+
+* after the change:
+X40 -> 16: 4(int) + 8(VPTR) + (4padding) = 16.
+Y40 -> 16: X40(without padding -> 12) + 4(int) = 16.
+====================== End Question 40 =====================
+*/
+
+/*
+====================== Start Question 41 =====================
+*/
+
+void Foo41(X40 x) {}
+
+void Question41()
+{
+    Y40 y1;
+
+    Foo41(y1);
+}
+
+/*
+a. he will active Copy-Ctor of X40 and will actelly get X40 in size 16.
+
+b. becuase he expect get x but i pass him y so empilict he doing casting to X40
+and then do copy Ctor from X40 to X40.
+
+c. to pass by const refernce or by pointer.
+====================== End Question 41 =====================
+*/
+
+/*
+====================== Start Question 42 =====================
+*/
+
+class X42
+{
+  public:
+    X42(double d_) : m_a(d_) {}
+    virtual ~X42() {}
+
+  private:
+    double m_a;
+};
+
+class Y42 : public X42
+{
+  public:
+    Y42(double d_, int i_) : X42(d_), m_b(i_) {}
+
+  private:
+    int m_b;
+};
+
+int main()
+{
+    Y42 y1(0.0, 0), y2(14.2, 5);
+    Y42 y3(0.0, 0), y4(14.2, 5);
+
+    X42& x1 = y1;
+    X42& x2 = y2;
+
+    x1 = x2;
+    y3 = y4;
+
+    return 0;
+}
+
+/*
+a.
+* for "x1 = x2" will do convertion from Y42 to X42 then will do "=" opertor. so
+for y1 will be (14.2,0).
+
+* and "y3 = y4" will do as usual.
+
+b. we want to do polymorphic assigment but its only does what we mention in a*.
+
+c. because we didnt override the "=" operator of X42 so it do the defualt
+operator that copy by bits.
+
+d. becuase
+====================== End Question 42 =====================
+*/
+
+int main() { Question40(); }
