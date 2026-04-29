@@ -2309,7 +2309,7 @@ class Y42 : public X42
     int m_b;
 };
 
-int main()
+void Question42()
 {
     Y42 y1(0.0, 0), y2(14.2, 5);
     Y42 y3(0.0, 0), y4(14.2, 5);
@@ -2319,8 +2319,6 @@ int main()
 
     x1 = x2;
     y3 = y4;
-
-    return 0;
 }
 
 /*
@@ -2339,4 +2337,4 @@ d. becuase
 ====================== End Question 42 =====================
 */
 
-int main() { Question40(); }
+int main() { Question42(); }
