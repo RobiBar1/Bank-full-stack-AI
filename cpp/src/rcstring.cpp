@@ -1,3 +1,8 @@
+/*
+Writer: Robi
+Checker: Michael
+Date: 02.05.2026
+*/
 
 #include <assert.h> // assert
 #include <cstring>  // strlen, strcpy
@@ -123,6 +128,7 @@ RCString::CharProxy::operator=(char newChar) throw(std::bad_alloc)
     if (1 < m_str.m_value->m_ref_count)
     {
         StringValue* newValue = new StringValue(m_str.m_value->m_data);
+
         m_str.DecreaseRefCount();
         m_str.m_value = newValue;
     }
