@@ -2202,11 +2202,61 @@ handle the exception(try&cath/Wrap class/etc..).
 */
 
 /*
-====================== Start Question 39 =====================
-*/
+====================== Start Question 39 RCstring: =====================
+****keywords:
+1. copy-on-write:
+optemize method for mange memory, if n things look the same thing and only read
+it so all point to same place, and only if one of them want to change the
+info(write into it) so this is the moment he will get real memory for its own.
 
-/*
-====================== End Question 39 =====================
+2. RAII(Resource Acquisition Is Initialization):
+the idea is to link the life cycle of class to the life cycle of the resource he
+use (the create and destory of them will be close as possible).
+
+3. operator new:
+* function as malloc, only alloc the memory i need from heap.
+* the new opertator called this operator for his stage 1.
+* this function can be overload or override(and change the way the progrem alloc
+memory).
+
+4. new operator:
+its operator that build in in the C++ langh and i cant override him, allways do
+2 stages: stage 1: alloc the need memory for the class. stage 2: call to the
+class Ctor for init the class in the memeory.
+
+5. offsetof:
+macro come from c, this is how to call him "offsetof(type, member)" its return
+the offset in bytes from the member to the class he in.
+
+****Requirements:
+2.
+Q: support for impilicit conversions from char*. should we have it? why?
+A:
+
+3.
+Q: Should we support conversion from RCString to char*. why?
+A:
+
+5.
+Q: as the implementation probably relies on the assumption that "sizeof(char) ==
+1", should we protect customers whose platforms do not support the assumption?
+A:
+
+****Exercise:
+
+
+****Questions:
+1.
+Q: what are the different ways to implement refernce counting? What are their
+advantages/disadvantges?
+
+2. Explain "RAII":
+A:
+
+3.
+Q: what is the difference between operator new and the new operator?
+A:
+====================== End Question 39 RCstring =====================
 */
 
 /*
@@ -2277,7 +2327,8 @@ void Question41()
 }
 
 /*
-a. he will active Copy-Ctor of X40 and will actelly get X40 in size 16.
+a. he will do implicit converteion from Y40 to X40 then he will active Copy-Ctor
+of X40 and will actelly get X40 in size 16.
 
 b. becuase he expect get x but i pass him y so empilict he doing casting to X40
 and then do copy Ctor from X40 to X40.
@@ -2333,8 +2384,198 @@ b. we want to do polymorphic assigment but its only does what we mention in a*.
 c. because we didnt override the "=" operator of X42 so it do the defualt
 operator that copy by bits.
 
-d. becuase
+d. becuase it very hard to find the bug, its wrong behavor but no one warning us
+about it.
+
+e. the blame is on the progrmmer that wrote X42, becuase he didnt handle the
+opertator '=', he can do this things:
+1. "X42& operator=(const X42& other_) = 0;" this thing will make operator '=' of
+X42 to "pure method" that mean that what is inhirit from X42 MOST implement it
+and X42 class is becuame abstarct class.
+
+2. the best sulotions is: in X42 make the method virtual
+"virtual X42& operator=(const X42& other_);" and then in the son(Y42 in that
+case) we will override that exec method(WITH THE X42!) "X42& operator=(const
+X42& other_);".
+
+f.???(ask shimon if its right)
+1. how can avoid this situation:
+* put virtual on '=' operator when i write a class.
+
+2. what is the new habit:
+* to put virtual on the '=' operator..
 ====================== End Question 42 =====================
 */
 
-int main() { Question42(); }
+/*
+====================== Start Question 43: =====================
+*/
+
+class Base
+{
+  public:
+    virtual void method();
+};
+
+void Base::method() {}
+
+class MyClass : public Base
+{
+  public:
+    virtual void method();
+};
+
+void MyClass::method() {}
+
+void Question43(void)
+{
+    MyClass a;
+    Base a1;
+    a.method();
+    a1.method();
+
+    Base* b = new Base();
+    b->method();
+
+    Base* c = new MyClass();
+    c->Base::method();
+}
+
+/*
+a. in wich situations can the function be staticlyy bound(where the compiler
+knows at tompile time wich function should be called):
+* in both first call to methond(from a and a1) "MyClass a; Base a1; a.method();
+a1.method();" it will do it compile time, becuase its not a pointer or refernce.
+
+* in b ("Base* b = new Base(); b->method();") it will do it in run time becuase
+its a pointer.
+
+* in c("Base* c = new MyClass(); c->Base::method();") it will happned either in
+compile time, becuase i called it explicit.
+
+
+Summery: POINTER/REFERNCE WILL HAPPNED IN RUN TIME(if i didnt explicit called
+something as c example).
+
+b. what does it mean for inline:
+* i most put inline the options that can decided in compile time(option 1 or 3
+in the "*" in a).
+
+c. ???(ask mimir)
+====================== End Question 43 =====================
+*/
+
+/*
+====================== Start Question 44 "Protected": =====================
+a. what will you put in the protected part of the class:
+* accessors for my private variables, that how ill keep encapsuletion in 1 hand
+but in other hand ill give my child option to use them.
+
+* non public function that may be relevant for my childs either.
+
+* and case like this:
+"""
+class Base
+{
+  public:
+    virtual void method();
+
+  protected:
+    Base();
+};
+
+class MyClass : public Base
+{
+  public:
+    virtual void method();
+
+  private:
+    Base a;
+    int x;
+};
+"""
+here from outside no one can create class Base but in the MyClass we have
+private variable of this type and i can create him becuase i inhirt from him.
+
+
+b. what will never go in the protected part:
+* public things: that i want give the options to use them out of class.
+* private things: that are only for my use(for save the encapsuletion).
+* data memebers: will never be non private.
+
+c. why? explain in terms of encapsulation:
+* break encapsuletion and Tight Coupling.
+====================== End Question 44 =====================
+*/
+
+/*
+================= Start Question 45 Pure Virtual Method, Abstract class: ====
+*/
+
+class Base45
+{
+  public:
+    virtual ~Base45() = 0;
+    virtual void zibi() = 0;
+};
+
+Base45::~Base45() {}
+
+class MyClass45 : public Base45
+{
+  public:
+    ~MyClass45();
+    void zibi();
+};
+
+MyClass45::~MyClass45() {}
+void MyClass45::zibi() {}
+
+void Question45(void)
+{
+    Base45* a = new MyClass45;
+    a = dynamic_cast<Base45*>(a);
+    a->zibi();
+
+    delete a;
+}
+
+/*
+a.
+Q: can we implement a pure virtual method:
+A: yes, but its most be outside of the class defention.
+
+Q: why would you want to:
+A: i give defult behavor to this AND i enforce my child to imeplemnt this if he
+dont want to be an abstract class.
+
+Q: when will you have to:
+A: when decalre on Dtor as pure virtual, becuase if not, the linker will throw
+"unresolved external symbol".
+
+b. what hapnnes to a class that inhirist an abstract class:
+* he most implement the virtual methods from his father if he want be
+non-abstract class or else he will be abstract class.
+
+c. what is the meaninig of the syntax "=0":
+* its make the method to pure virtual and thefore the class is become abstract
+class.
+* in addition in the vtable instead of hold pointer to the implment of the
+function it will point into handler function of OS or the Compiler(e.g
+"__cxa_pure_virtual") that will crush in runtime if someone try to call
+her(becuase the child need to implement that method and override that pointer to
+point to there implementions, if its not happned so the handler will stay there
+and will crash in run time).
+
+d.
+Q: why would you declare a Dtor pure virtual:
+1: for create class that dont have other functions to abstract class(becuase
+need declere atleast 1 function as pure virtual and we dont have other function
+to do it..).
+
+Q: would you implement it:
+A: Yes, most do it as mention in a.
+====================== End Question 45 =====================
+*/
+
+int main() { Question45(); }
