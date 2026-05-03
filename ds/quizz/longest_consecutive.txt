@@ -1,0 +1,56 @@
+hey
+/*
+
+*/
+
+psodo:
+---naive: nlogn run time, n space time.
+1.	sort
+2.	count max seq.
+
+---naive 2: n+k run time, n space time.
+1. sort with counting
+2. count max seq.
+
+---best balance solution here:
+1. heap_sort.
+2. pop and count max seq.
+
+ssize_t CountLongestConsecutive(int* arr, size_t size)
+{
+	Heap* sort_heap = NULL;
+	size_t cur_max = 0;
+	int cur_num = 0;	
+	size_t max = 0;
+	size_t i = 0;
+	int tmp = 0;	
+	
+	assert(NULL != str);
+	
+	sort_heap = HeapSort(arr, size);
+	if (NULL == sort_heap)
+	{
+		return -1;
+	}
+	
+	cur_num = HeapPop(sort_heap);
+	++max;
+	++cur_max;
+	for (; i < size; ++i)
+	{
+		tmp = HeapPop(sort_heap);
+		if (tmp == cur_num)
+		{
+			cur_max += 1
+			max = cur_max > max ? cur_max : max;
+		}
+		else
+		{
+			cur_max = 1;
+		}
+		
+		cur_num = tmp;
+	}
+	
+	return (ssize_t)max;
+}
