@@ -2578,4 +2578,31 @@ A: Yes, most do it as mention in a.
 ====================== End Question 45 =====================
 */
 
+/*
+====================== Start Question 45 =====================
+c. all the cases i can promse to user when he use try&catch:
+1. no throw exception guarantee:
+* the funcion never throw exeption.
+
+2. Strong exception guarantee:
+* is promse that the proggrem will roll back to where it was before the function
+that throw the expetion called.
+
+3. Basic exception guarantee:
+* if function throw expetion the progreem was on valid state before but maybe in
+diffrent state from before(i change him variable but dont have any resorce leak
+or memory curapetion or something).
+
+4. no exception guarantee:
+* if i throw i dont guarantee valid state of the progreem(may have memory leaks/
+memory coureptiom)
+
+d.
+* Ctor - Strong excpetion.
+* Dtor - promse no throw.
+* const methods - Strong exception.
+* non-const methods - Basic exception.
+====================== End Question 45 =====================
+*/
+
 int main() { Question45(); }

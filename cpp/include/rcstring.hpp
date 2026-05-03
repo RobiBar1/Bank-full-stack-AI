@@ -37,7 +37,8 @@ class RCString
 
     struct StringValue
     {
-        StringValue(const char* startVal);
+        StringValue(const char* startVal) throw(std::invalid_argument,
+                                                std::bad_alloc);
         ~StringValue();
 
         std::size_t m_ref_count;

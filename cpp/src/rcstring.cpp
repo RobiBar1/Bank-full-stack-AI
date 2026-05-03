@@ -13,9 +13,14 @@ Date: 02.05.2026
 namespace ilrd
 {
 // ======================== Start StringValue implement =======================
-RCString::StringValue::StringValue(const char* startVal) : m_ref_count(1)
+RCString::StringValue::StringValue(const char* startVal) throw(
+    std::invalid_argument, std::bad_alloc)
+    : m_ref_count(1)
 {
-    assert(startVal);
+    if (NULL == startVal)
+    {
+        throw std::invalid_argument("enter null pointer to RCString");
+    }
 
     size_t len = strlen(startVal) + 1;
     m_data = new char[len]; // wrap with try&catch?
@@ -27,13 +32,8 @@ RCString::StringValue::~StringValue() { delete[] m_data; }
 
 // ======================== Start RCString implement ========================
 RCString::RCString(const char* str) throw(std::invalid_argument, std::bad_alloc)
+    : m_value(new StringValue(str))
 {
-    if (NULL == str)
-    {
-        throw std::invalid_argument("enter null pointer to RCString");
-    }
-
-    m_value = new StringValue(str); // wrap with try&catch?
 }
 
 RCString::RCString(const RCString& other) noexcept : m_value(other.m_value)
