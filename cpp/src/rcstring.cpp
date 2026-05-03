@@ -12,8 +12,8 @@ Date: 02.05.2026
 
 namespace ilrd
 {
-// ======================== Start StringValue implement =======================
 
+// helper function:
 static char* CreateTheString(const char* startVal) throw(std::invalid_argument,
                                                          std::bad_alloc)
 {
@@ -29,6 +29,8 @@ static char* CreateTheString(const char* startVal) throw(std::invalid_argument,
 
     return ch;
 }
+
+// ======================== Start StringValue implement =======================
 
 RCString::StringValue::StringValue(const char* startVal) throw(
     std::invalid_argument, std::bad_alloc)
