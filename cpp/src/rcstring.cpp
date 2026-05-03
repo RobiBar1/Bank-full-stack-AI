@@ -13,9 +13,9 @@ Date: 02.05.2026
 namespace ilrd
 {
 // ======================== Start StringValue implement =======================
-RCString::StringValue::StringValue(const char* startVal) throw(
-    std::invalid_argument, std::bad_alloc)
-    : m_ref_count(1)
+
+static char* CreateTheString(const char* startVal) throw(std::invalid_argument,
+                                                         std::bad_alloc)
 {
     if (NULL == startVal)
     {
@@ -23,8 +23,17 @@ RCString::StringValue::StringValue(const char* startVal) throw(
     }
 
     size_t len = strlen(startVal) + 1;
-    m_data = new char[len]; // wrap with try&catch?
-    memccpy(m_data, startVal, sizeof(char), len);
+    char* ch = NULL;
+    ch = new char[len];
+    memccpy(ch, startVal, sizeof(char), len);
+
+    return ch;
+}
+
+RCString::StringValue::StringValue(const char* startVal) throw(
+    std::invalid_argument, std::bad_alloc)
+    : m_ref_count(1), m_data(CreateTheString(startVal))
+{
 }
 
 RCString::StringValue::~StringValue() { delete[] m_data; }
