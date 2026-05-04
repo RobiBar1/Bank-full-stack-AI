@@ -2579,7 +2579,7 @@ A: Yes, most do it as mention in a.
 */
 
 /*
-====================== Start Question 45 =====================
+====================== Start Question 46 =====================
 c. all the cases i can promse to user when he use try&catch:
 1. no throw exception guarantee:
 * the funcion never throw exeption.
@@ -2602,7 +2602,7 @@ d.
 * Dtor - promse no throw.
 * const methods - Strong exception.
 * non-const methods - Basic exception.
-====================== End Question 45 =====================
+====================== End Question 46 =====================
 */
 
 int main() { Question45(); }
