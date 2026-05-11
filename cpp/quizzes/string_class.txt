@@ -1,0 +1,66 @@
+asdasd
+
+/*
+
+*/
+namespace ilrd
+{
+	public class String
+	{
+	public:
+		String();
+		String(const char* str);
+		String(String& other);
+		~String();
+		
+		const std::size_t bufferForAllocString = 80;
+		const char* GetVal();
+		
+		String& operator=(const char* str);
+		String& operator[](const char ch); 	 
+	private:
+		char* m_str;	
+	}
+	
+	String::String()
+	{
+		this.m_str = new char[bufferForAllocString];
+		this.m_str[0] = "";
+		this.m_str[1] = "/0";
+	}
+	
+	String::String(const char* str)
+	{
+		this.m_str = strdup(str);
+	}
+	
+	String::const char* GetVal()
+	{
+		return m_str;
+	}
+		
+	String::String(String& other)
+	{
+		this.m_str = strdup(other.GetVal());
+	}
+	
+	String::~String()
+	{
+		delete[] this.m_str;
+	}
+	
+	String& operator=(const char* str)
+	{
+		this.m_str = strdup(other.GetVal());
+		
+		return *this
+	}
+	
+	String& operator[](std::size_t index, const char ch)
+	{
+		this.m_str[index] = ch;
+		
+		return *this;
+	}
+	
+}

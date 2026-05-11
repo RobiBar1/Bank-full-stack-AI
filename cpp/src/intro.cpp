@@ -1992,20 +1992,11 @@ a. it will crash the progrem and the lines of code after that wont happned.
 
 b.two ways to solve this:
 1. try&catch.
-2. set_terminate(Clean); or set_unexpected(Clean); or both. this will end in
-abort anyway but will run the cleanup function before.
+2. RAII(Wrap class).
 
 c.
-1. try&catch better if i want to keep running my progrem without get abort and
-if i sure that is throw something that inihirt from execption.
-
-2. set_unexpected or set_terminate is better if i anyway want to crash my
-proggrem anyway so its will be less overhead to use it and if im not sure what
-can be throw from function(for exemple he can throw something that dont inhirt
-from eception).
-
-3. resource_mangment_class - class that mange the resurce with his ctor and
-dtors.
+1. resource_mangment_class(RAII) - class that mange the resurce with his ctor
+and dtors.
 
 d. the best way to solve it resource_mangment_class i in function but if i in
 main so do try and catch.
@@ -2196,8 +2187,9 @@ memory leak.
 e. because the Ctor is not complete the compiler wont inject the code that call
 to Dtor.
 
-f. DONT(byden dont) throw from Ctor, if use function that can throw so i MUST
-handle the exception(try&cath/Wrap class/etc..).
+f.
+1. cant handle more then 1 resource from 1 Ctor.
+2. Ctor most throw exeption if they have resource problem.
 ====================== End Question 38 =====================
 */
 

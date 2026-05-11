@@ -1,0 +1,89 @@
+aasd
+
+class String
+{
+public:
+	String() not throwing;   			  //not explicit on perpse
+	String(const char* str) not throwing; //not explicit on perpse
+	String(const String& other) not throwing;
+	virtual ~String();
+	
+	const int buffer = 80;
+	
+	String& operator=(const String& other) throw {out_of_bounds};
+	String& operator[](size_t i, const char ch) throw {out_of_bounds};
+private:
+	char* str;
+	size_t size;
+}
+
+String::String()
+{
+	try
+	{
+		str = new char[buffer];
+		str[buffer - 1] = '\0';
+		size = buffer;
+	}
+	catch (execption e)
+	{
+		perror << "alloc failed\n";
+	}
+}
+
+String::String(const char* str)
+{
+	try
+	{
+		size_t size = strlen(str) + 1;
+		str = new char[size];
+		memncpy(this->str, str, sizeof(char), size);
+		this->size = size;
+	}
+	catch (execption e)
+	{
+		perror << "alloc failed\n";
+	}
+}
+
+String::String(const String& other)
+{
+	try
+	{
+		size_t size = strlen(other.str) + 1;
+		str = new char[size];
+		memncpy(this->str, other.str, sizeof(char), size);
+		this->size = size;
+	}
+	catch (execption e)
+	{
+		perror << "alloc failed\n";
+	}
+}
+
+String::~String()
+{
+	delete []str;	
+}
+
+String& String::operator=(const String& other)
+{	
+	if (other.size >= this->size)
+	{
+		throw out_of_bounds;
+	}
+	
+	this->str = strdup(other.str);		
+	
+	return *this;
+}
+
+void String::operator[](size_t i, const char ch)
+{	
+	if (i >= this->size || 0 > i)
+	{
+		throw out_of_bounds;
+	}
+	
+	this[i] = ch;
+}
