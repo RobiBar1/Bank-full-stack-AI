@@ -2390,12 +2390,10 @@ and X42 class is becuame abstarct class.
 case) we will override that exec method(WITH THE X42!) "X42& operator=(const
 X42& other_);".
 
-f.???(ask shimon if its right)
-1. how can avoid this situation:
-* put virtual on '=' operator when i write a class.
-
-2. what is the new habit:
-* to put virtual on the '=' operator..
+f.
+1. make "=opertator" and Copy-Ctor as protected.
+2. if i want to give the option to use them(so cant do it protected) so use
+Clone() function.
 ====================== End Question 42 =====================
 */
 
@@ -2435,7 +2433,7 @@ void Question43(void)
 
 /*
 a. in wich situations can the function be staticlyy bound(where the compiler
-knows at tompile time wich function should be called):
+knows at compile time wich function should be called):
 * in both first call to methond(from a and a1) "MyClass a; Base a1; a.method();
 a1.method();" it will do it compile time, becuase its not a pointer or refernce.
 
@@ -2453,7 +2451,10 @@ b. what does it mean for inline:
 * i most put inline the options that can decided in compile time(option 1 or 3
 in the "*" in a).
 
-c. ???(ask mimir)
+c. Dtors becuase alot of time call them explicit.
+
+d. can make static function virtual?
+A: no, becuase he dont get "this" parameter so cant work with it.
 ====================== End Question 43 =====================
 */
 
@@ -2597,4 +2598,22 @@ d.
 ====================== End Question 46 =====================
 */
 
+/*
+====================== Start Question 47 =====================
+
+a. what dies a sring class not have a virtual Dtor:
+
+b.
+Q: what is a Clone() function used for:
+A:
+
+Q: how is it implemented(Note: single line!), resarch it:
+A: call Copy Ctor.
+
+Q: what will return Clone():
+A: read about it.
+
+
+====================== End Question 46 =====================
+*/
 int main() { Question45(); }
