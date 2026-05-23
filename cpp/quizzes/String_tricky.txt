@@ -1,0 +1,50 @@
+class String
+{
+	public:
+	String& String() throw(bad_alloc); // not explicit on perpse
+	String& String(const char* str) throw(bad_alloc); // not explicit on perpse
+	String& String(const String& other) throw(bad_alloc); // not explicit on perpse
+	
+	String& operator=(const char* str);
+	String& operator=(const String& other);
+	String& operator=(const char str);
+	
+	private:
+	const int stringBuffer = 64;            
+	char* str;
+}
+
+String::String& String::String()
+{
+	str = new char[stringBuffer];
+	str[0] = 'A';
+	str[1] = 'B';
+	str[2] = 'C';
+	
+	return *this;
+}
+
+String::String& String::String(const char* str)
+{
+	this->str = strdup(str);
+	
+	return *this;
+}
+
+String::String& String::String(const String& other)
+{
+	return this->String(other.str);
+}
+
+String::String& String::operator=(const char* str)
+{
+	strcpy(this->str, str);
+	
+	return *this;
+}
+
+String::String& String::operator=(const String& other)
+{
+	
+}
+
