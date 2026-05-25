@@ -55,7 +55,7 @@ ssize_t SendUDPMessage(int sockfd, const struct sockaddr_in* dest_addr,
 ssize_t ReceiveUDPMessage(int sockfd, struct sockaddr_in* src_addr,
                           char* buffer, size_t buffer_size)
 {
-    socklen_t len = sizeof(*src_addr);
+    socklen_t len = sizeof(struct sockaddr);
 
     assert(NULL != src_addr);
     assert(NULL != buffer);

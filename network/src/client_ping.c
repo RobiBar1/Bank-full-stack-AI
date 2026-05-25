@@ -1,6 +1,6 @@
 /*
 Writer:  Robi
-Checker: ?
+Checker: No checkers
 Date:    24.05.2026
 
 comments:
@@ -40,7 +40,7 @@ int ActiveUDP(void)
         return 1;
     }
 
-    SetupClientAddress(&server_addr, LOCAL_ADRESS_LALA, PORT);
+    SetupClientAddress(&server_addr, LOCAL_ADRESS, PORT);
     for (; i < 5; ++i)
     {
         printf("Sending: %s\n", msg);
@@ -160,9 +160,9 @@ int ActiveUDPBrodcast(void)
 
 int main()
 {
-    /*ActiveUDP();
+    ActiveUDP();
+    /*ActiveTCP();
     ActiveUDPBrodcast();*/
-    ActiveTCP();
 
     return 0;
 }

@@ -1,11 +1,13 @@
 /*
 Writer:  Robi
-Checker: ?
+Checker: No checkers
 Date:    24.05.2026
 
 comments:
-gd -I include/ src/server_pong.c src/udp_lib.c -o pong
 gd -I include/ src/client_ping.c src/udp_lib.c -o ping
+
+gd -I include/ src/server_pong.c src/udp_tcp_lib.c  -o pong
+
 
 then execute pong first.
 */
@@ -13,6 +15,7 @@ then execute pong first.
 #include <assert.h>  /* assert */
 #include <pthread.h> /* pthread_create */
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 #include "udp_tcp_lib.h"
@@ -48,11 +51,12 @@ int ActiveUDP(void)
         return 1;
     }
 
-    printf("Pong program listening on port %d\n", PORT);
     while (i++ < NUM_OF_MSG_CAN_GET)
     {
+        printf("hey11\n");
         bytes_received =
             ReceiveUDPMessage(sockfd, &client_addr, buffer, BUFFER_SIZE);
+        printf("hey\n");
         if (0 < bytes_received)
         {
             printf("Received: %s\n", buffer);
@@ -210,9 +214,8 @@ int ActiveTCPThreads(void)
 
 int main()
 {
-    /*ActiveUDP();
-    ActiveTCP();*/
-    ActiveTCPThreads();
-
+    ActiveUDP();
+    /*ActiveTCP();
+    ActiveTCPThreads();*/
     return 0;
 }
