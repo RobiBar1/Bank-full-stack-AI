@@ -31,32 +31,3 @@ c.
 d. yes i can solve it without change the code in Base:
 1. do what i mention in c2.
 2. in main after the line "Base *pb = new Derived;" add "Derived *pb1 = pb;" then change the line "delete pb" to "delete pb1".
-
-
-
-
-
-
-
-
-
-UDPHandle(int fd_udp, struct sockaddr* their_addr)
-{
-    if (-1 == (numbytes = recvfrom(
-                                   fd_udp, rec_buf, BUFFER_SIZE - 1, 0,
-                                   (struct sockaddr*)&their_addr, &len)))
-                    {
-                        perror("recvfrom");
-                        exit(1);
-                    }
-
-                    rec_buf[numbytes] = '\0';
-                    printf("%s\n", rec_buf);
-
-                    if (-1 == sendto(fd_udp, "pong", 4, 0,
-                                     (struct sockaddr*)&their_addr, len))
-                    {
-                        perror("sendto");
-                        exit(1);
-                    }
-}
