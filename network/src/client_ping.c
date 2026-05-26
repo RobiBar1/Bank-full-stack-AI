@@ -124,13 +124,18 @@ static int ConfigForBroadcast(struct sockaddr_in* brodcast, int sockfd)
         return 1;
     }
 
+    sleep(1);
+
     return 0;
 }
 
 int ActiveUDPBrodcast(void)
 {
+    struct sockaddr_in client_adr = {0};
     struct sockaddr_in brodcast = {0};
-    char msg[] = "Robi say Hey";
+    char buffer[BUFFER_SIZE] = {0};
+    int bytes_received = 0;
+    char msg[] = "ping";
     int sockfd = 0;
     int i = 0;
 
@@ -150,6 +155,13 @@ int ActiveUDPBrodcast(void)
         printf("Sending: %s\n", msg);
         SendUDPMessage(sockfd, &brodcast, msg);
 
+        bytes_received =
+            ReceiveUDPMessage(sockfd, &client_adr, buffer, BUFFER_SIZE);
+        if (bytes_received > 0)
+        {
+            printf("Received: %s\n", buffer);
+        }
+
         sleep(1);
     }
 
@@ -160,9 +172,9 @@ int ActiveUDPBrodcast(void)
 
 int main()
 {
-    ActiveUDP();
-    /*ActiveTCP();
-    ActiveUDPBrodcast();*/
+    /*ActiveUDP();
+    ActiveTCP();*/
+    ActiveUDPBrodcast();
 
     return 0;
 }
