@@ -12,8 +12,8 @@ namespace ilrd
 template <typename T> class ScopeLock
 {
   public:
-    ScopeLock(const T& lock);
-    ~ScopeLock() throw();
+    ScopeLock(T& lock);
+    ~ScopeLock() noexcept;
 
   private:
     ScopeLock(ScopeLock& other);
@@ -22,12 +22,21 @@ template <typename T> class ScopeLock
     T& m_lock;
 };
 
-template <typename T> ScopeLock<T>::ScopeLock(const T& lock) : m_lock(lock)
+template <typename T> ScopeLock<T>::ScopeLock(T& lock) : m_lock(lock)
 {
-    m_lock.Lock();
+    m_lock.lock();
 }
 
-template <typename T> ScopeLock<T>::~ScopeLock() throw() { m_lock.UnLock(); }
+template <typename T> ScopeLock<T>::~ScopeLock() noexcept
+{
+    try
+    {
+        m_lock.unlock();
+    }
+    catch (...)
+    {
+    }
+}
 
 } // namespace ilrd
 
