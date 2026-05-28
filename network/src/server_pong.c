@@ -25,6 +25,9 @@ then execute pong first.
 #define BUFFER_SIZE 1024
 #define PORT 8080
 #define NUM_OF_THREADS 4
+#define INPUT1 "ping"
+#define INPUT2 "quit"
+#define OUTPUT1 "pong"
 
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
@@ -133,7 +136,7 @@ int ActiveTCP(void)
     return 0;
 }
 
-void* ThreadFunction(void* param)
+void* DoTcpRoutine(void* param)
 {
     char buffer[BUFFER_SIZE] = {0};
     ssize_t bytes_received = 0;
@@ -199,7 +202,7 @@ int ActiveTCPThreads(void)
         socket_fd_arr[i] = AcceptTCPConnection(server_sockfd, &client_addr);
         printf("Client connected %d!\n", client_sockfd);
 
-        pthread_create(&(thread_id[i]), NULL, ThreadFunction,
+        pthread_create(&(thread_id[i]), NULL, DoTcpRoutine,
                        (void*)(&(socket_fd_arr[i])));
     }
 
@@ -245,7 +248,7 @@ static int InitBigServer(int* fd_tcp, int* fd_udp, struct sockaddr* server_addr,
 
     FD_SET(*fd_tcp, master);
     FD_SET(*fd_udp, master);
-    FD_SET(0, master);
+    FD_SET(STDIN_FILENO, master);
 
     *max_fd = MAX(*fd_tcp, *fd_udp) + 1;
 
@@ -255,18 +258,15 @@ static int InitBigServer(int* fd_tcp, int* fd_udp, struct sockaddr* server_addr,
 static void STDInHandle(int max_fd)
 {
     char rec_buf[BUFFER_SIZE] = {0};
-    char* input1 = "ping";
-    char* input2 = "quit";
-    char* output1 = "pong";
     int i = 0;
 
     read(0, rec_buf, BUFFER_SIZE);
 
-    if (0 == memcmp(rec_buf, input1, 4))
+    if (0 == memcmp(rec_buf, INPUT1, 4))
     {
-        printf("%s\n", output1);
+        printf("%s\n", OUTPUT1);
     }
-    else if (0 == memcmp(rec_buf, input2, 4))
+    else if (0 == memcmp(rec_buf, INPUT2, 4))
     {
         for (i = 0; i < max_fd; ++i)
         {
@@ -298,7 +298,7 @@ static void TCPAccept(int new_fd, int fd_tcp, struct sockaddr* their_addr,
 static void UDPHandle(int fd_udp, struct sockaddr* their_addr)
 {
     char rec_buf[BUFFER_SIZE] = {0};
-    char* output1 = "pong";
+    char* OUTPUT1 = "pong";
     socklen_t len = 0;
     int numbytes = 0;
 
@@ -313,7 +313,7 @@ static void UDPHandle(int fd_udp, struct sockaddr* their_addr)
     rec_buf[numbytes] = '\0';
     printf("%s\n", rec_buf);
 
-    if (-1 == sendto(fd_udp, output1, 4, 0, their_addr, len))
+    if (-1 == sendto(fd_udp, OUTPUT1, 4, 0, their_addr, len))
     {
         perror("sendto\n");
         exit(1);
@@ -323,7 +323,7 @@ static void UDPHandle(int fd_udp, struct sockaddr* their_addr)
 static void TCPHandle(int i, fd_set* master)
 {
     char rec_buf[BUFFER_SIZE] = {0};
-    char* output1 = "pong";
+    char* OUTPUT1 = "pong";
     int numbytes = 0;
 
     numbytes = recv(i, rec_buf, BUFFER_SIZE - 1, 0);
@@ -338,9 +338,9 @@ static void TCPHandle(int i, fd_set* master)
         rec_buf[numbytes] = 0;
         printf("%s\n", rec_buf);
 
-        if (-1 == send(i, output1, sizeof(output1), 0))
+        if (-1 == send(i, OUTPUT1, sizeof(OUTPUT1), 0))
         {
-            perror(output1);
+            perror(OUTPUT1);
         }
     }
 }
