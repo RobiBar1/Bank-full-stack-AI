@@ -1,13 +1,13 @@
 /*
 Writer:  Robi
-Checker: No checkers
+Checker: Eden
 Date:    24.05.2026
 
 comments:
 for active UDP do on terminal:
 "
-gd -I include/ src/server_pong.c src/udp_lib.c -o pong
-gd -I include/ src/client_ping.c src/udp_lib.c -o ping
+gd -I include/ src/server_pong.c src/udp_tcp_lib.c -o pong
+gd -I include/ src/client_ping.c src/udp_tcp_lib.c -o ping
 "
 then execute pong first.
 */
@@ -22,8 +22,8 @@ then execute pong first.
 #define PORT 8080
 #define BUFFER_SIZE 1024
 #define LOCAL_ADRESS "127.0.0.1"
-#define LOCAL_ADRESS_LALA "10.10.1.170"
 #define LOCAL_ADRESS_BROADCAST "255.255.255.255"
+#define NUM_OF_MSG_TO_SNG 5
 
 int ActiveUDP(void)
 {
@@ -41,7 +41,7 @@ int ActiveUDP(void)
     }
 
     SetupClientAddress(&server_addr, LOCAL_ADRESS, PORT);
-    for (; i < 5; ++i)
+    for (; i < NUM_OF_MSG_TO_SNG; ++i)
     {
         printf("Sending: %s\n", msg);
         SendUDPMessage(sockfd, &server_addr, msg);
@@ -76,7 +76,7 @@ int ActiveTCP(void)
         return 1;
     }
 
-    SetupClientAddress(&server_addr, "127.0.0.1", PORT);
+    SetupClientAddress(&server_addr, LOCAL_ADRESS, PORT);
     if (0 >
         connect(sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr)))
     {
@@ -87,7 +87,7 @@ int ActiveTCP(void)
     }
 
     printf("Connected to TCP Pong server.\n");
-    for (; i < 5; ++i)
+    for (; i < NUM_OF_MSG_TO_SNG; ++i)
     {
         printf("Sending: %s\n", msg);
         SendTCPMessage(sockfd, msg);
@@ -124,13 +124,18 @@ static int ConfigForBroadcast(struct sockaddr_in* brodcast, int sockfd)
         return 1;
     }
 
+    sleep(1);
+
     return 0;
 }
 
 int ActiveUDPBrodcast(void)
 {
+    struct sockaddr_in client_adr = {0};
     struct sockaddr_in brodcast = {0};
-    char msg[] = "Robi say Hey";
+    char buffer[BUFFER_SIZE] = {0};
+    int bytes_received = 0;
+    char msg[] = "ping";
     int sockfd = 0;
     int i = 0;
 
@@ -145,10 +150,17 @@ int ActiveUDPBrodcast(void)
         return 1;
     }
 
-    for (; i < 5; ++i)
+    for (; i < NUM_OF_MSG_TO_SNG; ++i)
     {
         printf("Sending: %s\n", msg);
         SendUDPMessage(sockfd, &brodcast, msg);
+
+        bytes_received =
+            ReceiveUDPMessage(sockfd, &client_adr, buffer, BUFFER_SIZE);
+        if (bytes_received > 0)
+        {
+            printf("Received: %s\n", buffer);
+        }
 
         sleep(1);
     }
@@ -160,9 +172,9 @@ int ActiveUDPBrodcast(void)
 
 int main()
 {
-    ActiveUDP();
-    /*ActiveTCP();
-    ActiveUDPBrodcast();*/
+    /*ActiveUDP();
+    ActiveTCP();*/
+    ActiveUDPBrodcast();
 
     return 0;
 }

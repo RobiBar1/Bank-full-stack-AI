@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <unistd.h> /* close */
 
 enum Protocol
 {
@@ -31,7 +32,7 @@ int CreateSocket(enum Protocol pro);
  * socketfd - socket file discriptor to close.
  */
 
-void CloseSocket(int socketfd);
+inline void CloseSocket(int socketfd) { close(socketfd); }
 
 /*
  * @details: Config sockaddr_in structure (ipv4/6, port, big/little endian)for a
