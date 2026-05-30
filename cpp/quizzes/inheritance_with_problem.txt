@@ -1,0 +1,33 @@
+a.
+Base ctor
+Base ctor
+Derived ctor
+
+Base cctor
+Base print
+Base dtor
+
+Base cctor
+Base print
+Base dtor
+
+Derived print
+
+Base dtor
+Base dtor
+
+b. the problems are:
+1. Base dtor is not virtual(its problem becuase he isnt leaf -> derived inhirit from him) there for in "delete pb" in main it will call dtor of Base.
+
+2. the operator= and copy ctor in base is public(by defult becuase its struct) so may be object slice(if was there parameters).
+
+3. the operator= and copy ctor in both classes have no name so cant reach him if want to.
+
+c.
+1. make the Dtor of Base virtual.
+2. make operator= and copy ctor in base protected.
+3. give name to the parameters.
+
+d. yes i can solve it without change the code in Base:
+1. do what i mention in c2.
+2. in main after the line "Base *pb = new Derived;" add "Derived *pb1 = pb;" then change the line "delete pb" to "delete pb1".

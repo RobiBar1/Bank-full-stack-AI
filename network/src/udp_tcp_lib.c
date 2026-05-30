@@ -18,8 +18,6 @@ int CreateSocket(enum Protocol pro)
     return sockfd;
 }
 
-void CloseSocket(int socketfd) { close(socketfd); }
-
 void SetupServerAddress(struct sockaddr_in* addr, int port)
 {
     assert(NULL != addr);
