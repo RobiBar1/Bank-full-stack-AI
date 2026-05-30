@@ -321,7 +321,7 @@ void Z_SpecialTaxiDisplay(SpecialTaxi_t* const this) /* virtual */
 }
 
 /***************************************************************************/
-/* =========================== Non-Class Functions ======================= */
+/* ========================== Non-Class Functions ======================== */
 /***************************************************************************/
 void Z_PrintInfoGetPublicTransport(PublicTransport_t* const a)
 {
