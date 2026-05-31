@@ -1,0 +1,51 @@
+classes:
+
+- interface "vichele"
+@@parameters:
+* weels_amount
+* type
+* ID
+
+- class "motorcycles" implement vichele
+- class "car" implement vichele
+- class "bus" inhirit car
+
+class "spot"
+@@parameters:
+* max_vichele_can_contain
+* is_occupy
+* my_num_in_level
+@@functions:
+* void    EnterVichele(Vichele)
+* Vichele OutVichele()
+
+class "level"
+@@parameters:
+* my_level_num
+* total_spots
+* available_spots
+* is_full
+
+- class "house_parking" have in him levels
+@@parameters:
+* total_levels
+* is_full
+* vicheles_ID_in_me_right_now
+@@functions:
+* void    ReciveVichele(Vichele)
+* void    RelaseVichele()
+
+- class "house_parking_manger"
+@@parameters:
+* house_parking
+* price_per_min
+* time_right_now
+@@functions:
+* details_paper VicheleEnter(Vichele)
+* bool 			VicheleCheckIfPay(details_paper)
+* bool 			VichelePay(details_paper)
+* details_paper VicheleRealse(Vichele)
+
+
+
+
