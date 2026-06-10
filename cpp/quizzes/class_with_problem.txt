@@ -1,0 +1,70 @@
+dsf
+
+1.
+a. an arr.
+b. 
+spacename ilrd
+{
+
+class Arr
+{
+public:
+	Arr();
+	Arr(const Arr& other);
+	
+	void set(int index);
+	int get(void);
+	
+private:
+	int m_arr[100];
+	int m_idx;
+	
+} // end Arr class
+
+Arr::Arr() : m_idx(0)
+{
+	std::memset(m_arr, sizeof(int), 0);
+}
+
+Arr::Arr(const Arr& other) : m_idx(0)
+{
+	std::memcpy(m_arr, other.m_arr, sizeof(int) * 100);
+}
+
+void Arr::set(int val)
+{	
+	m_arr[m_idx++] = val;
+	m_idx = m_idx < 99 ? m_idx + 1: m_idx;
+}
+
+int Arr::get(void)
+{
+	m_arr[m_idx] = val;
+	m_idx = m_idx > 0 ? m_idx - 1: m_idx;
+}
+} // end ilrd namespace
+
+c. No, becuase the rule of three -> shellow copy -> may be dangaling pointer.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

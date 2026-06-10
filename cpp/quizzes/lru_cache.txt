@@ -1,0 +1,62 @@
+namespace ilrd
+{
+
+<typename T>
+class LRU<T,T>
+{
+public:
+	LRU<>(std::size_t capacaity);
+	
+	void Put(T key, T value);
+	T Get(T key);
+
+private:
+	std::size_t m_cap;
+	Map<T,T> m_map;
+}
+
+<typename T>
+LRU<T,T>::LRU(std::size_t capacaity) : m_cap(capacaity), m_map(new Map<T,T>(capacaity))
+{
+}
+
+<typename T>
+LRU<T,T>::Put(T key, T value)
+{
+	if (!m_map.Find())
+	{
+		m_map.Add(key, value);
+	}
+}
+
+<typename T>
+T LRU<T,T>::Get(T key)
+{
+	return m_map.Get(key);
+}
+
+} // end ilrd
+
+/*
+
+psodo how the map put beihnd the scene:
+
+***Ctor(std::size_t capacity, hash_func func):
+1. will init arr with type Cellvalue in size of capacity and value of not_exist in all cells.
+2. class Cellvalue will be with:
+	*	key from type T
+	*	val from type T
+3. will init private method Hash(T key).
+
+***method Find(T key):
+1. index = Hash(key);
+2. return (!(is_non_exists_valeue == arr[(Hash(key)];
+
+Add(T key, T val):
+1. if Find(key) -> return.
+2. else ->
+	* arr[Hash(key)] = val;
+
+Get(T key):
+1. return (arr[Hash(key)]); // if not exist
+*/
