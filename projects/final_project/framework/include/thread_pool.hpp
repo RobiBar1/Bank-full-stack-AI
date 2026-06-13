@@ -10,11 +10,7 @@
 #include "priority_queue.hpp"
 #include "waitable_queue.hpp"
 
-#if __cplusplus >= 201103L
-// noexcept is defined, do nothing
-#else
 #define noexcept throw()
-#endif // #if cplusplus >= 201103L
 
 namespace ilrd
 {
@@ -34,9 +30,6 @@ class ThreadPool
       public:
         virtual void Execute() const = 0;
         virtual ~IThreadPoolTask() = default;
-
-      private:
-        Priority m_priority;
     };
 
     ThreadPool(
@@ -49,6 +42,8 @@ class ThreadPool
 
     void Add(const std::shared_ptr<IThreadPoolTask>& task,
              Priority priority = MEDIUM);
+    void Add(std::function<void(void)> task_func, Priority priority = MEDIUM);
+
     void Run();
     void Stop();  // finish all queued tasks and stop
     void Pause(); // finish all running tasks and stop (dont empty queue)
@@ -57,56 +52,77 @@ class ThreadPool
   private:
     static const Priority VERY_LOW = static_cast<Priority>(LOW - 1);
     static const Priority VERY_HIGH = static_cast<Priority>(HIGH + 1);
+    using TaskPair = std::pair<std::shared_ptr<IThreadPoolTask>, Priority>;
 
     class WorkerThread
     {
       public:
-        WorkerThread(ThreadPool& thread_pool);
+        WorkerThread(ThreadPool* tp);
+        WorkerThread(WorkerThread&& other);
         ~WorkerThread();
-        size_t GetTid();
+
+        std::thread::id Getid() const;
 
       private:
-        ThreadPool& m_thread_pool;
+        static void ThreadJob(ThreadPool* tp);
         std::thread m_thread;
-        bool m_isTerminated = false:
-        // TODO: add private members
-    };
+    }; // end WorkerThread
+
+    class BadAppleTask : public ThreadPool::IThreadPoolTask
+    {
+      public:
+        BadAppleTask(ThreadPool& tp);
+        ~BadAppleTask() = default;
+
+        void Execute() const;
+
+      private:
+        ThreadPool& m_tp;
+    }; // end BadAppleTask
+
+    void CreateThreads(std::size_t numThreads);
+    void AddBadApples(std::size_t numBadApples, Priority prio);
 
     enum class Status
     {
         RUNNING,
         PAUSED,
         STOPPED,
-    };
+    }; // end Status
 
-    // class StopTask : public IThreadPoolTask
-    // class KillTask : public IThreadPoolTask
-    using TaskPair = std::pair<std::shared_ptr<IThreadPoolTask>, Priority>;
-    WaitableQueue<TaskPair, PriorityQueue<TaskPair>> m_queue;
-    std::unordered_map<std::size_t, WorkerThread> m_workerThreads;
+    class ComparePriority
+    {
+      public:
+        bool operator()(const TaskPair& left, const TaskPair& right) const;
+    }; // end ComparePriority
+
+    WaitableQueue<TaskPair, PriorityQueue<TaskPair, std::vector<TaskPair>,
+                                          ComparePriority>>
+        m_queue;
+    std::unordered_map<std::thread::id, WorkerThread> m_workerThreads;
     std::condition_variable_any m_condRun;
     std::mutex m_mtx;
-    enum class Status m_status = PAUSED;
+    enum Status m_status = Status::PAUSED;
+    std::size_t m_numThreadOn = 0;
 
 }; // end ThreadPool
 
-class FuncTask : public ThreadPool::IThreadPoolTask
+class FuncTask : public ThreadPool ::IThreadPoolTask
 {
   public:
     FuncTask(std::function<void(void)> taskFunc);
     ~FuncTask() = default;
     void Execute() const;
-    inline operator IThreadPoolTask*();
-    inline operator std::shared_ptr<IThreadPoolTask>(); // new conversion
-  private:
-    std::function<void(void)> m_task_func;
-};
 
-class FutureFunc : public ThreadPool::IThreadPoolTask
-{
-  public:
-    std::future<std::size_t> Get(); // returns future obj
-};
+  private:
+    std::function<void(void)> m_taskFunc;
+}; // end FuncTask
+
+// class FutureFunc : public ThreadPool::IThreadPoolTask
+// {
+//   public:
+//     std::future<std::size_t> Get(); // returns future obj
+// };
 
 } // namespace ilrd
 
