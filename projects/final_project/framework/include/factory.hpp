@@ -43,8 +43,8 @@ inline void Factory<Key, Base, Types...>::Add(
 }
 
 template <class Key, class Base, class... Types>
-std::shared_ptr<Base> Factory<Key, Base, Types...>::Create(const Key& key,
-                                                           Types... args)
+inline std::shared_ptr<Base>
+Factory<Key, Base, Types...>::Create(const Key& key, Types... args)
 {
     auto item = m_creators.find(key);
 
