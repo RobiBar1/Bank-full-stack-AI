@@ -52,13 +52,19 @@ void ThreadPool::AddBadApples(std::size_t numThreads, Priority priority)
 
 void ThreadPool::Run()
 {
-    m_status = Status::RUNNING;
+    {
+        std::lock_guard<std::mutex> lock(m_mtx);
+        m_status = Status::RUNNING;
+    }
     m_condRun.notify_all();
 }
 
 void ThreadPool::Stop()
 {
-    m_status = Status::STOPPED;
+    {
+        std::lock_guard<std::mutex> lock(m_mtx);
+        m_status = Status::STOPPED;
+    }
     AddBadApples(m_numThreadOn, VERY_LOW);
     m_condRun.notify_all();
 }
@@ -87,9 +93,11 @@ void ThreadPool::CreateThreads(std::size_t numThreads)
 
 void ThreadPool::Pause()
 {
-    assert(m_status != ThreadPool::Status::STOPPED);
-
-    m_status = Status::PAUSED;
+    {
+        std::lock_guard<std::mutex> lock(m_mtx);
+        assert(m_status != ThreadPool::Status::STOPPED);
+        m_status = Status::PAUSED;
+    }
 
     auto mock_func = []() {};
     for (std::size_t i = 0; i < m_numThreadOn; ++i)
