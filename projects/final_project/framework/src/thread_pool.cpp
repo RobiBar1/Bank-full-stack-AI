@@ -104,6 +104,8 @@ void ThreadPool::Pause()
     {
         Add(std::make_shared<FuncTask>(mock_func), VERY_HIGH);
     }
+
+    m_condRun.notify_all();
 }
 
 void ThreadPool::SetNumOfThread(std::size_t numThreads)
