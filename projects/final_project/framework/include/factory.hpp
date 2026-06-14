@@ -46,7 +46,10 @@ template <class Key, class Base, class... Types>
 inline std::shared_ptr<Base>
 Factory<Key, Base, Types...>::Create(const Key& key, Types... args)
 {
-    return m_creators.at(key);
+    std::function<std::shared_ptr<Base>(Types... args)> func =
+        m_creators.at(key);
+
+    return func(args...);
 }
 
 } // namespace ilrd
