@@ -32,12 +32,20 @@ ThreadPool::~ThreadPool() { Stop(); }
 void ThreadPool::Add(const std::shared_ptr<IThreadPoolTask>& task,
                      Priority priority)
 {
-    m_queue.Push(TaskPair(task, priority));
+    std::lock_guard<std::mutex> lock(m_mtx);
+    if (m_status != Status::STOPPED)
+    {
+        m_queue.Push(TaskPair(task, priority));
+    }
 }
 
 void ThreadPool::Add(std::function<void(void)> task_func, Priority priority)
 {
-    m_queue.Push(TaskPair(std::make_shared<FuncTask>(task_func), priority));
+    std::lock_guard<std::mutex> lock(m_mtx);
+    if (m_status != Status::STOPPED)
+    {
+        m_queue.Push(TaskPair(std::make_shared<FuncTask>(task_func), priority));
+    }
 }
 
 void ThreadPool::AddBadApples(std::size_t numThreads, Priority priority)
@@ -61,11 +69,11 @@ void ThreadPool::Run()
 
 void ThreadPool::Stop()
 {
+    AddBadApples(m_numThreadOn, VERY_LOW);
     {
         std::lock_guard<std::mutex> lock(m_mtx);
         m_status = Status::STOPPED;
     }
-    AddBadApples(m_numThreadOn, VERY_LOW);
     m_condRun.notify_all();
 }
 
