@@ -46,9 +46,7 @@ template <class Key, class Base, class... Types>
 inline std::shared_ptr<Base>
 Factory<Key, Base, Types...>::Create(const Key& key, Types... args)
 {
-    auto item = m_creators.find(key);
-
-    return (item == m_creators.end() ? nullptr : item->second(args...));
+    return m_creators.at(key);
 }
 
 } // namespace ilrd
