@@ -273,7 +273,7 @@ void Z_TaxiDisplay(Taxi_t* const this) /* virtual */
 }
 
 /***************************************************************************/
-/* ====================== SpecialTaxi & SpecialTaxiVirtual_t ============= */
+/* ===================== SpecialTaxi & SpecialTaxiVirtual_t ============== */
 /***************************************************************************/
 typedef struct SpecialTaxi SpecialTaxi_t;
 
@@ -321,7 +321,7 @@ void Z_SpecialTaxiDisplay(SpecialTaxi_t* const this) /* virtual */
 }
 
 /***************************************************************************/
-/* =========================== Non-Class Functions ======================= */
+/* ========================== Non-Class Functions ======================== */
 /***************************************************************************/
 void Z_PrintInfoGetPublicTransport(PublicTransport_t* const a)
 {
