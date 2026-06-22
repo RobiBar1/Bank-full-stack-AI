@@ -1,0 +1,52 @@
+/*
+comments: i never implement our singleton & handlton yet, so only from theroy i remember about singletone..
+*/
+
+
+namespace ilrd
+{
+	typename<class T, ... args>
+	class Multinon
+	{
+		public:
+			
+			~Multinon();
+			static T* GetInstance();
+					
+			Multinon(Multinon& other) = delete;
+			operator=(Multinon& other) = delete;
+		
+		
+		private:
+			Multinon();
+			
+			static T* m_item;
+			
+	} // end Multinon
+	
+	typename<class T, ... args>
+	Multinon<T>::Multinon() : m_item(NULL)
+	{
+	}
+	
+	typename<class T, ... args>
+	Multinon<T>::~Multinon()
+	{
+		if (NULL != m_item)
+		{
+			T::~T();
+		}
+		
+		m_item = NULL;
+	}
+	
+	typename<class T, ... args>
+	T* Multinon<T>::GetInstance(args...)
+	{
+		return m_item == NULL ? T::T(args...) : m_item;
+	}
+	
+	
+}// end ilrd
+
+
