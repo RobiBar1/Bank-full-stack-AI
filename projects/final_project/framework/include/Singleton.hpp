@@ -60,7 +60,7 @@ T* Singleton<T>::GetInstance(Types&&... args)
     if (nullptr == sin)
     {
         std::lock_guard<std::mutex> lock(m_mtx);
-        sin = m_instance.load(std::memory_order_acquire);
+        sin = m_instance.load(std::memory_order_relaxed);
         if (nullptr == sin)
         {
             m_instance.store(new T(args...), std::memory_order_release);
