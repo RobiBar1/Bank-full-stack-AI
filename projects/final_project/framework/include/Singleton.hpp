@@ -27,16 +27,16 @@ template <class T> class Singleton
     Singleton& operator=(const Singleton& other) = delete;
     Singleton(Singleton&& other) = delete;
     Singleton& operator=(Singleton&& other) = delete;
-    ~Singleton() = default;
+    ~Singleton() = delete;
 
-    template <class... Types> static T* GetInstance(Types... args);
+    template <class... Types> static T* GetInstance(Types&& ...args);
 
   private:
     class SingletonDestroyer
     {
       public:
         SingletonDestroyer() = default;
-        ~SingletonDestroyer() noexcept;
+        ~SingletonDestroyer();
     };
 
     static std::atomic<T*> m_instance;
@@ -54,30 +54,28 @@ typename Singleton<T>::SingletonDestroyer Singleton<T>::m_destroyer;
 
 template <class T>
 template <class... Types>
-T* Singleton<T>::GetInstance(Types... args)
+T* Singleton<T>::GetInstance(Types&& ...args)
 {
-    if (nullptr == m_instance)
+    T* sin = m_instance.load(std::memory_order_acquire);
+
+    if (nullptr == sin)
     {
         std::lock_guard<std::mutex> lock(m_mtx);
-
-        if (nullptr == m_instance)
+        sin = m_instance.load(std::memory_order_acquire);
+        if (nullptr == sin)
         {
-            m_instance = new T(args...);
+            m_instance.store(new T(args...), std::memory_order_release);
         }
     }
 
     return m_instance;
 }
 
-template <class T> void Singleton<T>::SingletonDestroyer::Init()
-{
-    // empty on purpose
-}
-
 template <class T>
-Singleton<T>::SingletonDestroyer::~SingletonDestroyer() noexcept
+Singleton<T>::SingletonDestroyer::~SingletonDestroyer() 
 {
     delete m_instance;
+    m_instance = nullptr;
 }
 
 } // namespace ilrd
