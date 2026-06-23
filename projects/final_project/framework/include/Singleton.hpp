@@ -1,7 +1,7 @@
 /**
 Writer:  Robi
 Checker: Chen
-Date:    15/06/2026
+Date:    23/06/2026
 **/
 #ifndef __ILRD_RD176_SINGLETON__
 #define __ILRD_RD176_SINGLETON__
@@ -29,7 +29,7 @@ template <class T> class Singleton
     Singleton& operator=(Singleton&& other) = delete;
     ~Singleton() = delete;
 
-    template <class... Types> static T* GetInstance(Types&& ...args);
+    template <class... Types> static T* GetInstance(Types&&... args);
 
   private:
     class SingletonDestroyer
@@ -54,8 +54,9 @@ typename Singleton<T>::SingletonDestroyer Singleton<T>::m_destroyer;
 
 template <class T>
 template <class... Types>
-T* Singleton<T>::GetInstance(Types&& ...args)
+T* Singleton<T>::GetInstance(Types&&... args)
 {
+
     T* sin = m_instance.load(std::memory_order_acquire);
 
     if (nullptr == sin)
@@ -71,8 +72,7 @@ T* Singleton<T>::GetInstance(Types&& ...args)
     return m_instance;
 }
 
-template <class T>
-Singleton<T>::SingletonDestroyer::~SingletonDestroyer() 
+template <class T> Singleton<T>::SingletonDestroyer::~SingletonDestroyer()
 {
     delete m_instance;
     m_instance = nullptr;
