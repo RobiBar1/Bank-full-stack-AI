@@ -1,10 +1,10 @@
 /**
 Writer:  Robi
-Checker: Chen
+Checker: ?
 Date:    23/06/2026
 **/
-#ifndef __ILRD_RD176_SINGLETON__
-#define __ILRD_RD176_SINGLETON__
+#ifndef __ILRD_RD176_Handleton__
+#define __ILRD_RD176_Handleton__
 
 #include <atomic>
 #include <iostream>
@@ -19,42 +19,48 @@ Date:    23/06/2026
 namespace ilrd
 {
 
-template <class T> class Singleton
+template <class T> class Handleton
 {
   public:
-    Singleton() = delete;
-    Singleton(const Singleton& other) = delete;
-    Singleton& operator=(const Singleton& other) = delete;
-    Singleton(Singleton&& other) = delete;
-    Singleton& operator=(Singleton&& other) = delete;
-    ~Singleton() = delete;
+    Handleton() = delete;
+    Handleton(const Handleton& other) = delete;
+    Handleton& operator=(const Handleton& other) = delete;
+    Handleton(Handleton&& other) = delete;
+    Handleton& operator=(Handleton&& other) = delete;
+    ~Handleton() = delete;
 
     template <class... Types> static T* GetInstance(Types&&... args);
 
   private:
-    class SingletonDestroyer
+    class HandletonDestroyer
     {
       public:
-        SingletonDestroyer() = default;
-        ~SingletonDestroyer();
+        HandletonDestroyer() = default;
+        ~HandletonDestroyer();
     };
 
     static std::atomic<T*> m_instance;
     static std::mutex m_mtx;
-    static SingletonDestroyer m_destroyer;
+    static HandletonDestroyer m_destroyer;
 
 }; // Singleton
 
-template <class T> std::atomic<T*> Singleton<T>::m_instance(nullptr);
+} // namespace ilrd
 
-template <class T> std::mutex Singleton<T>::m_mtx;
+#ifdef IMPLEMENTER_MODE
+
+namespace ilrd
+{
+template <class T> std::atomic<T*> Handleton<T>::m_instance(nullptr);
+
+template <class T> std::mutex Handleton<T>::m_mtx;
 
 template <class T>
-typename Singleton<T>::SingletonDestroyer Singleton<T>::m_destroyer;
+typename Handleton<T>::HandletonDestroyer Handleton<T>::m_destroyer;
 
 template <class T>
 template <class... Types>
-T* Singleton<T>::GetInstance(Types&&... args)
+T* Handleton<T>::GetInstance(Types&&... args)
 {
     T* sin = m_instance.load(std::memory_order_acquire);
     if (nullptr == sin)
@@ -71,7 +77,7 @@ T* Singleton<T>::GetInstance(Types&&... args)
     return m_instance;
 }
 
-template <class T> Singleton<T>::SingletonDestroyer::~SingletonDestroyer()
+template <class T> Handleton<T>::HandletonDestroyer::~HandletonDestroyer()
 {
     delete m_instance;
     m_instance = nullptr;
@@ -79,4 +85,6 @@ template <class T> Singleton<T>::SingletonDestroyer::~SingletonDestroyer()
 
 } // namespace ilrd
 
-#endif // __ILRD_RD176_SINGLETON__
+#endif // IMPLEMENTER_MODE
+
+#endif // __ILRD_RD176_Handleton__
