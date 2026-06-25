@@ -1,3 +1,9 @@
+/*
+Writer:  Robi
+Checker: Max
+Date:    25.06.2026
+*/
+
 #ifndef __ILRD_RD176_LOGGER__
 #define __ILRD_RD176_LOGGER__
 

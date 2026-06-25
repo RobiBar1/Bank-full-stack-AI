@@ -1,3 +1,9 @@
+/*
+Writer:  Robi
+Checker: Max
+Date:    25.06.2026
+*/
+
 #include <chrono>
 #include <ctime>
 #include <iomanip>
