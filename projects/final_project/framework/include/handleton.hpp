@@ -32,16 +32,10 @@ template <class T> class Handleton
     template <class... Types> static T* GetInstance(Types&&... args);
 
   private:
-    class HandletonDestroyer
-    {
-      public:
-        HandletonDestroyer() = default;
-        ~HandletonDestroyer();
-    };
+    static void CleanUp();
 
     static std::atomic<T*> m_instance;
     static std::mutex m_mtx;
-    static HandletonDestroyer m_destroyer;
 
 }; // Singleton
 
@@ -55,8 +49,11 @@ template <class T> std::atomic<T*> Handleton<T>::m_instance(nullptr);
 
 template <class T> std::mutex Handleton<T>::m_mtx;
 
-template <class T>
-typename Handleton<T>::HandletonDestroyer Handleton<T>::m_destroyer;
+template <class T> void Handleton<T>::CleanUp()
+{
+    delete m_instance;
+    m_instance = nullptr;
+}
 
 template <class T>
 template <class... Types>
@@ -71,16 +68,11 @@ T* Handleton<T>::GetInstance(Types&&... args)
         {
             m_instance.store(new T(std::forward<Types>(args)...),
                              std::memory_order_release);
+            std::atexit(CleanUp);
         }
     }
 
     return m_instance;
-}
-
-template <class T> Handleton<T>::HandletonDestroyer::~HandletonDestroyer()
-{
-    delete m_instance;
-    m_instance = nullptr;
 }
 
 } // namespace ilrd

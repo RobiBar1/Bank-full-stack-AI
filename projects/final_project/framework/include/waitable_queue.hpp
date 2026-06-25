@@ -78,7 +78,7 @@ bool WaitableQueue<T, Container>::Pop(T* outParam,
         std::chrono::system_clock::now() + timeout;
     std::unique_lock<std::timed_mutex> lock(m_mtx, std::defer_lock_t());
 
-    if (!lock.try_lock_until(timeout_time) &&
+    if (!lock.try_lock_until(timeout_time) ||
         !m_condNotEmpty.wait_until(lock, timeout_time,
                                    [this] { return !m_container.empty(); }))
     {

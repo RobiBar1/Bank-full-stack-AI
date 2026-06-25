@@ -2,6 +2,7 @@
 #include "handleton.hpp"
 #include <dlfcn.h>
 #include <iostream>
+#include <string>
 
 const std::string RESET = "\033[0m";
 const std::string RED = "\033[31m";
@@ -13,11 +14,14 @@ int main()
     Tester* t = Handleton<Tester>::GetInstance(10);
     std::cout << "main process singleton return address: " << t << std::endl;
 
-    void* handle = dlopen("bin/debug/libplugin2.so", RTLD_LAZY);
+    void* handle =
+        dlopen("/home/robi/git/projects/final_project/bin/debug/libplugin2.so",
+               RTLD_LAZY);
 
     typedef Tester* (*plugin_t)();
     plugin_t Handleton_plugin =
         reinterpret_cast<plugin_t>(dlsym(handle, "Handleton_plugin"));
+    // Handleton_plugin
 
     std::cout << "======================================================"
               << std::endl;
