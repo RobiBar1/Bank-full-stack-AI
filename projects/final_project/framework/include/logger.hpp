@@ -62,13 +62,12 @@ class Logger
     // TO DO: insert thread loop func (popps from waitable queue and prints)
 
     void PopFromQueueLog(void); // (independent thread is here in a loop till
-                                // m_loggerIsBeingDestroyed)
-    bool m_loggerIsBeingDestroyed;
+                                // see the stop string in msg)
 
     std::atomic<LogLevel> m_logLevel;
     std::fstream m_log_file;
-    std::thread m_thread;
     WaitableQueue<std::string> m_queue;
+    std::thread m_thread;
 }; // Logger
 
 inline void Logger::SetLevel(LogLevel logLevel) { m_logLevel = logLevel; }
