@@ -1,3 +1,9 @@
+/*
+Writer:  Robi
+Checker: Max
+Date:    25.06.2026
+*/
+
 #include <chrono>
 #include <ctime>
 #include <iomanip>
@@ -8,9 +14,10 @@
 
 namespace ilrd
 {
+static const std::string STOP_MSG = "";
+
 Logger::Logger(const std::string& filePath, LogLevel logLevel)
-    : m_loggerIsBeingDestroyed(false), m_logLevel(logLevel),
-      m_log_file(filePath, std::ios::out),
+    : m_logLevel(logLevel), m_log_file(filePath, std::ios::out),
       m_thread(&Logger::PopFromQueueLog, this)
 {
     if (!m_log_file.is_open())
@@ -29,7 +36,7 @@ std::string Logger::GetTimeString(void)
     localtime_r(&time_now, &local_tm);
 
     std::stringstream strStream;
-    strStream << std::put_time(&local_tm, "%Y::%m::%d::%H::%M::%S");
+    strStream << std::put_time(&local_tm, "%d%m%Y::%H::%M::%S");
 
     return strStream.str();
 }
@@ -56,21 +63,22 @@ void Logger::Log(const std::string& logMessage, // msg
 
 Logger::~Logger()
 {
-    m_loggerIsBeingDestroyed = true;
-    m_queue.Push("");
-    m_thread.join();
+    m_queue.Push(STOP_MSG);
+    if (m_thread.joinable())
+    {
+        m_thread.join();
+    }
+
     m_log_file.close();
 }
 
 void Logger::PopFromQueueLog(void) // from thread
 {
     std::string msg = "x";
-    while ("" != msg)
+    while (STOP_MSG != msg)
     {
         m_queue.Pop(&msg);
         m_log_file << msg;
-        m_log_file.flush();
-        (void)0;
     }
 }
 
