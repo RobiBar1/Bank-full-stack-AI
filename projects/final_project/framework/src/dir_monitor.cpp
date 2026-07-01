@@ -81,7 +81,7 @@ void DirMonitor::Work()
 
     char buf[BUFFER_SIZE]
         __attribute__((aligned(__alignof__(struct inotify_event)))) = {0};
-    int monitor_fd = inotify_init1(0); /*IN_NONBLOCK);*/
+    int monitor_fd = inotify_init1(IN_NONBLOCK);
     pollfd polledFd = {monitor_fd, POLLIN, 0};
     inotify_add_watch(monitor_fd, m_dirPath.c_str(),
                       IN_DELETE | IN_CLOSE_WRITE | IN_MOVED_FROM | IN_MOVED_TO);
