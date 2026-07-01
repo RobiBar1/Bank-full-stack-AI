@@ -1,0 +1,76 @@
+/*
+stl1 = [40,50], [70,80], [120,130]
+stl2 = [10,20], [30,35], [120,150]
+*/
+
+pseodo:
+
+void FindOverLap(std::size_t[][] stl1, std::size_t[][] stl2, std::size_t[][] out_param_arr)
+{
+	const size_t START = 0, END = 1
+	i, j = 0
+	1. while i < stl1.length do:
+	{
+		while j < stl2.length do:
+		{
+			if (stl1[i][START] > stl2[j][END]) :
+				// ++j
+			else if (stl1[i][END] < stl2[j][START]) :
+				break
+			else :
+				if (stl1[i][START] + d < stl1[i][END] && stl2[j][START] + d < stl2[j][END]) :
+					out_param_arr[0][START] = stl1[i][START]
+					out_param_arr[0][END] = stl1[i][START] + d]
+					
+					return out_param_arr
+			++j
+		}	
+		++i
+	}
+	
+	return out_param_arr
+}
+
+code c++98:
+void FindOverLap(std::size_t** stl1, std::size_t stl1_size, std::size_t** stl2 , std::size_t stl2_size, std::size_t** out_param_arr, std::size_t d)
+{
+	assert (NULL != stl1);
+	assert (NULL != stl2);
+	assert (NULL != out_param_arr);
+	
+	const std::size_t START = 0;
+	const std::size_t END = 1;
+	std::size_t i = 0;
+	std::size_t j = 0;
+	
+	while (i < stl1_size) // i = 2
+	{
+		while (j < stl2_size) // j = 2
+		{
+			if (stl1[i][START] > stl2[j][END])
+			{
+				//empty on perpse
+			}
+			else if (stl1[i][END] < stl2[j][START])
+			{
+				break
+			}
+			else
+			{
+				if (stl1[i][START] + d <= stl1[i][END] && stl2[j][START] + d <= stl2[j][END])
+				{
+					out_param_arr[0][START] = stl1[i][START];
+					out_param_arr[0][END] = stl1[i][START] + d];
+					
+					return out_param_arr;
+				}
+			}
+			
+			++j;
+		}	
+		
+		++i;
+	}
+	
+	return out_param_arr;
+}
