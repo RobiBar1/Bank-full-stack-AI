@@ -1,6 +1,12 @@
-#include <assert.h>      //  assert
+/*
+Writer:  Robi
+Checker: Maayan
+Date:    01.07.2026
+*/
+
+#include <assert.h>      // assert
 #include <logger.hpp>    // DEBUG_INFO
-#include <poll.h>        //
+#include <poll.h>        // poll
 #include <sys/inotify.h> // struct inotify_event
 #include <unistd.h>      // read
 

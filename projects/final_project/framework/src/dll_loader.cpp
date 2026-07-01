@@ -1,3 +1,9 @@
+/*
+Writer:  Robi
+Checker: Maayan
+Date:    01.07.2026
+*/
+
 #include <dlfcn.h> // dlopen
 #include <string>  // std::string
 #include <utility> // std::pair
