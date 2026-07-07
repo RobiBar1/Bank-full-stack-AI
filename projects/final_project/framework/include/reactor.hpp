@@ -7,6 +7,8 @@
 #include <utility>       // pair
 #include <vector>        // vector
 
+#include "handleton.hpp" // handleton
+
 namespace ilrd
 {
 
@@ -45,7 +47,10 @@ class Reactor
     void Stop();
 
   private:
+    // explicit Reactor(std::unique_ptr<IListener> server);
     const std::unique_ptr<IListener> m_listener;
+
+    // friend class Handleton<Reactor>;
 
     struct HashPair
     {
