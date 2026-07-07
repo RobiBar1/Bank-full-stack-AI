@@ -1,6 +1,12 @@
-#include <assert.h>      //  assert
+/*
+Writer:  Robi
+Checker: Maayan
+Date:    01.07.2026
+*/
+
+#include <assert.h>      // assert
 #include <logger.hpp>    // DEBUG_INFO
-#include <poll.h>        //
+#include <poll.h>        // poll
 #include <sys/inotify.h> // struct inotify_event
 #include <unistd.h>      // read
 
@@ -75,7 +81,7 @@ void DirMonitor::Work()
 
     char buf[BUFFER_SIZE]
         __attribute__((aligned(__alignof__(struct inotify_event)))) = {0};
-    int monitor_fd = inotify_init1(0); /*IN_NONBLOCK);*/
+    int monitor_fd = inotify_init1(IN_NONBLOCK);
     pollfd polledFd = {monitor_fd, POLLIN, 0};
     inotify_add_watch(monitor_fd, m_dirPath.c_str(),
                       IN_DELETE | IN_CLOSE_WRITE | IN_MOVED_FROM | IN_MOVED_TO);
