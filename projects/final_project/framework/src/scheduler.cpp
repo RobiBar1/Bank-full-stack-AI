@@ -1,3 +1,10 @@
+/*
+Writer:  Robi
+Checker: ?
+date:    08.07.2026
+
+*/
+
 #include <assert.h>     // assert
 #include <cerrno>       // errno
 #include <signal.h>     // SIGEV_THREAD, struct sigevent
