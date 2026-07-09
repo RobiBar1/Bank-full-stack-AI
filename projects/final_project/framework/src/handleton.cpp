@@ -4,8 +4,7 @@
 #include "Tester.hpp"     //tester
 #include "dll_loader.hpp" // DLLLoader
 #include "logger.hpp"     //Logger, LogLevel
-
-// #include ".hpp" //
+#include "scheduler.hpp"  // scheduler
 
 namespace ilrd
 {
@@ -15,4 +14,6 @@ template Logger*
 Handleton<Logger>::GetInstance<const std::string&, Logger::LogLevel&&>(
     const std::string&, Logger::LogLevel&& logLevel);
 template Logger* Handleton<Logger>::GetInstance<>();
+template Scheduler* Handleton<Scheduler>::GetInstance<>();
+
 } // namespace ilrd

@@ -1,8 +1,7 @@
 /*
 Writer:  Robi
 Checker: ?
-date:    08.07.2026
-
+date:    09.07.2026
 */
 
 #include <assert.h>     // assert
@@ -37,12 +36,18 @@ Scheduler::Scheduler() : m_currentTopTask(nullptr)
     }
 }
 
-Scheduler::~Scheduler() noexcept
+Scheduler::~Scheduler() noexcept(true)
 {
     struct itimerspec disarm = {};
 
-    timer_settime(m_timer, 0, &disarm, nullptr);
-    timer_delete(m_timer);
+    try
+    {
+        timer_settime(m_timer, 0, &disarm, nullptr);
+        timer_delete(m_timer);
+    }
+    catch (...)
+    {
+    }
 }
 
 void Scheduler::Add(std::shared_ptr<ISchedulerTask> task,
@@ -58,7 +63,6 @@ void Scheduler::Add(std::shared_ptr<ISchedulerTask> task,
     if (nullptr == m_currentTopTask)
     {
         m_currentTopTask = std::make_shared<SchedTaskPair>(std::move(tmp));
-        mtx.unlock();
         StartTimer(startTime);
     }
     else if (m_currentTopTask->second > startTime)
@@ -139,7 +143,7 @@ void Scheduler::OnTimerEnd()
             m_queue.Pop(&nextTask);
             try
             {
-                StartTimer(m_currentTopTask->second);
+                StartTimer(nextTask.second);
             }
             catch (...)
             {
