@@ -1,6 +1,6 @@
 /*
 Writer:  Robi
-Checker: ?
+Checker: Max
 date:    09.07.2026
 */
 
@@ -69,7 +69,6 @@ void Scheduler::Add(std::shared_ptr<ISchedulerTask> task,
     {
         m_queue.Push(*m_currentTopTask);
         *m_currentTopTask = std::move(tmp);
-        mtx.unlock();
         StartTimer(startTime);
     }
     else
@@ -92,23 +91,17 @@ void Scheduler::TimerCallback(union sigval sv)
 
 void Scheduler::StartTimer(std::chrono::steady_clock::time_point startTime)
 {
-    static const long NSEC_IN_SEC = 1000000000L;
-
     struct itimerspec timerSpec = {};
 
-    auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
-                  startTime - std::chrono::steady_clock::now())
-                  .count();
+    auto secs = std::chrono::time_point_cast<std::chrono::seconds>(startTime);
+    auto ns =
+        std::chrono::time_point_cast<std::chrono::nanoseconds>(startTime) -
+        std::chrono::time_point_cast<std::chrono::nanoseconds>(secs);
 
-    if (ns <= 0)
-    {
-        ns = 1;
-    }
+    timerSpec.it_value.tv_sec = secs.time_since_epoch().count();
+    timerSpec.it_value.tv_nsec = ns.count();
 
-    timerSpec.it_value.tv_sec = static_cast<time_t>(ns / NSEC_IN_SEC);
-    timerSpec.it_value.tv_nsec = static_cast<long>(ns % NSEC_IN_SEC);
-
-    if (-1 == timer_settime(m_timer, 0, &timerSpec, nullptr))
+    if (-1 == timer_settime(m_timer, TIMER_ABSTIME, &timerSpec, nullptr))
     {
         throw std::system_error(errno, std::generic_category(),
                                 "timer_settime");
@@ -120,17 +113,8 @@ void Scheduler::OnTimerEnd()
     std::shared_ptr<ISchedulerTask> task;
     {
         std::lock_guard<std::mutex> lock(m_mutex);
-        if (!m_currentTopTask)
-        {
-            return;
-        }
-
-        if (std::chrono::steady_clock::now() < m_currentTopTask->second)
-        {
-            StartTimer(m_currentTopTask->second);
-
-            return;
-        }
+        assert(nullptr != m_currentTopTask);
+        assert(NULL != m_currentTopTask);
 
         task = m_currentTopTask->first;
         if (m_queue.IsEmpty())
@@ -141,16 +125,7 @@ void Scheduler::OnTimerEnd()
         {
             SchedTaskPair nextTask;
             m_queue.Pop(&nextTask);
-            try
-            {
-                StartTimer(nextTask.second);
-            }
-            catch (...)
-            {
-                m_queue.Push(nextTask);
-                throw;
-            }
-
+            StartTimer(nextTask.second);
             *m_currentTopTask = std::move(nextTask);
         }
     }

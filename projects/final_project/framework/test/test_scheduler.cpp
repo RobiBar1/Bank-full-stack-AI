@@ -77,6 +77,8 @@ void Test_SingleTask()
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
     assert(task->WasExecuted() && "Task should have executed");
+
+    std::cout << task->GetActualDelayMs() << std::endl;
     assert(task->GetActualDelayMs() >= 90 && task->GetActualDelayMs() <= 150 &&
            "Task should execute within reasonable time window");
 
