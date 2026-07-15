@@ -1,16 +1,45 @@
+# Ignore everything by default
 *
+
+# Allow directory traversal
 !**/
+
+# Allow specific academic/project directories
 !*/quizzes/*
 !*/quizz/*
 !*/exams/*
+
+# Allow specific file extensions and files
+# lang
 !*.c
 !*.cpp
 !*.h
 !*.hpp
 !*.md
+
+#full-stack-proj
+!package.json
+!package-lock.json
+!tsconfig.json
+!*.ts
+
+#git/makefile
 !.gitignore
 !.myfuncs
 !makefile
 
+# Explicitly RE-IGNORE directories (prevents tracking allowed extensions inside them)
 **/bin/
+node_modules/
+dist/
+build/
+coverage/
+
+# Explicitly ignore sensitive/generated files
+.env
+*.log
+
+
+
+
 
