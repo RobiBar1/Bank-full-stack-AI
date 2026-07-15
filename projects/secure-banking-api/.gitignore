@@ -21,7 +21,7 @@
 !package.json
 !package-lock.json
 !tsconfig.json
-!*.ts
+!*.js
 
 #git/makefile
 !.gitignore
