@@ -1,6 +1,15 @@
 // src/routes/health.routes.js
 const express = require('express');
-const { checkHealth } = require('../controllers/health.controller');
+const db = require('../config/database'); // The PostgreSQL pool created previously
+
+const HealthRepository = require('../repositories/health.repository');
+const HealthService = require('../services/health.service');
+const HealthController = require('../controllers/health.controller');
+
+// Manual Dependency Injection Wiring
+const healthRepository = new HealthRepository(db);
+const healthService = new HealthService(healthRepository);
+const healthController = new HealthController(healthService);
 
 const router = express.Router();
 
@@ -9,28 +18,15 @@ const router = express.Router();
  * /api/health:
  *   get:
  *     summary: System health check
- *     description: Returns the operational status and uptime of the banking API.
+ *     description: Returns the operational status of the API and Database.
  *     tags: [System]
  *     security: []
  *     responses:
  *       200:
  *         description: Successful health check response.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                   example: OK
- *                 timestamp:
- *                   type: string
- *                   format: date-time
- *                   example: "2026-07-14T11:03:36.000Z"
- *                 uptime_seconds:
- *                   type: number
- *                   example: 345.12
+ *       503:
+ *         description: Service degraded (e.g., database disconnected).
  */
-router.get('/health', checkHealth);
+router.get('/health', healthController.checkHealth);
 
 module.exports = router;
