@@ -11,13 +11,11 @@ const validate = (schema) => (req, res, next) => {
         next();
     } catch (error) {
         if (error instanceof ZodError) {
-            // Use .issues as the primary source, falling back to .errors for compatibility
-            const validationFailures = error.issues || error.errors || [];
-            
-            const formattedErrors = validationFailures.map(err => ({
-                field: err.path.join('.'),
-                message: err.message
-            }));
+            const issues = error.issues || error.errors || [];
+const formattedErrors = issues.map(err => ({
+    field: err.path.join('.'),
+    message: err.message
+}));
             
             return res.status(400).json({
                 error: {

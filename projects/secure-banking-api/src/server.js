@@ -5,8 +5,16 @@ const express = require('express');
 const helmet = require('helmet');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./config/swagger');
-const healthRoutes = require('./routes/health.routes');
 const errorHandler = require('./middlewares/error.middleware');
+
+// Route Imports
+const healthRoutes = require('./routes/health.routes');
+const dashboardRoutes = require('./routes/dashboard.routes');
+const authRoutes = require('./routes/auth.routes');
+const transactionRoutes = require('./routes/transaction.routes');
+
+const { testConnection } = require('./config/db');
+const { initializeDatabaseSchema } = require('./scripts/initTables');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -14,27 +22,43 @@ const PORT = process.env.PORT || 3000;
 app.use(helmet());
 app.use(express.json());
 
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-
 // Mount routes
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/api', healthRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/transactions', transactionRoutes);
 
 // Global Error Handler
 app.use(errorHandler);
 
-const server = app.listen(PORT, () => {
-    console.log(`[Server] Process initialized and listening on port ${PORT}`);
-    console.log(`[Swagger] Documentation available at http://localhost:${PORT}/api-docs`);
-});
+const startServer = async () => {
+    try {
+        await testConnection();
+        await initializeDatabaseSchema();
 
-process.on('SIGTERM', () => {
-    console.log('[Server] SIGTERM received: initiating graceful shutdown.');
-    server.close(() => {
-        console.log('[Server] HTTP server closed cleanly.');
-        process.exit(0);
-    });
-});
+        const server = app.listen(PORT, () => {
+            console.log(`[Server] Process initialized and listening on port ${PORT}`);
+            console.log(`[Swagger] Documentation available at http://localhost:${PORT}/api-docs`);
+        });
+
+        process.on('SIGTERM', () => {
+            server.close(() => {
+                process.exit(0);
+            });
+        });
+    } catch (error) {
+        console.error('[Server] Fatal boot error:', error);
+        process.exit(1);
+    }
+};
+
+if (require.main === module) {
+    startServer();
+}
 
 process.on('unhandledRejection', (reason, promise) => {
     console.error('[Server] Unhandled Promise Rejection:', reason);
 });
+
+module.exports = app;

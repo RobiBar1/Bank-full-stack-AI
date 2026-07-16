@@ -1,13 +1,13 @@
 // src/routes/health.routes.js
 const express = require('express');
-const db = require('../config/database'); // The PostgreSQL pool created previously
+const { pool } = require('../config/db'); // Extracting pool here
 
 const HealthRepository = require('../repositories/health.repository');
 const HealthService = require('../services/health.service');
 const HealthController = require('../controllers/health.controller');
 
 // Manual Dependency Injection Wiring
-const healthRepository = new HealthRepository(db);
+const healthRepository = new HealthRepository(pool); // Passing pool here
 const healthService = new HealthService(healthRepository);
 const healthController = new HealthController(healthService);
 
