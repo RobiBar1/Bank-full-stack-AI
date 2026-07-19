@@ -15,10 +15,8 @@ class DashboardController {
 
             const dashboardData = await this.service.getUserDashboard(userId);
 
-            res.status(200).json({
-                message: 'Dashboard data retrieved successfully',
-                data: dashboardData
-            });
+            // Returns data flattened at root level to map perfectly with React client state
+            res.status(200).json(dashboardData);
             
         } catch (error) {
             if (error.message === 'User not found.') {

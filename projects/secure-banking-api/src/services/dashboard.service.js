@@ -8,7 +8,7 @@ class DashboardService {
 
     /**
      * Aggregates the user balance and formatted transaction history.
-     * @param {string} userId 
+     * @param {string|number} userId 
      * @returns {Promise<object>}
      */
     async getUserDashboard(userId) {
@@ -21,28 +21,26 @@ class DashboardService {
         // 2. Fetch all related transactions
         const rawTransactions = await this.transactionRepository.findByUserId(userId);
 
-        // 3. Format the transactions array
+        // 3. Format the transactions array to match the React client interfaces perfectly
         const formattedTransactions = rawTransactions.map(tx => {
-            // Determine if the requesting user sent or received the money
             const isSender = tx.sender_id === userId;
-            
-            // Format the amount string
-            const sign = isSender ? '-' : '+';
-            const formattedAmount = `${sign}${tx.amount}`;
 
             return {
-                transaction_id: tx.id,
-                type: isSender ? 'DEBIT' : 'CREDIT',
-                amount: formattedAmount,
-                status: tx.status,
-                counterparty_id: isSender ? tx.receiver_id : tx.sender_id,
-                date: tx.created_at
+                id: tx.id,
+                // Maps to frontend dynamic coloring logic ('transfer_out' vs 'transfer_in')
+                type: isSender ? 'transfer_out' : 'transfer_in', 
+                // Passed without sign prefix because frontend applies currency formatting and adds sign dynamically
+                amount: tx.amount, 
+                date: tx.created_at,
+                description: isSender 
+                    ? `Transfer to ${tx.receiver_email}` 
+                    : `Transfer from ${tx.sender_email}`
             };
         });
 
         return {
-            current_balance: user.balance,
-            transaction_history: formattedTransactions
+            balance: user.balance,
+            transactions: formattedTransactions
         };
     }
 }

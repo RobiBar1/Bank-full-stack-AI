@@ -32,7 +32,8 @@ class TransactionRepository {
     }
 
     /**
-     * Retrieves all transactions where the user is the sender or receiver.
+     * Retrieves all transactions where the user is the sender or receiver,
+     * including the email addresses of both parties.
      * @param {string} userId 
      * @param {object} [client]
      * @returns {Promise<Array>}
@@ -40,10 +41,20 @@ class TransactionRepository {
     async findByUserId(userId, client = null) {
         const executor = client || this.db;
         const query = `
-            SELECT id, sender_id, receiver_id, amount, status, created_at 
-            FROM transactions 
-            WHERE sender_id = $1 OR receiver_id = $1 
-            ORDER BY created_at DESC
+            SELECT 
+                t.id, 
+                t.sender_id, 
+                t.receiver_id, 
+                t.amount, 
+                t.status, 
+                t.created_at,
+                sender.email AS sender_email,
+                receiver.email AS receiver_email
+            FROM transactions t
+            LEFT JOIN users sender ON t.sender_id = sender.id
+            LEFT JOIN users receiver ON t.receiver_id = receiver.id
+            WHERE t.sender_id = $1 OR t.receiver_id = $1 
+            ORDER BY t.created_at DESC
         `;
         const result = await executor.query(query, [userId]);
         return result.rows;

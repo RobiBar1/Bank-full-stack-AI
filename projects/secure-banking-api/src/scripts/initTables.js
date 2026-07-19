@@ -1,5 +1,6 @@
 // src/scripts/initTables.js
 const db = require('../config/db');
+const bcrypt = require('bcrypt');
 
 const createTablesQuery = `
     CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -32,12 +33,58 @@ const createTablesQuery = `
 `;
 
 /**
+ * Seeds mock users into the database for testing real-time features.
+ */
+const seedMockUsers = async () => {
+    try {
+        const mockPassword = 'Password123!';
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(mockPassword, saltRounds);
+
+        const mockUsers = [
+            {
+                email: 'user1@test.com',
+                password_hash: hashedPassword,
+                phone: '+12345678901',
+                balance: 1000.00,
+                is_verified: true // Pre-verified to bypass OTP login blocks during tests
+            },
+            {
+                email: 'user2@test.com',
+                password_hash: hashedPassword,
+                phone: '+12345678902',
+                balance: 500.00,
+                is_verified: true
+            }
+        ];
+
+        console.log('[Database] Checking for testing seed data...');
+        
+        for (const user of mockUsers) {
+            // ON CONFLICT DO NOTHING prevents row replication on repeated server restarts
+            await db.query(`
+                INSERT INTO users (email, password_hash, phone, balance, is_verified)
+                VALUES ($1, $2, $3, $4, $5)
+                ON CONFLICT (email) DO NOTHING;
+            `, [user.email, user.password_hash, user.phone, user.balance, user.is_verified]);
+        }
+        
+        console.log('[Database] Seeding phase complete. Mock users are validated and ready.');
+    } catch (error) {
+        console.error('[Database] Seeding mock users failed:', error.message);
+    }
+};
+
+/**
  * Executes the DDL statements to ensure tables and columns exist.
  */
 const initializeDatabaseSchema = async () => {
     try {
         await db.query(createTablesQuery);
         console.log('[Database] Schema initialization complete. Tables and columns verified.');
+        
+        // Execute the mock seeding step directly after schema verification
+        await seedMockUsers();
     } catch (error) {
         console.error('[Database] Schema initialization failed:', error.message);
         process.exit(1);

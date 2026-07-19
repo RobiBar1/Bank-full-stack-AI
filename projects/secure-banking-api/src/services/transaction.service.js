@@ -33,13 +33,11 @@ class TransactionService {
             if (!receiver) throw new Error('Receiver account not found.');
 
             // 2. Validate sufficient funds
-            // Note: PostgreSQL NUMERIC types are returned as strings in Node.js by default to prevent precision loss.
             if (parseFloat(sender.balance) < amount) {
                 throw new Error('Insufficient funds.');
             }
 
             // 3. Deduct from sender
-            // We use relative math in the database (balance = balance - X) to prevent concurrent race conditions
             await client.query(
                 'UPDATE users SET balance = balance - $1 WHERE id = $2',
                 [amount, sender.id]
@@ -50,6 +48,13 @@ class TransactionService {
                 'UPDATE users SET balance = balance + $1 WHERE id = $2',
                 [amount, receiver.id]
             );
+
+            // Fetch the exact updated balance of the receiver within the transaction isolation layer
+            const balanceRes = await client.query(
+                'SELECT balance FROM users WHERE id = $1',
+                [receiver.id]
+            );
+            const newReceiverBalance = balanceRes.rows[0].balance;
 
             // 5. Audit the transaction in the ledger
             const transactionRecord = await this.transactionRepository.create({
@@ -62,18 +67,39 @@ class TransactionService {
             // Commit all changes to the database permanently
             await client.query('COMMIT');
 
+            // 6. Broadcast real-time event to the receiver
+            try {
+                // Dynamically required to prevent potential lifecycle ordering issues during app boot
+                const { getIO } = require('../config/socket');
+                const io = getIO();
+                
+                io.to(receiverEmail).emit('balance_updated', {
+                    message: `You received ${amount} USD.`,
+                    updatedBalance: newReceiverBalance,
+                    transaction: {
+                        id: transactionRecord.id,
+                        type: 'transfer_in',
+                        amount: amount,
+                        date: transactionRecord.created_at || new Date().toISOString(),
+                        description: `Transfer from ${senderEmail}`
+                    }
+                });
+            } catch (socketError) {
+                // Catch socket errors separately so a network failure doesn't crash an already committed DB transfer
+                console.error('[Socket.IO Event Error] Real-time transmission failed:', socketError.message);
+            }
+
             return transactionRecord;
 
         } catch (error) {
             // Revert all changes in all tables if any step above failed
             await client.query('ROLLBACK');
             
-            // Format a clear error to pass up to the controller
             const failureMessage = error.message || 'Unknown database error occurred.';
             throw new Error(`Transfer failed: ${failureMessage}`);
             
         } finally {
-            // Guarantee the client is returned to the pool, even if the node process crashes inside the try block
+            // Guarantee the client is returned to the pool
             client.release();
         }
     }

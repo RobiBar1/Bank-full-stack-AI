@@ -9,13 +9,16 @@ const validate = (schema) => (req, res, next) => {
         // Parse and overwrite req.body with stripped/sanitized values
         req.body = schema.parse(req.body);
         next();
-    } catch (error) {
+    }
+    catch (error)
+    {
         if (error instanceof ZodError) {
             const issues = error.issues || error.errors || [];
-const formattedErrors = issues.map(err => ({
-    field: err.path.join('.'),
-    message: err.message
-}));
+            
+            const formattedErrors = issues.map(err => ({    
+                field: err.path.join('.'),
+                message: err.message
+            }));
             
             return res.status(400).json({
                 error: {
